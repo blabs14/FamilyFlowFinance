@@ -32,8 +32,8 @@ export const CreditCardInfo = ({ accountId }: CreditCardInfoProps) => {
   const totalPagamentos = Number(summary.total_pagamentos);
   const balance = Number(summary.saldo); // negativo
   
-  // Sem limite disponível nos dados atuais; derivação simples: crédito disponível = -saldo (se saldo < 0)
-  const availableCredit = balance < 0 ? -balance : 0;
+  // Para cartões de crédito, mostrar a dívida atual (valor absoluto do saldo negativo)
+  const currentDebt = balance < 0 ? -balance : 0;
   const utilizationPercentage = 0; // não temos limite para calcular efetivamente
   
   return (
@@ -52,13 +52,13 @@ export const CreditCardInfo = ({ accountId }: CreditCardInfoProps) => {
         </Badge>
       </div>
       
-      {/* Crédito Disponível (aproximação) */}
+      {/* Dívida Atual */}
       <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">Disponível</span>
+        <span className="text-sm text-muted-foreground">Dívida</span>
         <span className={`text-sm font-medium ${
-          availableCredit > 0 ? 'text-green-600' : 'text-gray-600'
+          currentDebt > 0 ? 'text-red-600' : 'text-gray-600'
         }`}>
-          {formatCurrency(availableCredit)}
+          {formatCurrency(currentDebt)}
         </span>
       </div>
       

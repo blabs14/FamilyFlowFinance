@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Estado Loading</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .button:hover {
+            background: #2563eb;
+        }
+        .button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            background: #f3f4f6;
+        }
+        .log {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Teste Estado Loading</h1>
+        <p>Este teste simula o comportamento do botão de login com diferentes estados.</p>
+        
+        <div class="status">
+            <strong>Estado Atual:</strong>
+            <div id="currentState">Carregando...</div>
+        </div>
+        
+        <button id="normalBtn" class="button">Botão Normal</button>
+        <button id="loadingBtn" class="button" disabled>Botão Loading (Desabilitado)</button>
+        <button id="toggleBtn" class="button">Toggle Loading State</button>
+        
+        <h3>📋 Logs:</h3>
+        <div id="logs" class="log"></div>
+    </div>
+
+    <script>
+        let isLoading = true;
+        let isSubmitting = false;
+        
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('logs');
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateState() {
+            const stateElement = document.getElementById('currentState');
+            const loadingBtn = document.getElementById('loadingBtn');
+            
+            stateElement.innerHTML = `
+                Loading: <strong>${isLoading}</strong><br>
+                Submitting: <strong>${isSubmitting}</strong><br>
+                Button Disabled: <strong>${isLoading || isSubmitting}</strong>
+            `;
+            
+            loadingBtn.disabled = isLoading || isSubmitting;
+            loadingBtn.textContent = (isLoading || isSubmitting) ? 'A carregar...' : 'Botão Normal';
+        }
+        
+        // Event listeners
+        document.getElementById('normalBtn').addEventListener('click', () => {
+            log('✅ Botão normal clicado!');
+        });
+        
+        document.getElementById('loadingBtn').addEventListener('click', () => {
+            log('🚨 Botão loading clicado! (Não deveria acontecer se estiver desabilitado)');
+        });
+        
+        document.getElementById('toggleBtn').addEventListener('click', () => {
+            isLoading = !isLoading;
+            log(`🔄 Estado loading alterado para: ${isLoading}`);
+            updateState();
+        });
+        
+        // Simular comportamento do React
+        function simulateReactBehavior() {
+            log('🚀 Simulando comportamento do React...');
+            log(`📊 Estado inicial - Loading: ${isLoading}, Submitting: ${isSubmitting}`);
+            
+            // Simular carregamento inicial (como no AuthContext)
+            setTimeout(() => {
+                isLoading = false;
+                log('✅ Carregamento inicial concluído - Loading agora é false');
+                updateState();
+            }, 2000);
+        }
+        
+        // Inicializar
+        log('🔍 Teste de estado loading iniciado');
+        updateState();
+        simulateReactBehavior();
+    </script>
+</body>
+</html>

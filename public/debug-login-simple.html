@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Login Simples</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        .log-info { color: #007bff; }
+        .log-success { color: #28a745; }
+        .log-error { color: #dc3545; }
+        .log-warning { color: #ffc107; }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .status-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug Login Simples</h1>
+        
+        <div id="status" class="status status-info">
+            Carregando configuração...
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" placeholder="Digite seu email">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" placeholder="Digite sua password">
+        </div>
+
+        <button onclick="fillTestCredentials()">📝 Preencher Credenciais de Teste</button>
+        <button onclick="testLogin()" id="loginBtn">🔐 Testar Login</button>
+        <button onclick="checkAuthStatus()">🔍 Verificar Status Auth</button>
+        <button onclick="clearLogs()">🧹 Limpar Logs</button>
+
+        <div id="logs" class="log"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        let supabaseClient = null;
+        let currentUser = null;
+        let currentSession = null;
+
+        function addLog(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logs.appendChild(logEntry);
+            logs.scrollTop = logs.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status status-${type}`;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+            addLog('Logs limpos', 'info');
+        }
+
+        async function initializeSupabase() {
+            try {
+                addLog('🚀 Inicializando cliente Supabase...', 'info');
+                
+                // Usar as variáveis corretas do .env.local
+                const supabaseUrl = 'https://ebitcwrrcumsvqjgrapw.supabase.co';
+                const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViaXRjd3JyY3Vtc3ZxamdyYXB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3NjcyMTYsImV4cCI6MjA2ODM0MzIxNn0.hLlTeSD2VzVCjvUSXLYQypXNYqthDx0q1N86aOftfEY';
+                
+                addLog(`📍 URL: ${supabaseUrl}`, 'info');
+                addLog(`🔑 Key: ${supabaseKey.substring(0, 20)}...`, 'info');
+                
+                if (!supabaseUrl || !supabaseKey) {
+                    throw new Error('Variáveis de ambiente do Supabase não encontradas');
+                }
+                
+                supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+                
+                if (!supabaseClient) {
+                    throw new Error('Falha ao criar cliente Supabase');
+                }
+                
+                addLog('✅ Cliente Supabase inicializado com sucesso', 'success');
+                updateStatus('Cliente Supabase pronto', 'success');
+                
+                // Verificar sessão atual
+                await checkAuthStatus();
+                
+            } catch (error) {
+                addLog(`❌ Erro ao inicializar Supabase: ${error.message}`, 'error');
+                updateStatus(`Erro na inicialização: ${error.message}`, 'error');
+            }
+        }
+
+        function fillTestCredentials() {
+            document.getElementById('email').value = 'testetotal@teste.com';
+            document.getElementById('password').value = 'teste14';
+            addLog('📝 Credenciais de teste preenchidas (do .env.local)', 'info');
+        }
+
+        async function checkAuthStatus() {
+            if (!supabaseClient) {
+                addLog('❌ Cliente Supabase não inicializado', 'error');
+                return;
+            }
+
+            try {
+                addLog('🔍 Verificando status de autenticação...', 'info');
+                
+                const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+                
+                if (sessionError) {
+                    addLog(`❌ Erro ao obter sessão: ${sessionError.message}`, 'error');
+                    return;
+                }
+                
+                if (sessionData.session) {
+                    currentSession = sessionData.session;
+                    currentUser = sessionData.session.user;
+                    addLog(`✅ Sessão ativa encontrada: ${currentUser.email}`, 'success');
+                    addLog(`🕒 Expira em: ${new Date(currentSession.expires_at * 1000).toLocaleString()}`, 'info');
+                    updateStatus(`Autenticado como: ${currentUser.email}`, 'success');
+                } else {
+                    currentSession = null;
+                    currentUser = null;
+                    addLog('ℹ️ Nenhuma sessão ativa encontrada', 'info');
+                    updateStatus('Não autenticado', 'info');
+                }
+                
+            } catch (error) {
+                addLog(`❌ Erro inesperado ao verificar auth: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLogin() {
+            if (!supabaseClient) {
+                addLog('❌ Cliente Supabase não inicializado', 'error');
+                return;
+            }
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                addLog('❌ Email e password são obrigatórios', 'error');
+                updateStatus('Email e password são obrigatórios', 'error');
+                return;
+            }
+
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.disabled = true;
+            loginBtn.textContent = '🔄 Fazendo login...';
+
+            try {
+                addLog(`🔐 Tentando login com: ${email}`, 'info');
+                updateStatus('Fazendo login...', 'info');
+                
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                addLog(`📋 Resposta do login:`, 'info');
+                addLog(`  - Erro: ${error ? error.message : 'Nenhum'}`, error ? 'error' : 'info');
+                addLog(`  - Usuário: ${data?.user ? data.user.email : 'Nenhum'}`, data?.user ? 'success' : 'info');
+                addLog(`  - Sessão: ${data?.session ? 'Ativa' : 'Inativa'}`, data?.session ? 'success' : 'info');
+                
+                if (error) {
+                    addLog(`❌ Erro no login: ${error.message}`, 'error');
+                    updateStatus(`Erro no login: ${error.message}`, 'error');
+                } else if (data?.user && data?.session) {
+                    currentUser = data.user;
+                    currentSession = data.session;
+                    addLog(`✅ Login bem-sucedido: ${data.user.email}`, 'success');
+                    updateStatus(`Login bem-sucedido: ${data.user.email}`, 'success');
+                } else {
+                    addLog('❌ Login falhou: dados de resposta inválidos', 'error');
+                    updateStatus('Login falhou: resposta inválida', 'error');
+                }
+                
+            } catch (error) {
+                addLog(`❌ Exceção durante o login: ${error.message}`, 'error');
+                updateStatus(`Erro inesperado: ${error.message}`, 'error');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = '🔐 Testar Login';
+            }
+        }
+
+        // Inicializar quando a página carregar
+        window.addEventListener('load', initializeSupabase);
+    </script>
+</body>
+</html>

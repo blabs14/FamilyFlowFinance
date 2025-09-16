@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import LogoutButton from '../auth/LogoutButton';
 import { RealTimeNotifications } from '../RealTimeNotifications';
 import { useRouteChange } from '../../hooks/useRouteChange';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 export function MainLayout() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -75,7 +76,9 @@ export function MainLayout() {
         {/* Conteúdo principal */}
         <main className="flex-1 md:ml-64 lg:ml-72 pb-20 md:pb-6">
           <div className="container mx-auto px-4 py-6 max-w-7xl">
-            <Outlet />
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
           </div>
         </main>
       </div>

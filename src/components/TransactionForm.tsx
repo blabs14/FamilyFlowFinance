@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { useAuth } from '../contexts/AuthContext';
 import { useCreateTransaction, useUpdateTransaction } from '../hooks/useTransactionsQuery';
 import { useReferenceData } from '../hooks/useCache';
-import { useCreateCategory } from '../hooks/useCategoriesQuery';
+import { useCreateCategory, useCategoriesDomain } from '../hooks/useCategoriesQuery';
 import { transactionSchema } from '../validation/transactionSchema';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -68,7 +68,8 @@ interface TransactionFormProps {
 
 const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'internal' }: TransactionFormProps) => {
   const { user } = useAuth();
-  const { accounts, categories } = useReferenceData();
+  const { accounts } = useReferenceData();
+  const { data: categories = [], isLoading: categoriesLoading } = useCategoriesDomain();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
@@ -99,9 +100,9 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
   const createCategoryMutation = useCreateCategory();
   const isSubmitting = createTransactionMutation.isPending || updateTransactionMutation.isPending || createCategoryMutation.isPending || form.formState.isSubmitting;
 
-  const dataLoading = accounts.isLoading || categories.isLoading;
+  const dataLoading = accounts.isLoading || categoriesLoading;
   const accountsList = Array.isArray(accounts.data) ? accounts.data : [];
-  const categoriesList = Array.isArray(categories.data) ? categories.data : [];
+  const categoriesList = Array.isArray(categories) ? categories : [];
 
   const selectedAccount = accountsList.find(a => a.account_id === account_id);
   const isCreditCard = (accTipo?: string) => (accTipo || '').toLowerCase() === 'cartão de crédito';

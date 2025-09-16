@@ -1,51 +1,81 @@
-import { expect, afterEach, vi } from 'vitest';
+import { beforeEach, afterEach, vi } from 'vitest';
+import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
-import * as matchers from '@testing-library/jest-dom/matchers';
+import dotenv from 'dotenv';
 
-// Extend Vitest's expect with jest-dom matchers
-expect.extend(matchers);
+// Carregar variáveis de ambiente para testes
+dotenv.config({ path: '.env.test' });
+dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 
-// Cleanup after each test case
+// Extend Jest matchers
+import '@testing-library/jest-dom';
+
+// Cleanup após cada teste
 afterEach(() => {
   cleanup();
+  vi.clearAllMocks();
 });
 
-// Mock environment variables
-vi.mock('@/lib/supabaseClient', () => ({
-  supabaseClient: {
+// Configuração global para testes mais rápidos
+beforeEach(() => {
+  // Reset de timers para cada teste
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+// Mock simplificado do supabaseClient
+vi.mock('@/integrations/supabase/client', () => {
+  const mockClient = {
     auth: {
-      getUser: vi.fn(),
-      signInWithPassword: vi.fn(),
-      signUp: vi.fn(),
-      signOut: vi.fn()
+      getUser: vi.fn().mockResolvedValue({ 
+        data: { user: { id: 'test-user-id', email: 'test@example.com' } }, 
+        error: null 
+      }),
+      getSession: vi.fn().mockResolvedValue({ 
+        data: { session: { user: { id: 'test-user-id' } } }, 
+        error: null 
+      }),
+      signOut: vi.fn().mockResolvedValue({ error: null }),
+      onAuthStateChange: vi.fn().mockReturnValue({
+        data: { subscription: { unsubscribe: vi.fn() } }
+      })
     },
-    from: vi.fn(() => ({
-      select: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      update: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      single: vi.fn(),
-      then: vi.fn()
-    }))
-  }
-}));
+    from: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    single: vi.fn().mockResolvedValue({ data: null, error: null }),
+    then: vi.fn().mockResolvedValue({ data: [], error: null })
+  };
+  
+  return { supabaseClient: mockClient };
+});
 
 // Note: React Query mocks removed to allow proper testing of query states
 // Individual tests should mock services instead of React Query itself
 
-// Mock AuthContext
+// Mock otimizado do AuthContext
 vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: vi.fn(() => ({
-    user: { id: 'test-user-id', email: 'test@example.com' },
+  useAuth: () => ({
+    user: {
+      id: 'test-user-id',
+      email: 'test@example.com',
+      user_metadata: { name: 'Test User' }
+    },
     loading: false,
+    signOut: vi.fn(),
     signIn: vi.fn(),
-    signUp: vi.fn(),
-    signOut: vi.fn()
-  }))
+    signUp: vi.fn()
+  }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => children
 }));
+
 
 // Global test utilities
 global.ResizeObserver = vi.fn().mockImplementation(() => ({

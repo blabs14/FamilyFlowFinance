@@ -426,8 +426,11 @@ export async function syncRegionalHolidays(
       return { created: 0, updated: 0, errors: [] };
     }
 
+    // Importar payrollService dinamicamente para evitar dependências circulares e ReferenceError
+    const { payrollService } = await import('./payrollService');
+
     // Obter feriados existentes
-    const existingHolidays = await payrollService.getHolidays(userId, year, contractId);
+    const existingHolidays = await payrollService.getHolidays(userId, year, contractId, workplaceLocation);
     
     for (const autoHoliday of regionalHolidays) {
       try {
@@ -442,7 +445,8 @@ export async function syncRegionalHolidays(
           holiday_type: autoHoliday.type,
           is_paid: true, // Feriados automáticos são pagos por defeito
           affects_overtime: true,
-          description: autoHoliday.description || `Feriado ${autoHoliday.type}`
+          description: autoHoliday.description || `Feriado ${autoHoliday.type}`,
+          contract_id: contractId // garantir associação ao contrato
         };
 
         if (existingHoliday) {

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/256</span>
+                <span class='fraction'>0/257</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/256</span>
+                <span class='fraction'>0/257</span>
             </div>
         
             
@@ -490,7 +490,9 @@
 <a name='L425'></a><a href='#L425'>425</a>
 <a name='L426'></a><a href='#L426'>426</a>
 <a name='L427'></a><a href='#L427'>427</a>
-<a name='L428'></a><a href='#L428'>428</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L428'></a><a href='#L428'>428</a>
+<a name='L429'></a><a href='#L429'>429</a>
+<a name='L430'></a><a href='#L430'>430</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -762,6 +764,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -789,6 +792,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1186,36 +1190,38 @@
                 Nenhum cartão de crédito encontrado
               &lt;/p&gt;
             ) : (
-<span class="cstat-no" title="statement not covered" >              myCards.map((card) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >                const balance = card.saldo || 0;</span>
-<span class="cstat-no" title="statement not covered" >                const isInDebt = balance &lt; 0;</span>
-                
-<span class="cstat-no" title="statement not covered" >                return (</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;div key={card.id} className="flex items-center justify-between"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;p className="font-medium"&gt;{card.nome}&lt;/p&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;div className="flex items-center gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        {isInDebt ? (</span>
-<span class="cstat-no" title="statement not covered" >                          &lt;Badge variant="destructive" className="text-xs"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                            &lt;AlertCircle className="h-3 w-3 mr-1" /&gt;</span>
-                            Em Dívida
-                          &lt;/Badge&gt;
-                        ) : (
-<span class="cstat-no" title="statement not covered" >                          &lt;Badge variant="secondary" className="text-xs"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                            &lt;CheckCircle className="h-3 w-3 mr-1" /&gt;</span>
-                            Em Dia
-                          &lt;/Badge&gt;
-                        )}
+<span class="cstat-no" title="statement not covered" >              &lt;div className="space-y-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                {myCards.map((card) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >                  const balance = card.saldo || 0;</span>
+<span class="cstat-no" title="statement not covered" >                  const isInDebt = balance &lt; 0;</span>
+                  
+<span class="cstat-no" title="statement not covered" >                  return (</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;div key={card.id} className="flex items-center justify-between"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                      &lt;div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;p className="font-medium"&gt;{card.nome}&lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;div className="flex items-center gap-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                          {isInDebt ? (</span>
+<span class="cstat-no" title="statement not covered" >                            &lt;Badge variant="destructive" className="text-xs"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                              &lt;AlertCircle className="h-3 w-3 mr-1" /&gt;</span>
+                              Em Dívida
+                            &lt;/Badge&gt;
+                          ) : (
+<span class="cstat-no" title="statement not covered" >                            &lt;Badge variant="secondary" className="text-xs"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                              &lt;CheckCircle className="h-3 w-3 mr-1" /&gt;</span>
+                              Em Dia
+                            &lt;/Badge&gt;
+                          )}
+                        &lt;/div&gt;
+                      &lt;/div&gt;
+<span class="cstat-no" title="statement not covered" >                      &lt;div className="text-right"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;p className={`font-bold ${isInDebt ? 'text-destructive' : 'text-green-600'}`}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                          {balance.toFixed(2)}€</span>
+                        &lt;/p&gt;
                       &lt;/div&gt;
                     &lt;/div&gt;
-<span class="cstat-no" title="statement not covered" >                    &lt;div className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;p className={`font-bold ${isInDebt ? 'text-destructive' : 'text-green-600'}`}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        {balance.toFixed(2)}€</span>
-                      &lt;/p&gt;
-                    &lt;/div&gt;
-                  &lt;/div&gt;
-                );
-<span class="cstat-no" title="statement not covered" >              })</span>
+                  );
+<span class="cstat-no" title="statement not covered" >                })}</span>
+              &lt;/div&gt;
             )}
           &lt;/CardContent&gt;
         &lt;/Card&gt;
@@ -1317,7 +1323,7 @@
           ) : (
 <span class="cstat-no" title="statement not covered" >            &lt;div className="space-y-3"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {myTransactions.slice(0, 5).map((transaction, index) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div key={transaction.id ? `tx-${transaction.id}` : `transaction-fallback-${index}-${transaction.descricao?.slice(0, 10) || 'unknown'}`} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div key={transaction.id || `transaction-${transaction.data}-${index}`} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="flex items-center gap-3"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;div className={`w-2 h-2 rounded-full ${</span>
 <span class="cstat-no" title="statement not covered" >                      transaction.tipo === 'receita' ? 'bg-green-500' : 'bg-red-500'</span>
@@ -1351,7 +1357,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.132Z
+                at 2025-09-14T17:15:08.717Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

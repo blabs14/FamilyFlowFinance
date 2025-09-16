@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Session, User } from '@supabase/supabase-js';
-import { logger } from '@/shared/lib/logger';
+import { logger } from '../shared/lib/logger';
 import { useUserDataInvalidation } from '../hooks/useUserDataInvalidation';
 
 interface AuthContextType {
@@ -27,14 +27,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    let initialSessionLoaded = false;
+    let initializationComplete = false;
     
-    console.log('[Auth] 🚀 Initializing auth context', {
-      timestamp: new Date().toISOString(),
-      mounted,
-      currentUser: user?.id || 'none',
-      currentSession: session?.access_token ? 'exists' : 'none'
-    });
+    console.log('[Auth] 🚀 FIXED: AuthProvider mounting...');
+    
+    // Função para garantir que loading seja sempre false após inicialização
+    const ensureLoadingFalse = () => {
+      if (mounted && !initializationComplete) {
+        console.log('[Auth] 🔧 FIXED: Forçando loading = false');
+        setLoading(false);
+        initializationComplete = true;
+      }
+    };
     
     // Setup auth state listener
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -43,115 +47,78 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      console.log(`[Auth] 🔄 Auth state changed: ${event}`, {
+      console.log(`[Auth] 🔄 FIXED: Auth state changed: ${event}`, {
         hasSession: !!session,
-        userId: session?.user?.id || 'none',
-        expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'none',
-        timestamp: new Date().toISOString(),
-        mounted,
-        initialSessionLoaded,
-        event
+        userId: session?.user?.id || 'none'
       });
       
       logger.info(`[Auth] Estado alterado: ${event}`, {
         hasSession: !!session,
-        userId: session?.user?.id,
-        expiresAt: session?.expires_at
+        userId: session?.user?.id
       });
       
       // Update state atomically
       setSession(session);
-      if (session?.user) {
-        console.log('🔧 AuthContext: Sessão encontrada, definindo user:', {
-          id: session.user.id,
-          email: session.user.email
-        });
-        console.log('🔧 AuthContext: USER ID COMPLETO para debug:', session.user.id);
-        setUser(session.user);
-      } else {
-        console.log('🔧 AuthContext: Nenhuma sessão encontrada');
-        setUser(null);
-      }
+      setUser(session?.user ?? null);
       
       // Always stop loading after any auth state change
-      if (loading) {
-        console.log('[Auth] 🏁 Auth state changed, stopping loading');
-        setLoading(false);
-      }
-      
-      // Mark as initialized
-      if (!initialSessionLoaded) {
-        initialSessionLoaded = true;
-      }
+      console.log('[Auth] 🏁 FIXED: Auth state changed, stopping loading');
+      setLoading(false);
+      initializationComplete = true;
     });
     
-    // Get initial session - this will trigger INITIAL_SESSION event
+    // Função simplificada de inicialização
     const initializeAuth = async () => {
+      console.log('[Auth] 🚀 FIXED: Inicializando autenticação...');
+      
       try {
-        console.log('[Auth] 🔍 Getting initial session...', {
-          timestamp: new Date().toISOString(),
-          localStorage: Object.keys(localStorage).filter(k => k.startsWith('sb-')).length + ' supabase keys'
-        });
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        const { data, error } = await supabase.auth.getSession();
+        console.log('[Auth] 📊 FIXED: Resultado getSession:', { hasSession: !!session, error: !!error });
         
-        if (!mounted) {
-          console.warn('[Auth] ⚠️ Component unmounted during getSession, skipping');
-          return;
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
         }
         
-        if (error) {
-          console.error('[Auth] ❌ Error getting initial session:', error);
-          logger.warn('[Auth] Erro ao obter sessão inicial:', error);
-          
-          // Set state and stop loading on error
-          setUser(null);
-          setSession(null);
-          setLoading(false);
-          initialSessionLoaded = true;
-        } else {
-          console.log('[Auth] 📋 Initial session result:', {
-            hasSession: !!data.session,
-            userId: data.session?.user?.id || 'none',
-            expiresAt: data.session?.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : 'none',
-            tokenLength: data.session?.access_token?.length || 0,
-            timestamp: new Date().toISOString()
-          });
-          
-          logger.info('[Auth] Sessão inicial carregada', {
-            hasSession: !!data.session,
-            userId: data.session?.user?.id
-          });
-          
-          // Set initial state immediately
-          setUser(data.session?.user ?? null);
-          setSession(data.session);
-          setLoading(false);
-          initialSessionLoaded = true;
-        }
       } catch (error) {
-        if (!mounted) return;
-        
-        console.error('[Auth] 💥 Exception getting initial session:', error);
-        logger.error('[Auth] Erro crítico ao inicializar autenticação:', error);
-        
-        // Set safe state and stop loading on exception
-        setUser(null);
-        setSession(null);
-        setLoading(false);
-        initialSessionLoaded = true;
+        console.error('[Auth] 💥 FIXED: Erro:', error);
+      } finally {
+        // SEMPRE definir loading como false no final, mesmo com erro
+        if (mounted) {
+          console.log('[Auth] 🔧 FIXED: Definindo loading = false (finally)');
+          setLoading(false);
+          initializationComplete = true;
+        }
       }
     };
     
+    // Inicializar autenticação
     initializeAuth();
     
+    // Fallback: garantir que loading seja false após 2 segundos
+    const fallbackTimer = setTimeout(() => {
+      if (mounted && !initializationComplete) {
+        console.warn('[Auth] ⏰ FIXED: Fallback - forçando loading = false após timeout');
+        setLoading(false);
+        initializationComplete = true;
+      }
+    }, 2000);
+    
     return () => {
+      console.log('[Auth] 🧹 FIXED: Limpeza do contexto');
       mounted = false;
+      clearTimeout(fallbackTimer);
       listener.subscription.unsubscribe();
     };
   }, []); // Empty dependency array to avoid re-initialization
 
   const login = async (email: string, password: string) => {
+    console.log('🔐 [AuthContext] Iniciando login...');
+    console.log('📧 [AuthContext] Email:', email);
+    console.log('🔑 [AuthContext] Password fornecida:', !!password);
+    console.log('🔑 [AuthContext] Password length:', password?.length);
+    
     console.log('[Auth] 🔐 Login attempt started', {
       email,
       timestamp: new Date().toISOString(),
@@ -163,9 +130,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     
     try {
+      console.log('📞 [AuthContext] Chamando supabase.auth.signInWithPassword...');
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       
+      console.log('📋 [AuthContext] Resposta do Supabase:');
+      console.log('  - Data:', data);
+      console.log('  - Error:', error);
+      console.log('  - User:', data?.user);
+      console.log('  - Session:', data?.session);
+      
       if (error) {
+        console.error('❌ [AuthContext] Erro no login:', error);
         console.error('[Auth] ❌ Login failed', {
           error: error.message,
           email,
@@ -173,6 +148,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         logger.warn('[Auth] Falha no login', { error: error.message, email });
       } else {
+        console.log('✅ [AuthContext] Login bem-sucedido!');
+        console.log('👤 [AuthContext] Utilizador:', data.user?.email);
         console.log('[Auth] ✅ Login successful', {
           userId: data.user?.id,
           email,
@@ -186,6 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       return { error };
     } catch (error) {
+      console.error('💥 [AuthContext] Erro inesperado no login:', error);
       console.error('[Auth] 💥 Login exception:', error);
       logger.error('[Auth] Erro crítico no login:', error);
       setLoading(false);
@@ -272,8 +250,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth deve ser usado dentro de AuthProvider');
-  return ctx;
-}
+// Hook separado para resolver problemas de Fast Refresh
+const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export { useAuth };

@@ -5,7 +5,7 @@ import { getTransactions } from '../services/transactions';
 import { getGoals } from '../services/goals';
 import { getCategories } from '../services/categories';
 import { getPersonalKPIs } from '../services/accounts';
-import { logger } from '@/shared/lib/logger';
+import { logger } from '../shared/lib/logger';
 
 export const useDashboardData = () => {
   const { user } = useAuth();

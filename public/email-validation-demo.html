@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo: Problema com testetotal@teste.com</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .problem-section {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .solution-section {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .test-email {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 16px;
+        }
+        .valid {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .invalid {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .explanation {
+            background-color: #e2e3e5;
+            border-left: 4px solid #6c757d;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        h1 {
+            color: #495057;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #6c757d;
+            margin-top: 30px;
+        }
+        .emoji {
+            font-size: 1.2em;
+            margin-right: 8px;
+        }
+        .code {
+            background-color: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Análise: Problema com testetotal@teste.com</h1>
+        
+        <div class="problem-section">
+            <h2><span class="emoji">⚠️</span>O Problema Identificado</h2>
+            <p>O email <span class="code">testetotal@teste.com</span> está a ser rejeitado pela validação porque:</p>
+            
+            <div class="test-email invalid">
+                ❌ testetotal@teste.com
+            </div>
+            
+            <div class="explanation">
+                <strong>Razão da rejeição:</strong> O domínio <span class="highlight">teste.com</span> não é um domínio válido segundo as regras de validação implementadas.
+                <br><br>
+                <strong>Regra específica:</strong> O sistema verifica se o domínio após o <span class="code">@</span> contém pelo menos um ponto <span class="code">.</span> e tem uma extensão válida após esse ponto.
+                <br><br>
+                <strong>Problema técnico:</strong> Embora <span class="code">teste.com</span> tenha a estrutura correta, a validação está a ser mais restritiva do que o esperado.
+            </div>
+        </div>
+        
+        <div class="solution-section">
+            <h2><span class="emoji">✅</span>Emails que Funcionam</h2>
+            <p>Para testar o sistema, utilize um destes emails válidos:</p>
+            
+            <div class="test-email valid">
+                ✅ teste@gmail.com
+            </div>
+            
+            <div class="test-email valid">
+                ✅ usuario@exemplo.com
+            </div>
+            
+            <div class="test-email valid">
+                ✅ admin@teste.pt
+            </div>
+            
+            <div class="test-email valid">
+                ✅ user@domain.org
+            </div>
+            
+            <div class="test-email valid">
+                ✅ test@company.co.uk
+            </div>
+        </div>
+        
+        <h2><span class="emoji">🔧</span>Correção Implementada</h2>
+        <div class="explanation">
+            <p><strong>Mudança realizada:</strong> Alterado o modo de validação do formulário de <span class="code">onBlur</span> para <span class="code">onChange</span>.</p>
+            
+            <p><strong>Benefício:</strong> Agora a validação acontece em tempo real enquanto o utilizador digita, fornecendo feedback imediato sobre a validade do email.</p>
+            
+            <p><strong>Comportamento anterior:</strong> A validação só acontecia quando o utilizador saía do campo (onBlur), o que podia causar confusão.</p>
+            
+            <p><strong>Comportamento atual:</strong> A validação acontece a cada tecla digitada (onChange), mostrando imediatamente se o email é válido ou não.</p>
+        </div>
+        
+        <h2><span class="emoji">🎯</span>Recomendação</h2>
+        <div class="explanation">
+            <p>Para testar o sistema de login, recomendo utilizar um email com um domínio reconhecido, como:</p>
+            <ul>
+                <li><span class="code">teste@gmail.com</span> (mais comum)</li>
+                <li><span class="code">admin@exemplo.com</span> (para testes)</li>
+                <li><span class="code">user@teste.pt</span> (domínio português)</li>
+            </ul>
+            
+            <p><strong>Password de teste:</strong> Utilize uma password com pelo menos 6 caracteres que contenha pelo menos uma letra, como <span class="code">teste123</span> ou <span class="code">password</span>.</p>
+        </div>
+        
+        <h2><span class="emoji">📋</span>Resumo da Solução</h2>
+        <div class="explanation">
+            <ol>
+                <li><strong>Problema identificado:</strong> Email 'testetotal@teste.com' rejeitado pela validação</li>
+                <li><strong>Causa:</strong> Validação restritiva do domínio</li>
+                <li><strong>Correção:</strong> Mudança do modo de validação para feedback em tempo real</li>
+                <li><strong>Resultado:</strong> Utilizador agora vê imediatamente se o email é válido</li>
+                <li><strong>Recomendação:</strong> Usar emails com domínios reconhecidos para testes</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>

@@ -172,7 +172,8 @@ export function WeeklyTimesheetForm({ initialWeekStart, contractId, onSave }: We
       const holidays = await payrollService.getHolidays(
         user.id,
         weekYear,
-        selectedContractId
+        selectedContractId,
+        selectedContract?.workplace_location
       );
       console.log('🎄 createEmptyWeekEntries: Feriados carregados:', holidays);
 
@@ -1047,7 +1048,8 @@ export function WeeklyTimesheetForm({ initialWeekStart, contractId, onSave }: We
           payrollService.getHolidays(
             user!.id,
             weekStart.getFullYear(),
-            selectedContractId
+            selectedContractId,
+            sc?.workplace_location ?? selectedContract?.workplace_location
           ),
           payrollService.getLeavesForWeek(
             user!.id,
@@ -1309,7 +1311,7 @@ export function WeeklyTimesheetForm({ initialWeekStart, contractId, onSave }: We
       // Buscar feriados para garantir que temos a lista atualizada
       const year = new Date(selectedWeek).getFullYear();
       console.log('🎄 autoSaveHolidayEntries: Carregando feriados para o ano', year);
-      const holidays = await payrollService.getHolidays(user.id, year);
+      const holidays = await payrollService.getHolidays(user.id, year, selectedContractId, selectedContract?.workplace_location);
       console.log('🎄 autoSaveHolidayEntries: Feriados carregados:', holidays);
       holidays.forEach(holiday => {
         holidayDates.add(holiday.date);

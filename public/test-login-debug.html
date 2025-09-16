@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Debug: Validação do Email "testetotal@exemplo.com"</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #1e293b;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+        .test-section h2 {
+            color: #475569;
+            margin-bottom: 15px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #dcfce7;
+            border: 1px solid #16a34a;
+            color: #15803d;
+        }
+        .error {
+            background: #fef2f2;
+            border: 1px solid #dc2626;
+            color: #dc2626;
+        }
+        .info {
+            background: #eff6ff;
+            border: 1px solid #3b82f6;
+            color: #1d4ed8;
+        }
+        .log {
+            background: #f1f5f9;
+            border: 1px solid #64748b;
+            color: #334155;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 6px;
+        }
+        .highlight {
+            background: #fef3c7;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug: Validação do Email "testetotal@exemplo.com"</h1>
+        
+        <div class="test-section">
+            <h2>Teste Específico do Email</h2>
+            <input type="email" id="testEmail" value="testetotal@exemplo.com" placeholder="Email para testar">
+            <input type="password" id="testPassword" value="teste14" placeholder="Password para testar">
+            <button onclick="testEmailValidation()">🧪 Testar Email Específico</button>
+            <button onclick="testAllValidations()">🔍 Testar Todas as Validações</button>
+            <button onclick="clearLogs()">🗑️ Limpar Logs</button>
+            
+            <div id="validationResult" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Análise Detalhada do Schema</h2>
+            <div id="schemaAnalysis" class="result info">
+Schema de validação atual:
+1. ✅ string().min(1, 'Email é obrigatório')
+2. ✅ email('Formato de email inválido') 
+3. ✅ max(254, 'Email demasiado longo')
+4. ✅ refine: não pode conter espaços
+5. ✅ refine: domínio deve conter ponto (.)
+
+Email testado: "testetotal@exemplo.com"
+- Tem mais de 1 caractere ✅
+- Formato de email válido ✅
+- Menos de 254 caracteres ✅
+- Não contém espaços ✅
+- Domínio "exemplo.com" contém ponto ✅
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Logs de Debug</h2>
+            <div id="debugLogs" class="log">Aguardando testes...</div>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('debugLogs');
+            const typeIcon = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            logElement.innerHTML += `[${timestamp}] ${typeIcon} ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('debugLogs').innerHTML = 'Logs limpos...\n';
+            document.getElementById('validationResult').innerHTML = '';
+        }
+
+        // Recrear exatamente o schema usado na aplicação
+        function createEmailValidation() {
+            return {
+                validate: (email) => {
+                    log(`Iniciando validação do email: "${email}"`);
+                    
+                    // 1. Verificar se não está vazio
+                    if (!email || email.length === 0) {
+                        log('❌ Falhou: Email é obrigatório', 'error');
+                        return { success: false, error: 'Email é obrigatório' };
+                    }
+                    log('✅ Passou: Email não está vazio');
+                    
+                    // 2. Verificar formato de email
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(email)) {
+                        log('❌ Falhou: Formato de email inválido', 'error');
+                        return { success: false, error: 'Formato de email inválido' };
+                    }
+                    log('✅ Passou: Formato de email válido');
+                    
+                    // 3. Verificar comprimento máximo
+                    if (email.length > 254) {
+                        log('❌ Falhou: Email demasiado longo', 'error');
+                        return { success: false, error: 'Email demasiado longo' };
+                    }
+                    log('✅ Passou: Email não é muito longo');
+                    
+                    // 4. Verificar se não tem espaços
+                    if (email.includes(' ')) {
+                        log('❌ Falhou: Email não pode conter espaços', 'error');
+                        return { success: false, error: 'Email não pode conter espaços' };
+                    }
+                    log('✅ Passou: Email não contém espaços');
+                    
+                    // 5. Verificar domínio básico
+                    const domain = email.split('@')[1];
+                    if (!domain || !domain.includes('.')) {
+                        log('❌ Falhou: Domínio de email inválido', 'error');
+                        return { success: false, error: 'Domínio de email inválido' };
+                    }
+                    log(`✅ Passou: Domínio "${domain}" é válido`);
+                    
+                    log('🎉 Email passou em todas as validações!', 'success');
+                    return { success: true };
+                }
+            };
+        }
+
+        function createPasswordValidation() {
+            return {
+                validate: (password) => {
+                    log(`Iniciando validação da password: "${password}"`);
+                    
+                    // 1. Verificar se não está vazia
+                    if (!password || password.length === 0) {
+                        log('❌ Falhou: Password é obrigatória', 'error');
+                        return { success: false, error: 'Password é obrigatória' };
+                    }
+                    log('✅ Passou: Password não está vazia');
+                    
+                    log('🎉 Password passou na validação básica!', 'success');
+                    return { success: true };
+                }
+            };
+        }
+
+        function testEmailValidation() {
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            const resultDiv = document.getElementById('validationResult');
+            
+            log('='.repeat(50));
+            log('🚀 INICIANDO TESTE DE VALIDAÇÃO');
+            log('='.repeat(50));
+            
+            const emailValidator = createEmailValidation();
+            const passwordValidator = createPasswordValidation();
+            
+            const emailResult = emailValidator.validate(email);
+            const passwordResult = passwordValidator.validate(password);
+            
+            let resultHTML = '';
+            
+            if (emailResult.success && passwordResult.success) {
+                resultHTML = `
+                <div class="success">
+                ✅ SUCESSO: Ambos os campos são válidos!
+                
+                Email: "${email}" ✅
+                Password: "${password}" ✅
+                
+                ➡️ O formulário deveria funcionar normalmente.
+                </div>`;
+                log('🎉 RESULTADO FINAL: VALIDAÇÃO PASSOU!', 'success');
+            } else {
+                const errors = [];
+                if (!emailResult.success) errors.push(`Email: ${emailResult.error}`);
+                if (!passwordResult.success) errors.push(`Password: ${passwordResult.error}`);
+                
+                resultHTML = `
+                <div class="error">
+                ❌ ERRO: Validação falhou!
+                
+                ${errors.join('\n')}
+                </div>`;
+                log('❌ RESULTADO FINAL: VALIDAÇÃO FALHOU!', 'error');
+            }
+            
+            resultDiv.innerHTML = resultHTML;
+        }
+
+        function testAllValidations() {
+            log('='.repeat(50));
+            log('🧪 TESTANDO MÚLTIPLOS EMAILS');
+            log('='.repeat(50));
+            
+            const testCases = [
+                { email: 'testetotal@exemplo.com', expected: true },
+                { email: 'teste@teste.com', expected: true },
+                { email: 'user@domain.org', expected: true },
+                { email: 'teste2@teste', expected: false },
+                { email: 'invalid-email', expected: false },
+                { email: '', expected: false },
+                { email: 'test @example.com', expected: false }
+            ];
+            
+            const emailValidator = createEmailValidation();
+            let results = 'Resultados dos testes:\n\n';
+            
+            testCases.forEach((testCase, index) => {
+                log(`\n--- Teste ${index + 1}: "${testCase.email}" ---`);
+                const result = emailValidator.validate(testCase.email);
+                const passed = result.success === testCase.expected;
+                
+                results += `${index + 1}. "${testCase.email}" - ${passed ? '✅ PASSOU' : '❌ FALHOU'}\n`;
+                if (!passed) {
+                    results += `   Esperado: ${testCase.expected ? 'válido' : 'inválido'}, Obtido: ${result.success ? 'válido' : 'inválido'}\n`;
+                }
+            });
+            
+            document.getElementById('validationResult').innerHTML = `<div class="info">${results}</div>`;
+        }
+
+        // Executar teste automático ao carregar
+        window.onload = function() {
+            log('🔄 Página carregada. Executando teste automático...');
+            setTimeout(testEmailValidation, 1000);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Final - Botão de Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .status.ready {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .logs {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 4px;
+        }
+        .log-entry.auth {
+            background: #e3f2fd;
+        }
+        .log-entry.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .log-entry.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .state-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .state-item {
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .state-true {
+            background: #d4edda;
+            color: #155724;
+        }
+        .state-false {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .state-null {
+            background: #e2e3e5;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Teste Final - Botão de Login</h1>
+    <p>Monitorização em tempo real do estado do AuthContext e funcionalidade do botão</p>
+    
+    <div class="container">
+        <div class="panel">
+            <h2>📊 Estado do AuthContext</h2>
+            <div id="authStatus" class="status loading">A carregar...</div>
+            
+            <div class="state-display">
+                <div class="state-item state-null" id="loadingState">
+                    Loading: ??
+                </div>
+                <div class="state-item state-null" id="userState">
+                    User: ??
+                </div>
+                <div class="state-item state-null" id="sessionState">
+                    Session: ??
+                </div>
+                <div class="state-item state-null" id="buttonState">
+                    Button: ??
+                </div>
+            </div>
+            
+            <h3>🎛️ Controlos</h3>
+            <button onclick="refreshIframe()">🔄 Recarregar Login</button>
+            <button onclick="clearLogs()">🗑️ Limpar Logs</button>
+            <button onclick="testButtonClick()">🖱️ Testar Clique</button>
+            <button onclick="checkAuthState()">🔍 Verificar Estado</button>
+            
+            <h3>📝 Logs do Sistema</h3>
+            <div id="logs" class="logs"></div>
+        </div>
+        
+        <div class="panel">
+            <h2>🖥️ Página de Login</h2>
+            <iframe id="loginFrame" src="/login"></iframe>
+        </div>
+    </div>
+
+    <script>
+        let logs = [];
+        let authState = {
+            loading: null,
+            user: null,
+            session: null,
+            buttonDisabled: null
+        };
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = {
+                time: timestamp,
+                message: message,
+                type: type
+            };
+            
+            logs.unshift(logEntry);
+            if (logs.length > 100) logs.pop();
+            
+            updateLogsDisplay();
+            console.log(`[${timestamp}] ${message}`);
+        }
+        
+        function updateLogsDisplay() {
+            const logsContainer = document.getElementById('logs');
+            logsContainer.innerHTML = logs.map(log => 
+                `<div class="log-entry ${log.type}">[${log.time}] ${log.message}</div>`
+            ).join('');
+        }
+        
+        function updateStateDisplay() {
+            // Loading state
+            const loadingEl = document.getElementById('loadingState');
+            loadingEl.textContent = `Loading: ${authState.loading}`;
+            loadingEl.className = `state-item ${
+                authState.loading === true ? 'state-true' : 
+                authState.loading === false ? 'state-false' : 'state-null'
+            }`;
+            
+            // User state
+            const userEl = document.getElementById('userState');
+            userEl.textContent = `User: ${authState.user ? 'Sim' : 'Não'}`;
+            userEl.className = `state-item ${
+                authState.user ? 'state-true' : 
+                authState.user === null ? 'state-null' : 'state-false'
+            }`;
+            
+            // Session state
+            const sessionEl = document.getElementById('sessionState');
+            sessionEl.textContent = `Session: ${authState.session ? 'Sim' : 'Não'}`;
+            sessionEl.className = `state-item ${
+                authState.session ? 'state-true' : 
+                authState.session === null ? 'state-null' : 'state-false'
+            }`;
+            
+            // Button state
+            const buttonEl = document.getElementById('buttonState');
+            buttonEl.textContent = `Button: ${authState.buttonDisabled ? 'Desabilitado' : 'Ativo'}`;
+            buttonEl.className = `state-item ${
+                authState.buttonDisabled === true ? 'state-true' : 
+                authState.buttonDisabled === false ? 'state-false' : 'state-null'
+            }`;
+            
+            // Overall status
+            const statusEl = document.getElementById('authStatus');
+            if (authState.loading === true) {
+                statusEl.textContent = '⏳ A carregar autenticação...';
+                statusEl.className = 'status loading';
+            } else if (authState.loading === false && !authState.buttonDisabled) {
+                statusEl.textContent = '✅ Botão de login ativo e pronto!';
+                statusEl.className = 'status ready';
+            } else if (authState.buttonDisabled) {
+                statusEl.textContent = '❌ Botão de login desabilitado';
+                statusEl.className = 'status error';
+            } else {
+                statusEl.textContent = '❓ Estado desconhecido';
+                statusEl.className = 'status error';
+            }
+        }
+        
+        function refreshIframe() {
+            addLog('🔄 A recarregar iframe de login...', 'info');
+            document.getElementById('loginFrame').src = '/login?' + Date.now();
+        }
+        
+        function clearLogs() {
+            logs = [];
+            updateLogsDisplay();
+            addLog('🗑️ Logs limpos', 'info');
+        }
+        
+        function testButtonClick() {
+            addLog('🖱️ A testar clique no botão...', 'info');
+            const iframe = document.getElementById('loginFrame');
+            try {
+                const button = iframe.contentDocument?.querySelector('button[type="submit"]');
+                if (button) {
+                    if (button.disabled) {
+                        addLog('❌ Botão está desabilitado - não é possível clicar', 'error');
+                    } else {
+                        addLog('✅ Botão está ativo - clique simulado', 'success');
+                        // Simular clique
+                        button.click();
+                    }
+                } else {
+                    addLog('❓ Botão não encontrado no iframe', 'error');
+                }
+            } catch (error) {
+                addLog(`❌ Erro ao aceder ao iframe: ${error.message}`, 'error');
+            }
+        }
+        
+        function checkAuthState() {
+            addLog('🔍 A verificar estado do AuthContext...', 'info');
+            const iframe = document.getElementById('loginFrame');
+            try {
+                // Tentar aceder ao estado através do iframe
+                const iframeWindow = iframe.contentWindow;
+                if (iframeWindow && iframeWindow.React) {
+                    addLog('✅ React encontrado no iframe', 'success');
+                } else {
+                    addLog('❓ Não foi possível aceder ao estado React', 'info');
+                }
+            } catch (error) {
+                addLog(`❌ Erro ao verificar estado: ${error.message}`, 'error');
+            }
+        }
+        
+        // Monitorizar mensagens do iframe
+        window.addEventListener('message', function(event) {
+            if (event.origin !== window.location.origin) return;
+            
+            if (event.data.type === 'AUTH_STATE_UPDATE') {
+                const data = event.data.payload;
+                authState = {
+                    loading: data.loading,
+                    user: data.user,
+                    session: data.session,
+                    buttonDisabled: data.buttonDisabled
+                };
+                
+                addLog(`📡 Estado recebido: loading=${data.loading}, user=${!!data.user}, button=${data.buttonDisabled ? 'disabled' : 'enabled'}`, 'auth');
+                updateStateDisplay();
+            }
+        });
+        
+        // Monitorizar logs do console
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const originalConsoleWarn = console.warn;
+        
+        console.log = function(...args) {
+            const message = args.join(' ');
+            if (message.includes('[Auth]')) {
+                addLog(`📝 ${message}`, 'auth');
+            }
+            originalConsoleLog.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            const message = args.join(' ');
+            addLog(`❌ ERROR: ${message}`, 'error');
+            originalConsoleError.apply(console, args);
+        };
+        
+        console.warn = function(...args) {
+            const message = args.join(' ');
+            addLog(`⚠️ WARN: ${message}`, 'error');
+            originalConsoleWarn.apply(console, args);
+        };
+        
+        // Inicialização
+        addLog('🚀 Sistema de monitorização iniciado', 'success');
+        addLog('📡 A aguardar dados do AuthContext...', 'info');
+        
+        // Verificar estado periodicamente
+        setInterval(() => {
+            const iframe = document.getElementById('loginFrame');
+            try {
+                const button = iframe.contentDocument?.querySelector('button[type="submit"]');
+                if (button) {
+                    const newButtonState = button.disabled;
+                    if (newButtonState !== authState.buttonDisabled) {
+                        authState.buttonDisabled = newButtonState;
+                        addLog(`🔄 Estado do botão alterado: ${newButtonState ? 'desabilitado' : 'ativo'}`, 'auth');
+                        updateStateDisplay();
+                    }
+                }
+            } catch (error) {
+                // Ignorar erros de acesso ao iframe
+            }
+        }, 1000);
+        
+        updateStateDisplay();
+    </script>
+</body>
+</html>

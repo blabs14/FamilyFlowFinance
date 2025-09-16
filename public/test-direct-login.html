@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Direto de Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .log-container {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        .log-info { background: #d1ecf1; color: #0c5460; }
+        .log-success { background: #d4edda; color: #155724; }
+        .log-warning { background: #fff3cd; color: #856404; }
+        .log-error { background: #f8d7da; color: #721c24; }
+        .log-debug { background: #e2e3e5; color: #383d41; }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.warning { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste Direto de Login</h1>
+        <p>Este teste verifica diretamente a funcionalidade de login sem depender do formulário React.</p>
+        
+        <div class="test-section">
+            <h3>📋 Dados de Teste</h3>
+            <label for="testEmail">Email:</label>
+            <input type="email" id="testEmail" value="teste@exemplo.com">
+            
+            <label for="testPassword">Password:</label>
+            <input type="password" id="testPassword" value="123456">
+            
+            <button onclick="testDirectLogin()">🚀 Teste Login Direto</button>
+            <button onclick="testSupabaseConnection()">🔗 Teste Conexão Supabase</button>
+            <button onclick="checkAuthState()">🔍 Verificar Estado Auth</button>
+            <button onclick="clearLogs()">🧹 Limpar Logs</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 Estado Atual</h3>
+            <div id="status" class="status warning">Aguardando teste...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📝 Logs de Teste</h3>
+            <div class="log-container" id="logContainer">
+                <div class="log-entry log-info">Sistema iniciado. Pronto para testes.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logCount = 0;
+        
+        function log(message, type = 'info') {
+            logCount++;
+            const timestamp = new Date().toLocaleTimeString();
+            const logContainer = document.getElementById('logContainer');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            if (logCount > 100) {
+                const firstLog = logContainer.querySelector('.log-entry');
+                if (firstLog) firstLog.remove();
+                logCount--;
+            }
+        }
+        
+        function updateStatus(message, type = 'warning') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        async function testDirectLogin() {
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            
+            log('🚀 Iniciando teste de login direto...', 'info');
+            log(`📧 Email: ${email}`, 'debug');
+            log(`🔑 Password: ${password ? '[DEFINIDA]' : '[VAZIA]'}`, 'debug');
+            
+            updateStatus('Testando login...', 'warning');
+            
+            try {
+                // Simular chamada à API de login
+                log('📞 Simulando chamada à API...', 'info');
+                
+                // Verificar se os dados são válidos
+                if (!email || !email.includes('@')) {
+                    throw new Error('Email inválido');
+                }
+                
+                if (!password || password.length < 6) {
+                    throw new Error('Password deve ter pelo menos 6 caracteres');
+                }
+                
+                log('✅ Validação local passou', 'success');
+                
+                // Simular delay da API
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Para este teste, vamos simular um erro de credenciais
+                log('❌ Simulando erro de credenciais (esperado para teste)', 'warning');
+                updateStatus('Credenciais inválidas (simulado)', 'error');
+                
+            } catch (error) {
+                log(`💥 Erro no teste: ${error.message}`, 'error');
+                updateStatus(`Erro: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testSupabaseConnection() {
+            log('🔗 Testando conexão com Supabase...', 'info');
+            updateStatus('Testando conexão...', 'warning');
+            
+            try {
+                // Verificar se as variáveis de ambiente estão disponíveis
+                const supabaseUrl = 'https://your-project.supabase.co'; // Placeholder
+                const supabaseKey = 'your-anon-key'; // Placeholder
+                
+                log('🔧 Verificando configuração...', 'debug');
+                log(`📍 URL: ${supabaseUrl ? '[DEFINIDA]' : '[NÃO DEFINIDA]'}`, 'debug');
+                log(`🔑 Key: ${supabaseKey ? '[DEFINIDA]' : '[NÃO DEFINIDA]'}`, 'debug');
+                
+                // Simular teste de conexão
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                log('✅ Configuração parece válida', 'success');
+                updateStatus('Conexão OK (simulado)', 'success');
+                
+            } catch (error) {
+                log(`💥 Erro na conexão: ${error.message}`, 'error');
+                updateStatus(`Erro de conexão: ${error.message}`, 'error');
+            }
+        }
+        
+        function checkAuthState() {
+            log('🔍 Verificando estado de autenticação...', 'info');
+            updateStatus('Verificando estado...', 'warning');
+            
+            try {
+                // Simular verificação do estado
+                const isAuthenticated = false; // Para este teste
+                const user = null;
+                const loading = false;
+                
+                log('📊 Estado atual:', 'debug');
+                log(`   - Autenticado: ${isAuthenticated}`, 'debug');
+                log(`   - Utilizador: ${user ? 'Presente' : 'Ausente'}`, 'debug');
+                log(`   - Loading: ${loading}`, 'debug');
+                
+                if (isAuthenticated) {
+                    log('✅ Utilizador autenticado', 'success');
+                    updateStatus('Utilizador autenticado', 'success');
+                } else {
+                    log('ℹ️ Utilizador não autenticado', 'info');
+                    updateStatus('Utilizador não autenticado', 'warning');
+                }
+                
+            } catch (error) {
+                log(`💥 Erro ao verificar estado: ${error.message}`, 'error');
+                updateStatus(`Erro: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearLogs() {
+            const logContainer = document.getElementById('logContainer');
+            logContainer.innerHTML = '<div class="log-entry log-info">Logs limpos. Sistema pronto.</div>';
+            logCount = 1;
+            updateStatus('Logs limpos', 'success');
+        }
+        
+        // Verificar se a página está a funcionar
+        log('🚀 Sistema de teste direto iniciado', 'success');
+        log('📋 Use os botões para testar diferentes aspectos do login', 'info');
+        log('⚠️ Este é um teste simulado - não faz login real', 'warning');
+    </script>
+</body>
+</html>

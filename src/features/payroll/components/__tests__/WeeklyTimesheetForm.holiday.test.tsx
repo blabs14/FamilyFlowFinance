@@ -94,7 +94,8 @@ describe('WeeklyTimesheetForm - Holiday Auto-fill', () => {
       expect(payrollService.getHolidays).toHaveBeenCalledWith(
         mockUser.id,
         2024,
-        mockContract.id
+        mockContract.id,
+        undefined
       );
     });
 

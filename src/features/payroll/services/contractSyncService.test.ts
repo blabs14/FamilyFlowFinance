@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { contractSyncService } from './contractSyncService';
 import { supabase } from '@/lib/supabaseClient';
 import { holidayAutoService } from './holidayAutoService';
+import { payrollService } from './payrollService';
 import { logger } from '@/shared/lib/logger';
 
 // Mock das dependências
@@ -34,6 +35,12 @@ vi.mock('@/shared/lib/logger', () => ({
   }
 }));
 
+vi.mock('./payrollService', () => ({
+  payrollService: {
+    getContract: vi.fn()
+  }
+}));
+
 describe('contractSyncService', () => {
   const mockContractId = '550e8400-e29b-41d4-a716-446655440000';
   const mockUserId = '550e8400-e29b-41d4-a716-446655440001';
@@ -62,13 +69,14 @@ describe('contractSyncService', () => {
       };
       
       (supabase.from as any).mockReturnValue(mockSupabaseChain);
+      (payrollService.getContract as any).mockResolvedValue(mockContract);
       (holidayAutoService.syncHolidaysForContract as any).mockResolvedValue(undefined);
 
       // Act
       await contractSyncService.syncAllContractParameters(mockContractId, mockUserId);
 
       // Assert
-      expect(supabase.from).toHaveBeenCalledWith('payroll_contracts');
+      expect(payrollService.getContract).toHaveBeenCalledWith(mockContractId, mockUserId);
       expect(holidayAutoService.syncHolidaysForContract).toHaveBeenCalledWith(mockContractId);
       expect(supabase.from).toHaveBeenCalledWith('payroll_ot_policies');
       expect(supabase.from).toHaveBeenCalledWith('payroll_deduction_configs');
@@ -91,6 +99,7 @@ describe('contractSyncService', () => {
       };
       
       (supabase.from as any).mockReturnValue(mockSupabaseChain);
+      (payrollService.getContract as any).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -114,6 +123,7 @@ describe('contractSyncService', () => {
       };
       
       (supabase.from as any).mockReturnValue(mockSupabaseChain);
+      (payrollService.getContract as any).mockResolvedValue(mockContractWithoutLocation);
 
       // Act
       await contractSyncService.syncAllContractParameters(mockContractId, mockUserId);
@@ -202,19 +212,12 @@ describe('contractSyncService', () => {
       // Assert
       expect(supabase.from).toHaveBeenCalledWith('payroll_deduction_configs');
       expect(mockSupabaseChain.insert).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            user_id: mockUserId,
-            contract_id: mockContractId,
-            deduction_type: 'irs'
-          }),
-          expect.objectContaining({
-            user_id: mockUserId,
-            contract_id: mockContractId,
-            deduction_type: 'social_security',
-            percentage: 11.0
-          })
-        ])
+        expect.objectContaining({
+          user_id: mockUserId,
+          contract_id: mockContractId,
+          irs_percentage: 0,
+          social_security_percentage: 11
+        })
       );
     });
   });

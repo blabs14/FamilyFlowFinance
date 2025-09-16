@@ -15,15 +15,14 @@ export function showSuccess(message: string) {
 }
 
 export function formatCurrency(
-  valueInCents: number, 
+  value: number, 
   locale: string = 'pt-PT', 
   currency: string = 'EUR'
 ): string {
-  const valueInUnits = valueInCents / 100;
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currency
-  }).format(valueInUnits);
+  }).format(value);
 }
 
 // Função para obter ícone baseado no nome da categoria

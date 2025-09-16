@@ -35,32 +35,58 @@ import { goalSchema } from '../validation/goalSchema';
 import { ZodError } from 'zod';
 // Lazy loading para ExcelJS
 const LazyExcelExport = React.lazy(() => import('exceljs').then(module => ({
-  default: ({ data, filename }: { data: any[], filename: string }) => {
+  default: ({ data, filename, onDone, onError }: { data: any[]; filename: string; onDone?: () => void; onError?: (e: unknown) => void }) => {
     const exportToExcel = async () => {
-      const workbook = new module.default.Workbook();
-      const worksheet = workbook.addWorksheet('Insights');
-      
-      // Adicionar headers
-      const headers = Object.keys(data[0] || {});
-      worksheet.addRow(headers);
-      
-      // Adicionar dados
-      data.forEach(row => {
-        worksheet.addRow(Object.values(row));
+      const ExcelJS = module.default;
+      const workbook = new ExcelJS.Workbook();
+
+      // data esperado: array de sheets com { sheetName, title, headers, data, metadata? }
+      (data as Array<any>).forEach((sheet) => {
+        const worksheet = workbook.addWorksheet(sheet.sheetName || 'Sheet');
+
+        // Título
+        if (sheet.title) {
+          worksheet.addRow([sheet.title]);
+        }
+
+        // Metadata
+        if (sheet.metadata && Array.isArray(sheet.metadata)) {
+          sheet.metadata.forEach((meta: any[]) => worksheet.addRow(meta));
+        }
+
+        // Linha vazia
+        worksheet.addRow([]);
+
+        // Cabeçalhos
+        if (sheet.headers && Array.isArray(sheet.headers)) {
+          worksheet.addRow(sheet.headers);
+        }
+
+        // Dados
+        if (sheet.data && Array.isArray(sheet.data)) {
+          sheet.data.forEach((row: any[]) => worksheet.addRow(row));
+        }
       });
-      
-      // Gerar e baixar arquivo
+
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.click();
       window.URL.revokeObjectURL(url);
     };
-    
-    exportToExcel();
+
+    (async () => {
+      try {
+        await exportToExcel();
+        onDone?.();
+      } catch (e) {
+        onError?.(e);
+      }
+    })();
+
     return null;
   }
 })));
@@ -120,6 +146,7 @@ export default function Insights() {
   const [goalErrors, setGoalErrors] = useState<Record<string, string>>({});
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportJob, setExportJob] = useState<{ data: any[]; filename: string } | null>(null);
 
   // Atalho global '/' coberto por GlobalShortcuts
 
@@ -355,6 +382,10 @@ export default function Insights() {
 
   // Função para exportar relatório usando lazy loading
   const handleExport = async () => {
+    if (!insights.length) {
+      notifyError({ title: 'Sem dados para exportar', description: 'Não há insights disponíveis para exportação.' });
+      return;
+    }
     setIsExporting(true);
     try {
       const currentDate = new Date().toLocaleDateString('pt-PT');
@@ -411,50 +442,10 @@ export default function Insights() {
         }
       ];
 
-      // Usar o componente lazy para exportar
-      const LazyExcelExportComponent = await import('exceljs').then(module => {
-        const ExcelJS = module.default;
-        return async (data: typeof exportData, filename: string) => {
-          const workbook = new ExcelJS.Workbook();
-          
-          data.forEach(sheet => {
-            const worksheet = workbook.addWorksheet(sheet.sheetName);
-            
-            // Adicionar título
-            worksheet.addRow([sheet.title]);
-            
-            // Adicionar metadata se existir
-            if (sheet.metadata) {
-              sheet.metadata.forEach(meta => worksheet.addRow(meta));
-            }
-            
-            // Linha vazia
-            worksheet.addRow([]);
-            
-            // Adicionar cabeçalhos
-            worksheet.addRow(sheet.headers);
-            
-            // Adicionar dados
-            sheet.data.forEach(row => worksheet.addRow(row));
-          });
-          
-          const buffer = await workbook.xlsx.writeBuffer();
-          const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-          const url = window.URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = filename;
-          link.click();
-          window.URL.revokeObjectURL(url);
-        };
-      });
-      
-      await LazyExcelExportComponent(exportData, fileName);
-      
-      notifySuccess({ title: 'Relatório exportado', description: `O relatório foi descarregado como "${fileName}"` });
+      // Disparar exportação via componente lazy com Suspense
+      setExportJob({ data: exportData as any, filename: fileName });
     } catch (error) {
-      notifyError({ title: 'Erro ao exportar', description: 'Não foi possível exportar o relatório.' });
-    } finally {
+      notifyError({ title: 'Erro ao preparar exportação', description: 'Não foi possível preparar os dados para exportação.' });
       setIsExporting(false);
     }
   };
@@ -561,6 +552,32 @@ export default function Insights() {
           </div>
         </div>
       </div>
+
+      {exportJob && (
+        <div className="px-1">
+          <Suspense fallback={
+            <div className="flex items-center gap-2 text-xs text-muted-foreground" role="status" aria-live="polite">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              A carregar exportador…
+            </div>
+          }>
+            <LazyExcelExport
+              data={exportJob.data}
+              filename={exportJob.filename}
+              onDone={() => {
+                notifySuccess({ title: 'Relatório exportado', description: `O relatório foi descarregado como "${exportJob.filename}"` });
+                setIsExporting(false);
+                setExportJob(null);
+              }}
+              onError={(e) => {
+                notifyError({ title: 'Erro ao exportar', description: 'Não foi possível exportar o relatório.' });
+                setIsExporting(false);
+                setExportJob(null);
+              }}
+            />
+          </Suspense>
+        </div>
+      )}
 
       {/* Insights principais - carrossel em mobile, grid em md+ */}
       <div className="space-y-4">

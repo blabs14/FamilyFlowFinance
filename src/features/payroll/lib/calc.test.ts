@@ -376,6 +376,63 @@ describe('Payroll Calculation Functions', () => {
       expect(total.netPay).toBe(0);
     });
 
+    it('should handle calculations without overtime policy (all hours as regular)', () => {
+      const longWorkEntry: PayrollTimeEntry = {
+        ...mockTimeEntry,
+        start_time: '08:00',
+        end_time: '19:00', // 10 hours (would be OT with policy)
+        break_minutes: 60
+      };
+      
+      const total = calcMonth(
+        mockContract,
+        [longWorkEntry],
+        null, // No overtime policy
+        [], // No holidays
+        [], // No mileage trips
+        36
+      );
+      
+      // All hours should be treated as regular
+      expect(total.regularHours).toBe(10);
+      expect(total.overtimeHours).toBe(0);
+      expect(total.regularPay).toBe(8000); // 10 hours * €8.00
+      expect(total.overtimePay).toBe(0);
+      expect(total.overtimePayDay).toBe(0);
+      expect(total.overtimePayNight).toBe(0);
+      expect(total.overtimePayWeekend).toBe(0);
+      expect(total.overtimePayHoliday).toBe(0);
+      expect(total.grossPay).toBeGreaterThan(8000); // Should include meal allowance
+    });
+
+    it('should handle calculations without overtime policy (undefined)', () => {
+      const longWorkEntry: PayrollTimeEntry = {
+        ...mockTimeEntry,
+        start_time: '08:00',
+        end_time: '20:00', // 11 hours (would be OT with policy)
+        break_minutes: 60
+      };
+      
+      const total = calcMonth(
+        mockContract,
+        [longWorkEntry],
+        undefined, // Undefined overtime policy
+        [], // No holidays
+        [], // No mileage trips
+        36
+      );
+      
+      // All hours should be treated as regular
+      expect(total.regularHours).toBe(11);
+      expect(total.overtimeHours).toBe(0);
+      expect(total.regularPay).toBe(8800); // 11 hours * €8.00
+      expect(total.overtimePay).toBe(0);
+      expect(total.overtimePayDay).toBe(0);
+      expect(total.overtimePayNight).toBe(0);
+      expect(total.overtimePayWeekend).toBe(0);
+      expect(total.overtimePayHoliday).toBe(0);
+    });
+
     it('should handle overnight shifts correctly', () => {
       const overnightEntry: PayrollTimeEntry = {
         ...mockTimeEntry,

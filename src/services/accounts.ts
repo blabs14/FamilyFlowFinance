@@ -9,7 +9,7 @@ import {
   AccountReserved
 } from '../integrations/supabase/types';
 import { AccountDomain, AccountWithBalancesDomain, mapAccountRowToDomain, mapAccountWithBalancesToDomain } from '../shared/types/accounts';
-import { logger } from '@/shared/lib/logger';
+import { logger } from '../shared/lib/logger';
 
 export const getAccounts = async (userId?: string): Promise<{ data: Account[] | null; error: unknown }> => {
   try {
@@ -167,7 +167,30 @@ export const updateAccount = async (id: string, updates: AccountUpdateExtended, 
         .single();
 
       if ((accountData as { tipo?: string } | null)?.tipo === 'cartão de crédito') {
-        const target = (updates.saldoAtual || 0) + (Number(updates.ajusteSaldo) || 0);
+        // Para cartões de crédito, distinguir entre saldo alvo e ajuste
+        let target: number;
+        
+        // Obter saldo atual primeiro
+        const { data: currentBalanceData } = await supabase
+          .from('account_balances')
+          .select('saldo_atual')
+          .eq('account_id', id)
+          .single();
+        
+        const currentBalance = currentBalanceData?.saldo_atual || 0;
+        
+        // Verificar se é um ajuste (ajusteSaldo != 0) ou mudança de saldo alvo
+        if (updates.ajusteSaldo !== undefined && updates.ajusteSaldo !== null && updates.ajusteSaldo !== 0) {
+          // É um ajuste - aplicar ao saldo atual
+          target = currentBalance + Number(updates.ajusteSaldo);
+        } else if (updates.saldoAtual !== undefined && updates.saldoAtual !== null && updates.saldoAtual !== currentBalance) {
+          // É uma mudança de saldo alvo (diferente do atual)
+          target = updates.saldoAtual;
+        } else {
+          // Nenhum ajuste real - não fazer nada
+          return { data: null, error: { message: 'Nenhum ajuste de saldo especificado' } };
+        }
+        
         const { error: rpcError } = await supabase.rpc('manage_credit_card_balance', {
           p_user_id: resolvedUserId,
           p_account_id: id,

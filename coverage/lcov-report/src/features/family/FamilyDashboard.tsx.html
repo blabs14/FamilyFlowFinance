@@ -1306,7 +1306,7 @@
 <span class="cstat-no" title="statement not covered" >              {formatCurrency(familyKPIs.totalBalance)}</span>
             &lt;/div&gt;
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-center mt-1"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/accounts')}&gt;Ver contas&lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/accounts')} aria-label="Ver todas as contas familiares"&gt;Ver contas&lt;/Button&gt;</span>
             &lt;/div&gt;
           &lt;/CardContent&gt;
         &lt;/Card&gt;
@@ -1328,7 +1328,7 @@
 <span class="cstat-no" title="statement not covered" >              {formatCurrency(familyKPIs.creditCardDebt)}</span>
             &lt;/div&gt;
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-center mt-1"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/accounts')}&gt;Gerir cartões&lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/accounts')} aria-label="Gerir cartões de crédito familiares"&gt;Gerir cartões&lt;/Button&gt;</span>
             &lt;/div&gt;
           &lt;/CardContent&gt;
         &lt;/Card&gt;
@@ -1353,7 +1353,7 @@
 <span class="cstat-no" title="statement not covered" >              &lt;span className={((familyKPIs.deltaVsPrev || 0) &gt;= 0) ? 'text-green-600' : 'text-red-600'}&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {((familyKPIs.deltaVsPrev || 0) &gt;= 0 ? '+' : '')}{(familyKPIs.deltaVsPrev || 0).toFixed(2)}€ vs mês anterior</span>
               &lt;/span&gt;
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/transactions')}&gt;Ver transações&lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/transactions')} aria-label="Ver todas as transações familiares"&gt;Ver transações&lt;/Button&gt;</span>
             &lt;/div&gt;
           &lt;/CardContent&gt;
         &lt;/Card&gt;
@@ -1375,7 +1375,7 @@
 <span class="cstat-no" title="statement not covered" >              {familyKPIs.topGoalProgress.toFixed(1)}%</span>
             &lt;/div&gt;
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-center mt-1"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/goals')}&gt;Ver objetivos&lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/goals')} aria-label="Ver objetivos financeiros familiares"&gt;Ver objetivos&lt;/Button&gt;</span>
             &lt;/div&gt;
           &lt;/CardContent&gt;
         &lt;/Card&gt;
@@ -1399,7 +1399,7 @@
 <span class="cstat-no" title="statement not covered" >          &lt;CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="text-2xl font-bold"&gt;{familyKPIs.goalsProgressPercentage.toFixed(1)}%&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-center mt-1"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/goals')}&gt;Detalhar&lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/goals')} aria-label="Ver detalhes dos objetivos"&gt;Detalhar&lt;/Button&gt;</span>
             &lt;/div&gt;
           &lt;/CardContent&gt;
         &lt;/Card&gt;
@@ -1424,7 +1424,7 @@
               )}
             &lt;/div&gt;
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-center mt-1"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/budgets')}&gt;Ver orçamentos&lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/budgets')} aria-label="Ver orçamentos familiares"&gt;Ver orçamentos&lt;/Button&gt;</span>
             &lt;/div&gt;
           &lt;/CardContent&gt;
         &lt;/Card&gt;
@@ -1475,7 +1475,7 @@
                 &lt;/p&gt;
               )}
 <span class="cstat-no" title="statement not covered" >              &lt;div className="flex justify-end"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/accounts')}&gt;Gerir contas&lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/accounts')} aria-label="Gerir contas bancárias familiares"&gt;Gerir contas&lt;/Button&gt;</span>
               &lt;/div&gt;
             &lt;/div&gt;
           )}
@@ -1523,7 +1523,7 @@
                 &lt;/p&gt;
               )}
 <span class="cstat-no" title="statement not covered" >              &lt;div className="flex justify-end"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/goals')}&gt;Gerir objetivos&lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/goals')} aria-label="Gerir objetivos financeiros"&gt;Gerir objetivos&lt;/Button&gt;</span>
               &lt;/div&gt;
             &lt;/div&gt;
           )}
@@ -1573,7 +1573,7 @@
                   &lt;/p&gt;
                 )}
 <span class="cstat-no" title="statement not covered" >                &lt;div className="flex justify-end"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/members')}&gt;Gerir membros&lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/members')} aria-label="Gerir membros da família"&gt;Gerir membros&lt;/Button&gt;</span>
                 &lt;/div&gt;
               &lt;/div&gt;
             )}
@@ -1614,7 +1614,7 @@
                     &lt;/div&gt;
                   ))}
 <span class="cstat-no" title="statement not covered" >                &lt;div className="flex justify-end"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/members')}&gt;Gerir convites&lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;Button variant="link" className="h-auto p-0 text-xs" onClick={() =&gt; navigate('/family/members')} aria-label="Gerir convites pendentes"&gt;Gerir convites&lt;/Button&gt;</span>
                 &lt;/div&gt;
               &lt;/div&gt;
             )}
@@ -1671,14 +1671,14 @@
   );
 <span class="cstat-no" title="statement not covered" >};</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default FamilyDashboard; </span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >export default FamilyDashboard;</span></pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.525Z
+                at 2025-09-14T17:15:09.625Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

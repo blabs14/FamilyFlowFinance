@@ -61,18 +61,17 @@ Object.defineProperty(window, 'URL', {
   }
 });
 
-Object.defineProperty(document, 'createElement', {
-  value: vi.fn((tagName) => {
-    if (tagName === 'a') {
-      return {
-        href: '',
-        download: '',
-        click: vi.fn(),
-        style: {}
-      };
+const originalCreateElement = document.createElement.bind(document);
+vi.spyOn(document, 'createElement').mockImplementation((tagName: any) => {
+  const el = originalCreateElement(tagName as any) as any;
+  if (tagName === 'a') {
+    try {
+      el.click = vi.fn();
+    } catch {
+      Object.defineProperty(el, 'click', { value: vi.fn() });
     }
-    return document.createElement(tagName);
-  })
+  }
+  return el;
 });
 
 const mockPayrollService = payrollService as any;

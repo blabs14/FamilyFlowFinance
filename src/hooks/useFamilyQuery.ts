@@ -1,7 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './use-toast';
-import * as familyService from '../services/family';
+import { familyService } from '../features/family/services/family.service';
 
 // ============================================================================
 // FAMILY DATA HOOKS
@@ -11,7 +12,7 @@ export const useFamilyData = () => {
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ['family-data'],
+    queryKey: ['family', 'current', user?.id],
     queryFn: familyService.getFamilyData,
     enabled: !!user,
   });
@@ -22,7 +23,7 @@ export const useFamilyMembers = (familyId?: string) => {
   
   return useQuery({
     queryKey: ['family-members', familyId],
-    queryFn: () => familyService.getFamilyMembers(familyId),
+    queryFn: () => familyService.getMembers(familyId),
     enabled: !!user,
   });
 };
@@ -49,11 +50,11 @@ export const useCreateFamily = () => {
     mutationFn: ({ familyName, description }: { familyName: string; description?: string }) =>
       familyService.createFamily(familyName, description),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['family-data'] });
-      queryClient.invalidateQueries({ queryKey: ['family-members'] });
+      queryClient.invalidateQueries({ queryKey: ['family'] });
+      queryClient.invalidateQueries({ queryKey: ['user-families'] });
       toast({
-        title: 'Família criada',
-        description: 'Família criada com sucesso!',
+        title: "Família criada com sucesso!",
+        description: "A sua nova família foi criada e você foi adicionado como administrador.",
       });
     },
     onError: (error: unknown) => {
@@ -290,4 +291,19 @@ export const useFamilyStatistics = (familyId: string) => {
     queryFn: () => familyService.getFamilyStatistics(familyId),
     enabled: !!user && !!familyId,
   });
-}; 
+};
+
+// ============================================================================
+// USER FAMILIES HOOK
+// ============================================================================
+
+export const useUserFamilies = () => {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['user-families'],
+    queryFn: () => familyService.getUserFamilies(),
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
+};

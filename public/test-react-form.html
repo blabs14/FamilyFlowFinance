@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste React Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .error {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste de Formulário React-like</h1>
+        
+        <p>Este teste simula o comportamento do formulário de login React.</p>
+        
+        <form id="loginForm">
+            <div>
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" value="testetotal@teste.com" required>
+                <div id="emailError" class="error"></div>
+            </div>
+            
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" value="teste14" required>
+                <div id="passwordError" class="error"></div>
+            </div>
+            
+            <button type="submit" id="submitBtn">Entrar</button>
+        </form>
+        
+        <div id="log" class="log">
+            <strong>Log de eventos:</strong><br>
+        </div>
+    </div>
+
+    <script>
+        function addLog(message) {
+            const log = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            log.innerHTML += `[${timestamp}] ${message}<br>`;
+            log.scrollTop = log.scrollHeight;
+            console.log(message);
+        }
+
+        function validateForm() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            let isValid = true;
+            
+            // Limpar erros anteriores
+            document.getElementById('emailError').textContent = '';
+            document.getElementById('passwordError').textContent = '';
+            
+            // Validar email
+            if (!email) {
+                document.getElementById('emailError').textContent = 'Email é obrigatório';
+                isValid = false;
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                document.getElementById('emailError').textContent = 'Email inválido';
+                isValid = false;
+            }
+            
+            // Validar password
+            if (!password) {
+                document.getElementById('passwordError').textContent = 'Password é obrigatória';
+                isValid = false;
+            } else if (password.length < 6) {
+                document.getElementById('passwordError').textContent = 'Password deve ter pelo menos 6 caracteres';
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+
+        async function simulateLogin(email, password) {
+            addLog('🔄 Simulando chamada ao Supabase...');
+            
+            // Simular delay de rede
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Simular resposta do Supabase
+            if (email === 'testetotal@teste.com' && password === 'teste14') {
+                addLog('✅ Login simulado com sucesso!');
+                return { success: true };
+            } else {
+                addLog('❌ Credenciais inválidas!');
+                return { success: false, error: 'Credenciais inválidas' };
+            }
+        }
+
+        // Event listeners
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            addLog('🚨 Form submit disparado!');
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            addLog(`📧 Email: ${email}`);
+            addLog(`🔑 Password length: ${password.length}`);
+            
+            // Validar formulário
+            if (!validateForm()) {
+                addLog('❌ Validação falhou!');
+                return;
+            }
+            
+            addLog('✅ Validação passou!');
+            
+            // Desabilitar botão
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'A entrar...';
+            
+            try {
+                const result = await simulateLogin(email, password);
+                
+                if (result.success) {
+                    addLog('🎉 Login concluído com sucesso!');
+                    addLog('🔄 Redirecionando...');
+                } else {
+                    addLog(`❌ Erro no login: ${result.error}`);
+                }
+            } catch (error) {
+                addLog(`❌ Erro inesperado: ${error.message}`);
+            } finally {
+                // Reabilitar botão
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Entrar';
+            }
+        });
+
+        document.getElementById('submitBtn').addEventListener('click', function(e) {
+            addLog('🚨 Botão clicado!');
+        });
+
+        // Verificar se há algum erro JavaScript
+        window.addEventListener('error', function(e) {
+            addLog(`❌ Erro JavaScript: ${e.message}`);
+        });
+
+        addLog('🚀 Página carregada, formulário pronto!');
+    </script>
+</body>
+</html>

@@ -65,9 +65,8 @@ const PersonalAccounts: React.FC = () => {
     // Para outras contas, usar o saldo calculado
     let saldoAtual = 0;
     if (account.tipo === 'cartão de crédito') {
-      // Buscar o saldo diretamente da tabela accounts
-      // Por enquanto, usar 0 como fallback
-      saldoAtual = 0; // Será atualizado via useEffect
+      // Para cartões de crédito, usar o saldo atual da conta
+      saldoAtual = account.saldo_atual || 0;
     } else {
       saldoAtual = account.saldo_atual || 0;
     }
@@ -226,14 +225,21 @@ const PersonalAccounts: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Saldo Disponível */}
+                  {/* Saldo Disponível / Dívida */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Disponível</span>
+                      <span className="text-sm text-muted-foreground">
+                        {account.tipo === 'cartão de crédito' ? 'Dívida' : 'Disponível'}
+                      </span>
                       <span className={`text-sm font-medium ${
-                        account.saldo_disponivel < 0 ? 'text-red-600' : 'text-green-600'
+                        account.tipo === 'cartão de crédito' 
+                          ? (account.saldo_atual < 0 ? 'text-red-600' : 'text-gray-600')
+                          : (account.saldo_disponivel < 0 ? 'text-red-600' : 'text-green-600')
                       }`}>
-                        {formatCurrency(account.saldo_disponivel)}
+                        {account.tipo === 'cartão de crédito' 
+                          ? formatCurrency(account.saldo_atual < 0 ? -account.saldo_atual : 0)
+                          : formatCurrency(account.saldo_disponivel)
+                        }
                       </span>
                     </div>
                   </div>
@@ -340,14 +346,14 @@ const PersonalAccounts: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Saldo Disponível */}
+                  {/* Dívida */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Disponível</span>
+                      <span className="text-sm text-muted-foreground">Dívida</span>
                       <span className={`text-sm font-medium ${
-                        account.saldo_disponivel < 0 ? 'text-red-600' : 'text-green-600'
+                        account.saldo_atual < 0 ? 'text-red-600' : 'text-gray-600'
                       }`}>
-                        {formatCurrency(account.saldo_disponivel)}
+                        {formatCurrency(account.saldo_atual < 0 ? -account.saldo_atual : 0)}
                       </span>
                     </div>
                   </div>

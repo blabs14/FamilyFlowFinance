@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { usePersonal } from './PersonalProvider';
-import { useFamily } from '../family/FamilyContext';
+import { useOptionalFamily } from '../family/FamilyContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Progress } from '../../components/ui/progress';
 import { Badge } from '../../components/ui/badge';
@@ -45,7 +45,8 @@ const PersonalGoals: React.FC = () => {
   const { data: goalProgress = [] } = useGoalProgress();
   const { toast } = useToast();
   const confirmation = useConfirmation();
-  const { canEdit } = useFamily();
+  const family = useOptionalFamily();
+  const canEditGoal = family?.canEdit?.('goal') ?? true;
 
   const handleCreateGoal = () => {
     setShowCreateModal(true);
@@ -170,7 +171,7 @@ const PersonalGoals: React.FC = () => {
             Suas metas financeiras e objetivos de poupança
           </p>
         </div>
-        {canEdit('goal') && (
+        {canEditGoal && (
           <Button onClick={handleCreateGoal} aria-label="Criar novo objetivo financeiro">
             <Plus className="h-4 w-4 mr-2" />
             Novo Objetivo
@@ -391,7 +392,7 @@ const PersonalGoals: React.FC = () => {
           <p className="text-muted-foreground mb-4">
             Cria o teu primeiro objetivo para começar a poupar
           </p>
-          {canEdit('goal') && (
+          {canEditGoal && (
             <Button onClick={handleCreateGoal}>
               <Plus className="h-4 w-4 mr-2" />
               Criar Objetivo

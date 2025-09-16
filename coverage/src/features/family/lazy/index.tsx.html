@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/179</span>
+                <span class='fraction'>0/180</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/179</span>
+                <span class='fraction'>0/180</span>
             </div>
         
             
@@ -310,10 +310,12 @@
 <a name='L245'></a><a href='#L245'>245</a>
 <a name='L246'></a><a href='#L246'>246</a>
 <a name='L247'></a><a href='#L247'>247</a>
-<a name='L248'></a><a href='#L248'>248</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L248'></a><a href='#L248'>248</a>
+<a name='L249'></a><a href='#L249'>249</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -562,6 +564,7 @@
 <span class="cstat-no" title="statement not covered" >// Otimização de performance com carregamento sob demanda</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >import React, { lazy, Suspense } from 'react';</span>
+<span class="cstat-no" title="statement not covered" >import { logger } from '@/shared/lib/logger';</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >// Componente de fallback otimizado</span>
 <span class="cstat-no" title="statement not covered" >export const LazyFallback: React.FC&lt;{ message?: string }&gt; = ({ message = "A carregar..." }) =&gt; (</span>
@@ -593,81 +596,81 @@
 &nbsp;
 <span class="cstat-no" title="statement not covered" >// Componentes de Formulários Pesados - com tratamento de erros robusto</span>
 <span class="cstat-no" title="statement not covered" >export const LazyTransactionForm = createSafeLazyComponent(</span>
-<span class="cstat-no" title="statement not covered" >  '../../components/TransactionForm',</span>
+<span class="cstat-no" title="statement not covered" >  '../../../components/TransactionForm',</span>
 <span class="cstat-no" title="statement not covered" >  'Formulário de Transação'</span>
 );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const LazyGoalAllocationModal = createSafeLazyComponent(</span>
-<span class="cstat-no" title="statement not covered" >  '../../components/GoalAllocationModal',</span>
+<span class="cstat-no" title="statement not covered" >  '../../../components/GoalAllocationModal',</span>
 <span class="cstat-no" title="statement not covered" >  'Modal de Alocação'</span>
 );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const LazyGoalForm = createSafeLazyComponent(</span>
-<span class="cstat-no" title="statement not covered" >  '../../components/GoalForm',</span>
+<span class="cstat-no" title="statement not covered" >  '../../../components/GoalForm',</span>
 <span class="cstat-no" title="statement not covered" >  'Formulário de Objetivo'</span>
 );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const LazyAccountForm = createSafeLazyComponent(</span>
-<span class="cstat-no" title="statement not covered" >  '../../components/AccountForm',</span>
+<span class="cstat-no" title="statement not covered" >  '../../../components/AccountForm',</span>
 <span class="cstat-no" title="statement not covered" >  'Formulário de Conta'</span>
 );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const LazyRegularAccountForm = createSafeLazyComponent(</span>
-<span class="cstat-no" title="statement not covered" >  '../../components/RegularAccountForm',</span>
+<span class="cstat-no" title="statement not covered" >  '../../../components/RegularAccountForm',</span>
 <span class="cstat-no" title="statement not covered" >  'Formulário de Conta Regular'</span>
 );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const LazyBudgetForm = createSafeLazyComponent(</span>
-<span class="cstat-no" title="statement not covered" >  '../../components/BudgetForm',</span>
+<span class="cstat-no" title="statement not covered" >  '../../../components/BudgetForm',</span>
 <span class="cstat-no" title="statement not covered" >  'Formulário de Orçamento'</span>
 );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >// Componentes de Diálogos e Modais - com tratamento de erros robusto</span>
 <span class="cstat-no" title="statement not covered" >export const LazyConfirmationDialog = createSafeLazyComponent(</span>
-<span class="cstat-no" title="statement not covered" >  '../../components/ui/confirmation-dialog',</span>
+<span class="cstat-no" title="statement not covered" >  '../../../components/ui/confirmation-dialog',</span>
 <span class="cstat-no" title="statement not covered" >  'Diálogo de Confirmação'</span>
 );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const LazyTransferModal = createSafeLazyComponent(</span>
-<span class="cstat-no" title="statement not covered" >  '../../components/TransferModal',</span>
+<span class="cstat-no" title="statement not covered" >  '../../../components/TransferModal',</span>
 <span class="cstat-no" title="statement not covered" >  'Modal de Transferência'</span>
 );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >// Componentes de UI Pesados - com tratamento de erros robusto</span>
 <span class="cstat-no" title="statement not covered" >export const LazyTooltip = createSafeLazyComponent(</span>
-<span class="cstat-no" title="statement not covered" >  '../../components/ui/tooltip',</span>
+<span class="cstat-no" title="statement not covered" >  '../../../components/ui/tooltip',</span>
 <span class="cstat-no" title="statement not covered" >  'Tooltip'</span>
 );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const LazySelect = createSafeLazyComponent(</span>
-<span class="cstat-no" title="statement not covered" >  '../../components/ui/select',</span>
+<span class="cstat-no" title="statement not covered" >  '../../../components/ui/select',</span>
 <span class="cstat-no" title="statement not covered" >  'Select'</span>
 );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const LazyDialog = createSafeLazyComponent(</span>
-<span class="cstat-no" title="statement not covered" >  '../../components/ui/dialog',</span>
+<span class="cstat-no" title="statement not covered" >  '../../../components/ui/dialog',</span>
 <span class="cstat-no" title="statement not covered" >  'Dialog'</span>
 );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const LazySheet = createSafeLazyComponent(</span>
-<span class="cstat-no" title="statement not covered" >  '../../components/ui/sheet',</span>
+<span class="cstat-no" title="statement not covered" >  '../../../components/ui/sheet',</span>
 <span class="cstat-no" title="statement not covered" >  'Sheet'</span>
 );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >// Componentes de Gráficos e Visualizações - com tratamento de erros robusto</span>
 <span class="cstat-no" title="statement not covered" >export const LazyReportChart = createSafeLazyComponent(</span>
-<span class="cstat-no" title="statement not covered" >  '../../components/ReportChart',</span>
+<span class="cstat-no" title="statement not covered" >  '../../../components/ReportChart',</span>
 <span class="cstat-no" title="statement not covered" >  'Gráfico de Relatório'</span>
 );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const LazyChart = createSafeLazyComponent(</span>
-<span class="cstat-no" title="statement not covered" >  '../../components/ui/chart',</span>
+<span class="cstat-no" title="statement not covered" >  '../../../components/ui/chart',</span>
 <span class="cstat-no" title="statement not covered" >  'Chart'</span>
 );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >// Componentes de Notificações - com tratamento de erros robusto</span>
 <span class="cstat-no" title="statement not covered" >export const LazyRealTimeNotifications = createSafeLazyComponent(</span>
-<span class="cstat-no" title="statement not covered" >  '../../components/RealTimeNotifications',</span>
+<span class="cstat-no" title="statement not covered" >  '../../../components/RealTimeNotifications',</span>
 <span class="cstat-no" title="statement not covered" >  'Notificações em Tempo Real'</span>
 );
 &nbsp;
@@ -697,12 +700,12 @@
 <span class="cstat-no" title="statement not covered" >        const startTime = performance.now();</span>
 <span class="cstat-no" title="statement not covered" >        const serviceModule = await serviceImport();</span>
 <span class="cstat-no" title="statement not covered" >        const loadTime = performance.now() - startTime;</span>
-<span class="cstat-no" title="statement not covered" >        console.log(`✅ Lazy service loaded (${loadTime.toFixed(2)}ms)`);</span>
+<span class="cstat-no" title="statement not covered" >        logger.debug(`✅ Lazy service loaded (${loadTime.toFixed(2)}ms)`);</span>
         
 <span class="cstat-no" title="statement not covered" >        setService(serviceModule);</span>
 <span class="cstat-no" title="statement not covered" >        setLoading(false);</span>
 <span class="cstat-no" title="statement not covered" >      } catch (err) {</span>
-<span class="cstat-no" title="statement not covered" >        console.warn('⚠️ Lazy service loading failed:', err);</span>
+<span class="cstat-no" title="statement not covered" >        logger.warn('⚠️ Lazy service loading failed:', err);</span>
 <span class="cstat-no" title="statement not covered" >        setError(err as Error);</span>
 <span class="cstat-no" title="statement not covered" >        setLoading(false);</span>
 <span class="cstat-no" title="statement not covered" >        // Fornecer um serviço fallback para evitar quebras na aplicação</span>
@@ -736,7 +739,7 @@
 ): React.LazyExoticComponent&lt;React.ComponentType&lt;TProps&gt;&gt; {
 <span class="cstat-no" title="statement not covered" >  const lazyComp = lazy(() =&gt; </span>
 <span class="cstat-no" title="statement not covered" >    importFn().catch((error) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      console.warn('Lazy component loading failed:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.warn('Lazy component loading failed:', error);</span>
 <span class="cstat-no" title="statement not covered" >      return {</span>
 <span class="cstat-no" title="statement not covered" >        default: (fallbackComponent || (() =&gt; &lt;ComponentFallback message="Componente não disponível" /&gt;)) as React.ComponentType&lt;TProps&gt;</span>
 <span class="cstat-no" title="statement not covered" >      };</span>
@@ -783,7 +786,7 @@
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  React.useEffect(() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    const handleError = (event: ErrorEvent) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Lazy loading error:', event.error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Lazy loading error:', event.error);</span>
 <span class="cstat-no" title="statement not covered" >      setError(event.error || new Error('Unknown error'));</span>
 <span class="cstat-no" title="statement not covered" >      setHasError(true);</span>
 <span class="cstat-no" title="statement not covered" >    };</span>
@@ -804,14 +807,14 @@
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return &lt;&gt;{children}&lt;/&gt;;</span>
-<span class="cstat-no" title="statement not covered" >}; </span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >};</span></pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.132Z
+                at 2025-09-14T17:15:08.717Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

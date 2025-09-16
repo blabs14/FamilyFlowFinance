@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulação AuthContext</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .logs {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .state-display {
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Simulação AuthContext - Debug Loading State</h1>
+        
+        <div id="status" class="status info">Pronto para simular...</div>
+        
+        <div class="grid">
+            <div>
+                <h3>Estado Atual</h3>
+                <div id="state-display" class="state-display">Estado não inicializado</div>
+                
+                <div>
+                    <button onclick="initializeAuth()">Inicializar Auth</button>
+                    <button onclick="simulateLogin()">Simular Login</button>
+                    <button onclick="simulateLogout()">Simular Logout</button>
+                    <button onclick="resetState()">Reset Estado</button>
+                    <button onclick="clearLogs()">Limpar Logs</button>
+                </div>
+            </div>
+            
+            <div>
+                <h3>Logs Detalhados</h3>
+                <div id="logs" class="logs"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2';
+        
+        // Configuração do Supabase
+        const supabaseUrl = 'https://ebitcwrrcumsvqjgrapw.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViaXRjd3JyY3Vtc3ZxamdyYXB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3NjcyMTYsImV4cCI6MjA2ODM0MzIxNn0.hLlTeSD2VzVCjvUSXLYQypXNYqthDx0q1N86aOftfEY';
+        
+        const supabase = createClient(supabaseUrl, supabaseKey, {
+            auth: {
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true,
+                flowType: 'pkce',
+            },
+        });
+        
+        // Estado simulado do AuthContext
+        let authState = {
+            user: null,
+            session: null,
+            loading: true,
+            initialSessionLoaded: false
+        };
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('logs');
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        function showStatus(message, type = 'info') {
+            const statusElement = document.getElementById('status');
+            statusElement.className = `status ${type}`;
+            statusElement.textContent = message;
+        }
+        
+        function updateStateDisplay() {
+            const stateElement = document.getElementById('state-display');
+            stateElement.innerHTML = `
+<strong>Estado AuthContext:</strong>
+loading: ${authState.loading}
+initialSessionLoaded: ${authState.initialSessionLoaded}
+user: ${authState.user ? authState.user.email : 'null'}
+session: ${authState.session ? 'ativa' : 'null'}
+
+<strong>Timestamp:</strong> ${new Date().toLocaleTimeString()}`;
+        }
+        
+        function setLoading(value) {
+            log(`🔧 setLoading(${value}) - Estado anterior: ${authState.loading}`);
+            authState.loading = value;
+            updateStateDisplay();
+            log(`✅ Estado loading atualizado para: ${authState.loading}`);
+        }
+        
+        function setUser(user) {
+            log(`👤 setUser(${user ? user.email : 'null'})`);
+            authState.user = user;
+            updateStateDisplay();
+        }
+        
+        function setSession(session) {
+            log(`📱 setSession(${session ? 'ativa' : 'null'})`);
+            authState.session = session;
+            updateStateDisplay();
+        }
+        
+        async function initializeAuth() {
+            log('=== 🚀 INICIALIZAÇÃO AUTH CONTEXT ===');
+            
+            // Estado inicial
+            authState = {
+                user: null,
+                session: null,
+                loading: true,
+                initialSessionLoaded: false
+            };
+            
+            log(`[Auth] 🔍 DEBUG: Estado inicial - loading: ${authState.loading}`);
+            log(`[Auth] 🔍 DEBUG: initialSessionLoaded: ${authState.initialSessionLoaded}`);
+            updateStateDisplay();
+            
+            try {
+                log(`[Auth] 🔍 DEBUG: Antes de getSession - loading: ${authState.loading}`);
+                
+                const { data, error } = await supabase.auth.getSession();
+                
+                if (error) {
+                    log(`[Auth] 🔧 DEBUG: Chamando setLoading(false) - ERRO`);
+                    log(`[Auth] ❌ Erro ao obter sessão inicial: ${error.message}`);
+                    setLoading(false);
+                    showStatus('❌ Erro na inicialização', 'error');
+                    return;
+                }
+                
+                log(`[Auth] 🔧 DEBUG: Chamando setLoading(false) - SUCESSO`);
+                log(`[Auth] ✅ Sessão obtida com sucesso`);
+                
+                if (data.session) {
+                    log(`[Auth] 👤 Utilizador encontrado: ${data.session.user?.email}`);
+                    setSession(data.session);
+                    setUser(data.session.user);
+                } else {
+                    log(`[Auth] ℹ️ Nenhuma sessão ativa encontrada`);
+                    setSession(null);
+                    setUser(null);
+                }
+                
+                authState.initialSessionLoaded = true;
+                setLoading(false);
+                
+                showStatus('✅ Inicialização concluída', 'success');
+                
+            } catch (error) {
+                log(`[Auth] 🔧 DEBUG: Chamando setLoading(false) - EXCEÇÃO`);
+                log(`[Auth] ❌ Exceção durante inicialização: ${error.message}`);
+                setLoading(false);
+                showStatus('❌ Exceção na inicialização', 'error');
+            }
+            
+            log('=== ✅ FIM DA INICIALIZAÇÃO ===');
+        }
+        
+        async function simulateLogin() {
+            log('=== 🔐 SIMULAÇÃO DE LOGIN ===');
+            
+            setLoading(true);
+            
+            try {
+                // Simular um login (não vamos fazer login real, apenas simular o estado)
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                const mockUser = {
+                    id: 'mock-user-id',
+                    email: 'teste@exemplo.com',
+                    created_at: new Date().toISOString()
+                };
+                
+                const mockSession = {
+                    user: mockUser,
+                    access_token: 'mock-access-token',
+                    expires_at: Math.floor(Date.now() / 1000) + 3600
+                };
+                
+                setSession(mockSession);
+                setUser(mockUser);
+                setLoading(false);
+                
+                log('✅ Login simulado com sucesso');
+                showStatus('✅ Login simulado', 'success');
+                
+            } catch (error) {
+                log(`❌ Erro no login simulado: ${error.message}`);
+                setLoading(false);
+                showStatus('❌ Erro no login', 'error');
+            }
+        }
+        
+        async function simulateLogout() {
+            log('=== 🚪 SIMULAÇÃO DE LOGOUT ===');
+            
+            setLoading(true);
+            
+            try {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                setSession(null);
+                setUser(null);
+                setLoading(false);
+                
+                log('✅ Logout simulado com sucesso');
+                showStatus('✅ Logout simulado', 'success');
+                
+            } catch (error) {
+                log(`❌ Erro no logout simulado: ${error.message}`);
+                setLoading(false);
+                showStatus('❌ Erro no logout', 'error');
+            }
+        }
+        
+        window.initializeAuth = initializeAuth;
+        window.simulateLogin = simulateLogin;
+        window.simulateLogout = simulateLogout;
+        
+        window.resetState = function() {
+            authState = {
+                user: null,
+                session: null,
+                loading: true,
+                initialSessionLoaded: false
+            };
+            updateStateDisplay();
+            log('🔄 Estado resetado');
+            showStatus('Estado resetado', 'info');
+        };
+        
+        window.clearLogs = function() {
+            document.getElementById('logs').textContent = '';
+            showStatus('Logs limpos', 'info');
+        };
+        
+        // Inicialização automática
+        updateStateDisplay();
+        log('🚀 Simulação carregada. Clique em "Inicializar Auth" para começar.');
+        
+    </script>
+</body>
+</html>

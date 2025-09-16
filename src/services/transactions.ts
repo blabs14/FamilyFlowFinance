@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabaseClient';
 import { Transaction, TransactionInsert, TransactionUpdate } from '@/types/transaction';
 import { Database } from '@/integrations/supabase/types';
-import { logger } from '@/shared/lib/logger';
+import { logger } from '../shared/lib/logger';
 
 export const getTransactions = async (): Promise<{ data: Transaction[] | null; error: unknown }> => {
   try {

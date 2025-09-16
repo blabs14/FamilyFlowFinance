@@ -16,12 +16,16 @@ export const CreditCardBalance = ({ accountId, fallbackBalance, accountType }: C
   // Determinar a cor baseada no saldo (sempre vermelho para cartões de crédito, exceto quando = 0)
   const balanceColor = balance < 0 ? 'text-red-600' : 'text-gray-600';
   
+  // Para cartões de crédito, mostrar a dívida como valor positivo
+  const displayValue = balance < 0 ? Math.abs(balance) : 0;
+  const displayColor = balance < 0 ? 'text-red-600' : 'text-gray-600';
+
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">Saldo Atual</span>
-        <span className={`text-lg font-semibold ${balanceColor}`}>
-          {formatCurrency(balance)}
+        <span className="text-sm text-muted-foreground">Dívida</span>
+        <span className={`text-lg font-semibold ${displayColor}`}>
+          {formatCurrency(displayValue)}
         </span>
       </div>
       <p className="text-xs text-muted-foreground capitalize">{accountType}</p>

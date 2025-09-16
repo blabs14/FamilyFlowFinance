@@ -112,10 +112,19 @@ export function MileageTripForm({ trip, policies, onSave, onCancel }: MileageTri
       return;
     }
 
+    // Garantir que a política selecionada existe e tem contract_id
+    const policy = policies.find(p => p.id === formData.policy_id) || selectedPolicy;
+    if (!policy || !policy.contract_id) {
+      setErrors(prev => ({ ...prev, policy_id: 'Política inválida. Selecione uma política válida.' }));
+      return;
+    }
+
     setLoading(true);
     try {
       const tripData = {
-        ...formData
+        ...formData,
+        // assegurar que o contract_id é enviado para o backend
+        contract_id: policy.contract_id
       };
 
       let savedTrip: PayrollMileageTrip;
@@ -127,7 +136,7 @@ export function MileageTripForm({ trip, policies, onSave, onCancel }: MileageTri
           description: 'A viagem foi atualizada com sucesso.'
         });
       } else {
-        savedTrip = await payrollService.createMileageTrip(user.id, formData.policy_id, tripData);
+        savedTrip = await payrollService.createMileageTrip(user.id, formData.policy_id, tripData as any);
         toast({
           title: 'Viagem Registada',
           description: 'A viagem foi registada com sucesso.'

@@ -151,4 +151,6 @@ export interface FamilyMethods {
 }
 
 // Tipo completo do contexto
-export interface FamilyContextType extends FamilyData, FamilyMethods {}
+export interface FamilyContextType extends FamilyData, FamilyMethods {
+  switchFamily: (familyId: string) => Promise<void>;
+}

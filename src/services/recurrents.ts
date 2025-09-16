@@ -22,6 +22,10 @@ export const recurringRuleSchema = z.object({
   trial_end_date: z.string().optional().nullable(),
   cancel_at_period_end: z.boolean().optional().nullable(),
   payment_method: z.string().optional().nullable(),
+  // Campos para transferências
+  transaction_type: z.enum(['expense', 'income', 'transfer']).default('expense'),
+  from_account_id: z.string().uuid().optional().nullable(),
+  to_account_id: z.string().uuid().optional().nullable(),
   metadata: z.record(z.any()).optional()
 });
 

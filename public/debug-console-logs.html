@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Console Logs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .log {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 500px;
+            overflow-y: auto;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+        .button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #2563eb;
+        }
+        .iframe-container {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin: 20px 0;
+            height: 600px;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug Console Logs</h1>
+        <p>Esta página captura todos os logs do console da aplicação React.</p>
+        
+        <button class="button" onclick="clearLogs()">Limpar Logs</button>
+        <button class="button" onclick="openLoginPage()">Abrir Página de Login</button>
+        <button class="button" onclick="reloadIframe()">Recarregar</button>
+        
+        <h3>📋 Console Logs Capturados:</h3>
+        <div id="logs" class="log">Aguardando logs...
+</div>
+        
+        <h3>📱 Aplicação React:</h3>
+        <div class="iframe-container">
+            <iframe id="appFrame" src="/login"></iframe>
+        </div>
+    </div>
+
+    <script>
+        let logCount = 0;
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('logs');
+            const prefix = type === 'error' ? '❌' : type === 'warn' ? '⚠️' : type === 'debug' ? '🔧' : 'ℹ️';
+            
+            if (logCount === 0) {
+                logElement.textContent = '';
+            }
+            
+            logElement.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            logCount++;
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').textContent = 'Logs limpos...\n';
+            logCount = 0;
+        }
+        
+        function openLoginPage() {
+            document.getElementById('appFrame').src = '/login?t=' + Date.now();
+        }
+        
+        function reloadIframe() {
+            const iframe = document.getElementById('appFrame');
+            iframe.src = iframe.src;
+        }
+        
+        // Interceptar logs do console
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        const originalDebug = console.debug;
+        
+        console.log = function(...args) {
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            addLog(message, 'info');
+            originalLog.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            addLog(message, 'error');
+            originalError.apply(console, args);
+        };
+        
+        console.warn = function(...args) {
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            addLog(message, 'warn');
+            originalWarn.apply(console, args);
+        };
+        
+        console.debug = function(...args) {
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            addLog(message, 'debug');
+            originalDebug.apply(console, args);
+        };
+        
+        // Capturar erros JavaScript
+        window.addEventListener('error', function(e) {
+            addLog(`JavaScript Error: ${e.message} at ${e.filename}:${e.lineno}`, 'error');
+        });
+        
+        // Capturar erros de Promise rejeitadas
+        window.addEventListener('unhandledrejection', function(e) {
+            addLog(`Unhandled Promise Rejection: ${e.reason}`, 'error');
+        });
+        
+        // Interceptar logs do iframe
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'console') {
+                addLog(`[IFRAME] ${event.data.message}`, event.data.level);
+            }
+        });
+        
+        addLog('🚀 Debug Console iniciado - aguardando logs da aplicação React...');
+        
+        // Tentar capturar logs do iframe após carregamento
+        document.getElementById('appFrame').addEventListener('load', function() {
+            addLog('📱 Iframe carregado - tentando capturar logs...');
+            
+            try {
+                const iframeWindow = this.contentWindow;
+                if (iframeWindow && iframeWindow.console) {
+                    // Tentar interceptar logs do iframe
+                    const iframeConsole = iframeWindow.console;
+                    
+                    const originalIframeLog = iframeConsole.log;
+                    iframeConsole.log = function(...args) {
+                        const message = args.map(arg => 
+                            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                        ).join(' ');
+                        addLog(`[REACT] ${message}`, 'info');
+                        originalIframeLog.apply(iframeConsole, args);
+                    };
+                }
+            } catch (e) {
+                addLog(`⚠️ Não foi possível interceptar logs do iframe: ${e.message}`, 'warn');
+            }
+        });
+    </script>
+</body>
+</html>

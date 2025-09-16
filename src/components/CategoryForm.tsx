@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCreateCategory, useUpdateCategory } from '../hooks/useCategoriesQuery';
+import { useUpsertCategoryCustomization, useDeleteCategoryCustomization } from '../hooks/useCategoryCustomizationsQuery';
 import { categorySchema } from '../validation/categorySchema';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -16,11 +17,11 @@ import {
 import { logger } from '@/shared/lib/logger';
 
 interface CategoryFormData {
-  id?: string;
   nome: string;
-  tipo: string;
-  cor?: string;
+  cor: string;
   icone?: string;
+  descricao?: string;
+  user_id?: string;
 }
 
 interface CategoryFormProps {
@@ -33,7 +34,6 @@ const CategoryForm = ({ initialData, onSuccess, onCancel }: CategoryFormProps) =
   const { user } = useAuth();
   const [form, setForm] = useState<CategoryFormData>({
     nome: '',
-    tipo: 'despesa',
     cor: '#3B82F6',
     icone: '📊',
     ...initialData
@@ -42,7 +42,17 @@ const CategoryForm = ({ initialData, onSuccess, onCancel }: CategoryFormProps) =
   
   const createCategoryMutation = useCreateCategory();
   const updateCategoryMutation = useUpdateCategory();
-  const isSubmitting = createCategoryMutation.isPending || updateCategoryMutation.isPending;
+  const upsertCustomizationMutation = useUpsertCategoryCustomization();
+  const deleteCustomizationMutation = useDeleteCategoryCustomization();
+  
+  const isSubmitting = createCategoryMutation.isPending || 
+                      updateCategoryMutation.isPending || 
+                      upsertCustomizationMutation.isPending ||
+                      deleteCustomizationMutation.isPending;
+
+  // Determinar se é categoria default (user_id é null)
+  const isDefaultCategory = initialData?.user_id === null;
+  const isEditing = !!initialData?.id;
 
   useEffect(() => {
     if (initialData) {
@@ -57,6 +67,17 @@ const CategoryForm = ({ initialData, onSuccess, onCancel }: CategoryFormProps) =
 
   const handleSelectChange = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleResetCustomization = async () => {
+    if (!initialData?.id) return;
+    
+    try {
+      await deleteCustomizationMutation.mutateAsync(initialData.id);
+      if (onSuccess) onSuccess();
+    } catch (err: any) {
+      logger.error('Erro ao resetar personalização:', err);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,23 +96,35 @@ const CategoryForm = ({ initialData, onSuccess, onCancel }: CategoryFormProps) =
     }
     
     try {
-      const payload = {
-        nome: form.nome,
-        tipo: form.tipo,
-        cor: form.cor,
-        icone: form.icone,
-      };
-      
-      if (initialData && initialData.id) {
-        await updateCategoryMutation.mutateAsync({ id: initialData.id, data: payload });
+      if (isEditing && isDefaultCategory) {
+        // Para categorias padrão, criar/atualizar personalização
+        await upsertCustomizationMutation.mutateAsync({
+          category_id: initialData!.id!,
+          custom_color: form.cor,
+          custom_icon: form.icone
+        });
+      } else if (isEditing) {
+        // Para categorias do utilizador, atualizar normalmente
+        const payload = {
+          nome: form.nome,
+          cor: form.cor,
+          icone: form.icone,
+        };
+        await updateCategoryMutation.mutateAsync({ id: initialData!.id!, data: payload });
       } else {
+        // Criar nova categoria
+        const payload = {
+          nome: form.nome,
+          cor: form.cor,
+          icone: form.icone,
+        };
         await createCategoryMutation.mutateAsync(payload);
       }
       
       if (onSuccess) onSuccess();
     } catch (err: any) {
       logger.error('Erro ao guardar categoria:', err);
-      // O erro já é tratado pelo hook useCrudMutation
+      // O erro já é tratado pelos hooks
     }
   };
 
@@ -109,26 +142,19 @@ const CategoryForm = ({ initialData, onSuccess, onCancel }: CategoryFormProps) =
             required
             autoFocus
             className="w-full"
+            disabled={isEditing && isDefaultCategory} // Desabilitar nome para categorias default em edição
             aria-invalid={!!validationErrors.nome}
             aria-describedby={validationErrors.nome ? 'nome-error' : undefined}
           />
           {validationErrors.nome && <div id="nome-error" className="text-red-600 text-sm">{validationErrors.nome}</div>}
+          {isEditing && isDefaultCategory && (
+            <div className="text-sm text-muted-foreground">
+              O nome das categorias padrão não pode ser alterado. Apenas a cor e ícone podem ser personalizados.
+            </div>
+          )}
         </div>
 
-        <div className="space-y-2">
-          <label htmlFor="tipo">Tipo</label>
-          <Select value={form.tipo} onValueChange={(value) => handleSelectChange('tipo', value)}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Selecionar tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="despesa">Despesa</SelectItem>
-              <SelectItem value="receita">Receita</SelectItem>
-              <SelectItem value="transferencia">Transferência</SelectItem>
-            </SelectContent>
-          </Select>
-          {validationErrors.tipo && <div className="text-red-600 text-sm">{validationErrors.tipo}</div>}
-        </div>
+
 
         <div className="space-y-2">
           <label htmlFor="cor">Cor</label>
@@ -163,10 +189,21 @@ const CategoryForm = ({ initialData, onSuccess, onCancel }: CategoryFormProps) =
         <div className="flex flex-col sm:flex-row gap-2">
           <FormSubmitButton 
             isSubmitting={isSubmitting}
-            submitText={initialData?.id ? 'Atualizar' : 'Criar'}
-            submittingText={initialData?.id ? 'A atualizar...' : 'A criar...'}
+            submitText={isEditing && isDefaultCategory ? 'Personalizar' : (initialData?.id ? 'Atualizar' : 'Criar')}
+            submittingText={isEditing && isDefaultCategory ? 'A personalizar...' : (initialData?.id ? 'A atualizar...' : 'A criar...')}
             className="w-full"
           />
+          {isEditing && isDefaultCategory && (
+            <Button 
+              type="button" 
+              variant="destructive" 
+              onClick={handleResetCustomization}
+              disabled={isSubmitting}
+              className="w-full"
+            >
+              Resetar Personalização
+            </Button>
+          )}
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel} className="w-full">
               Cancelar

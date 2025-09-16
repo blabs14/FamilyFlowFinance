@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/150</span>
+                <span class='fraction'>0/151</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/150</span>
+                <span class='fraction'>0/151</span>
             </div>
         
             
@@ -280,13 +280,15 @@
 <a name='L215'></a><a href='#L215'>215</a>
 <a name='L216'></a><a href='#L216'>216</a>
 <a name='L217'></a><a href='#L217'>217</a>
-<a name='L218'></a><a href='#L218'>218</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L218'></a><a href='#L218'>218</a>
+<a name='L219'></a><a href='#L219'>219</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -507,6 +509,7 @@ import { PayrollMealAllowanceConfig } from '../types';
 <span class="cstat-no" title="statement not covered" >import { payrollService } from '../services/payrollService';</span>
 <span class="cstat-no" title="statement not covered" >import { useAuth } from '@/contexts/AuthContext';</span>
 <span class="cstat-no" title="statement not covered" >import { useNavigate } from 'react-router-dom';</span>
+<span class="cstat-no" title="statement not covered" >import { logger } from '@/shared/lib/logger';</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >const MONTHS = [</span>
 <span class="cstat-no" title="statement not covered" >  { value: 1, label: 'Janeiro' },</span>
@@ -544,22 +547,22 @@ interface PayrollMealAllowanceConfigProps {
 <span class="cstat-no" title="statement not covered" >  }, [contractId]);</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const loadConfigByContract = async () =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    console.log('🔍 PayrollMealAllowanceConfig - loadConfigByContract chamada com:', { userId: user?.id, contractId });</span>
+<span class="cstat-no" title="statement not covered" >    logger.debug('PayrollMealAllowanceConfig - loadConfigByContract chamada com:', { userId: user?.id, contractId });</span>
     
 <span class="cstat-no" title="statement not covered" >    if (!user?.id || !contractId) {</span>
-<span class="cstat-no" title="statement not covered" >      console.log('❌ PayrollMealAllowanceConfig - Faltam dados:', { userId: user?.id, contractId });</span>
+<span class="cstat-no" title="statement not covered" >      logger.warn('PayrollMealAllowanceConfig - Faltam dados:', { userId: user?.id, contractId });</span>
 <span class="cstat-no" title="statement not covered" >      return;</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
     
 <span class="cstat-no" title="statement not covered" >    setLoading(true);</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
-<span class="cstat-no" title="statement not covered" >      console.log('🔄 PayrollMealAllowanceConfig - Carregando configuração...');</span>
+<span class="cstat-no" title="statement not covered" >      logger.debug('PayrollMealAllowanceConfig - Carregando configuração...');</span>
 <span class="cstat-no" title="statement not covered" >      const data = await payrollService.getMealAllowanceConfig(user.id, contractId);</span>
-<span class="cstat-no" title="statement not covered" >      console.log('✅ PayrollMealAllowanceConfig - Configuração carregada:', data);</span>
+<span class="cstat-no" title="statement not covered" >      logger.debug('PayrollMealAllowanceConfig - Configuração carregada:', data);</span>
 <span class="cstat-no" title="statement not covered" >      setConfig(data);</span>
 <span class="cstat-no" title="statement not covered" >      onConfigChange?.(data);</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('❌ PayrollMealAllowanceConfig - Erro ao carregar configuração:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('PayrollMealAllowanceConfig - Erro ao carregar configuração:', error);</span>
 <span class="cstat-no" title="statement not covered" >      setConfig(null);</span>
 <span class="cstat-no" title="statement not covered" >      onConfigChange?.(null);</span>
 <span class="cstat-no" title="statement not covered" >    } finally {</span>
@@ -584,7 +587,7 @@ interface PayrollMealAllowanceConfigProps {
 <span class="cstat-no" title="statement not covered" >        onConfigChange?.(null);</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Error loading meal allowance config:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Error loading meal allowance config:', error);</span>
 <span class="cstat-no" title="statement not covered" >      setConfig(null);</span>
 <span class="cstat-no" title="statement not covered" >      onConfigChange?.(null);</span>
 <span class="cstat-no" title="statement not covered" >    } finally {</span>
@@ -721,7 +724,7 @@ interface PayrollMealAllowanceConfigProps {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.525Z
+                at 2025-09-14T17:15:09.625Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

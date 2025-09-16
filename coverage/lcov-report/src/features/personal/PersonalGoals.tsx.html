@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/367</span>
+                <span class='fraction'>0/372</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/367</span>
+                <span class='fraction'>0/372</span>
             </div>
         
             
@@ -592,7 +592,14 @@
 <a name='L527'></a><a href='#L527'>527</a>
 <a name='L528'></a><a href='#L528'>528</a>
 <a name='L529'></a><a href='#L529'>529</a>
-<a name='L530'></a><a href='#L530'>530</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L530'></a><a href='#L530'>530</a>
+<a name='L531'></a><a href='#L531'>531</a>
+<a name='L532'></a><a href='#L532'>532</a>
+<a name='L533'></a><a href='#L533'>533</a>
+<a name='L534'></a><a href='#L534'>534</a>
+<a name='L535'></a><a href='#L535'>535</a>
+<a name='L536'></a><a href='#L536'>536</a>
+<a name='L537'></a><a href='#L537'>537</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -607,6 +614,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -629,6 +637,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -764,6 +774,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -983,6 +995,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1123,6 +1137,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import React, { useState, useEffect } from 'react';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
 import { usePersonal } from './PersonalProvider';
+<span class="cstat-no" title="statement not covered" >import { useOptionalFamily } from '../family/FamilyContext';</span>
 <span class="cstat-no" title="statement not covered" >import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';</span>
 <span class="cstat-no" title="statement not covered" >import { Progress } from '../../components/ui/progress';</span>
 <span class="cstat-no" title="statement not covered" >import { Badge } from '../../components/ui/badge';</span>
@@ -1160,13 +1175,15 @@ type AuditEntry = { id: string; timestamp: string; operation: string; old_data?:
   
 <span class="cstat-no" title="statement not covered" >  // Usar os hooks robustos que já funcionam</span>
 <span class="cstat-no" title="statement not covered" >  const goalsQuery = useGoals();</span>
-<span class="cstat-no" title="statement not covered" >  const { data: goals = [], isLoading, error, refetch } = goalsQuery as any;</span>
+<span class="cstat-no" title="statement not covered" >  const { data: goals = [], isLoading, error, refetch } = goalsQuery;</span>
 <span class="cstat-no" title="statement not covered" >  const createGoalMutation = useCreateGoal();</span>
 <span class="cstat-no" title="statement not covered" >  const updateGoalMutation = useUpdateGoal();</span>
 <span class="cstat-no" title="statement not covered" >  const deleteGoalMutation = useDeleteGoal();</span>
 <span class="cstat-no" title="statement not covered" >  const { data: goalProgress = [] } = useGoalProgress();</span>
 <span class="cstat-no" title="statement not covered" >  const { toast } = useToast();</span>
 <span class="cstat-no" title="statement not covered" >  const confirmation = useConfirmation();</span>
+<span class="cstat-no" title="statement not covered" >  const family = useOptionalFamily();</span>
+<span class="cstat-no" title="statement not covered" >  const canEditGoal = family?.canEdit?.('goal') ?? true;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const handleCreateGoal = () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    setShowCreateModal(true);</span>
@@ -1271,7 +1288,7 @@ type AuditEntry = { id: string; timestamp: string; operation: string; old_data?:
 <span class="cstat-no" title="statement not covered" >    return (</span>
 <span class="cstat-no" title="statement not covered" >      &lt;div className="text-center py-12"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;p className="text-red-600"&gt;Erro ao carregar objetivos: {error.message}&lt;/p&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;Button onClick={() =&gt; refetch()} className="mt-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;Button onClick={() =&gt; refetch()} className="mt-4" aria-label="Tentar carregar objetivos novamente"&gt;</span>
           Tentar novamente
         &lt;/Button&gt;
       &lt;/div&gt;
@@ -1291,17 +1308,19 @@ type AuditEntry = { id: string; timestamp: string; operation: string; old_data?:
             Suas metas financeiras e objetivos de poupança
           &lt;/p&gt;
         &lt;/div&gt;
-<span class="cstat-no" title="statement not covered" >        &lt;Button onClick={handleCreateGoal}&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Plus className="h-4 w-4 mr-2" /&gt;</span>
-          Novo Objetivo
-        &lt;/Button&gt;
+<span class="cstat-no" title="statement not covered" >        {canEditGoal &amp;&amp; (</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Button onClick={handleCreateGoal} aria-label="Criar novo objetivo financeiro"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Plus className="h-4 w-4 mr-2" /&gt;</span>
+            Novo Objetivo
+          &lt;/Button&gt;
+        )}
       &lt;/div&gt;
 &nbsp;
       {/* Filtros rápidos */}
 <span class="cstat-no" title="statement not covered" >      &lt;div className="grid grid-cols-1 md:grid-cols-3 gap-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;Label&gt;Estado&lt;/Label&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Select value={filterStatus} onValueChange={(v) =&gt; setFilterStatus(v as any)}&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Select value={filterStatus} onValueChange={(v) =&gt; setFilterStatus(v as 'all' | 'active' | 'completed')}&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;SelectTrigger&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;SelectValue /&gt;</span>
             &lt;/SelectTrigger&gt;
@@ -1510,10 +1529,12 @@ type AuditEntry = { id: string; timestamp: string; operation: string; old_data?:
 <span class="cstat-no" title="statement not covered" >          &lt;p className="text-muted-foreground mb-4"&gt;</span>
             Cria o teu primeiro objetivo para começar a poupar
           &lt;/p&gt;
-<span class="cstat-no" title="statement not covered" >          &lt;Button onClick={handleCreateGoal}&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Plus className="h-4 w-4 mr-2" /&gt;</span>
-            Criar Objetivo
-          &lt;/Button&gt;
+<span class="cstat-no" title="statement not covered" >          {canEditGoal &amp;&amp; (</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Button onClick={handleCreateGoal}&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Plus className="h-4 w-4 mr-2" /&gt;</span>
+              Criar Objetivo
+            &lt;/Button&gt;
+          )}
         &lt;/div&gt;
       )}
 &nbsp;
@@ -1650,14 +1671,14 @@ type AuditEntry = { id: string; timestamp: string; operation: string; old_data?:
 <span class="cstat-no" title="statement not covered" >      })}</span>
     &lt;/div&gt;
   );
-<span class="cstat-no" title="statement not covered" >}; </span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >};</span></pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.525Z
+                at 2025-09-14T17:15:09.625Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

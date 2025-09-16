@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/236</span>
+                <span class='fraction'>0/237</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/236</span>
+                <span class='fraction'>0/237</span>
             </div>
         
             
@@ -335,7 +335,8 @@
 <a name='L270'></a><a href='#L270'>270</a>
 <a name='L271'></a><a href='#L271'>271</a>
 <a name='L272'></a><a href='#L272'>272</a>
-<a name='L273'></a><a href='#L273'>273</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L273'></a><a href='#L273'>273</a>
+<a name='L274'></a><a href='#L274'>274</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -350,6 +351,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -622,6 +624,7 @@
   PersonalSettings,
   ProfileData
 } from '../services/personalSettings';
+<span class="cstat-no" title="statement not covered" >import { logger } from '../shared/lib/logger';</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const usePersonalSettings = () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  const { user } = useAuth();</span>
@@ -673,7 +676,7 @@
 <span class="cstat-no" title="statement not covered" >        description: "Não foi possível salvar as configurações.",</span>
 <span class="cstat-no" title="statement not covered" >        variant: "destructive",</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro ao atualizar configurações:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Erro ao atualizar configurações:', error);</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >  });</span>
 &nbsp;
@@ -695,7 +698,7 @@
 <span class="cstat-no" title="statement not covered" >        description: "Não foi possível atualizar o perfil.",</span>
 <span class="cstat-no" title="statement not covered" >        variant: "destructive",</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro ao atualizar perfil:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Erro ao atualizar perfil:', error);</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >  });</span>
 &nbsp;
@@ -716,7 +719,7 @@
 <span class="cstat-no" title="statement not covered" >        description: "Não foi possível alterar o tema.",</span>
 <span class="cstat-no" title="statement not covered" >        variant: "destructive",</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro ao alterar tema:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Erro ao alterar tema:', error);</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >  });</span>
 &nbsp;
@@ -737,7 +740,7 @@
 <span class="cstat-no" title="statement not covered" >        description: "Não foi possível salvar as configurações de notificações.",</span>
 <span class="cstat-no" title="statement not covered" >        variant: "destructive",</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro ao atualizar notificações:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Erro ao atualizar notificações:', error);</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >  });</span>
 &nbsp;
@@ -768,7 +771,7 @@
 <span class="cstat-no" title="statement not covered" >      queryClient.invalidateQueries({ queryKey: ['personalSettings', user?.id] });</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    onError: (error) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro ao criar perfil inicial:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Erro ao criar perfil inicial:', error);</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >  });</span>
 &nbsp;
@@ -879,14 +882,14 @@
 <span class="cstat-no" title="statement not covered" >    refetchSettings,</span>
 <span class="cstat-no" title="statement not covered" >    refetchProfile,</span>
 <span class="cstat-no" title="statement not covered" >  };</span>
-<span class="cstat-no" title="statement not covered" >}; </span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >};</span></pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.132Z
+                at 2025-09-14T17:15:08.717Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

@@ -102,12 +102,20 @@ export function PayrollSetupPage() {
       const [contractsData, otPoliciesData, holidaysData, vacationsData, activeContract, deductionConfigsData] = await Promise.all([
         payrollService.getContracts(user.id),
         payrollService.getOTPolicies(user.id),
-        payrollService.getHolidays(user.id, new Date().getFullYear()),
+        payrollService.getHolidays(user.id, new Date().getFullYear(), undefined, undefined),
         payrollService.getVacations(user.id, undefined, new Date().getFullYear()),
         payrollService.getActiveContract(user.id),
         payrollService.getDeductionConfigs(user.id)
       ]);
       
+      // Após obter activeContract, recarregar feriados com o contexto correto
+      const holidaysWithContext = await payrollService.getHolidays(
+        user.id,
+        new Date().getFullYear(),
+        activeContract?.id,
+        activeContract?.workplace_location
+      );
+      setHolidays(holidaysWithContext);
       setContracts(contractsData);
       setOTPolicies(otPoliciesData);
       setHolidays(holidaysData);

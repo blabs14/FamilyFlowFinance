@@ -5,6 +5,7 @@ export const createFamily = familyService.createFamily;
 export const getFamilyData = familyService.getFamilyData;
 export const getFamilyMembers = familyService.getMembers;
 export const getPendingInvites = familyService.getPendingInvites;
+export const getUserFamilies = familyService.getUserFamilies;
 
 export {
   updateFamilySettings,
@@ -19,4 +20,4 @@ export {
   getFamilyKPIs,
   getFamilyKPIsRange,
   getFamilyCategoryBreakdown,
-} from "./family.legacy"; 
+} from "./family.legacy";

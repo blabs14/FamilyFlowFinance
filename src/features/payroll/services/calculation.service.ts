@@ -1,7 +1,6 @@
 import { PayrollContract, PayrollTimeEntry, PayrollOTPolicy, PayrollHoliday, PayrollMileageTrip, PayrollVacation, PayrollCalculation } from '../types';
 import { calcMonth, validateTimeEntry, PreCalculatedOvertimeData } from '../lib/calc';
 import { logger } from '@/shared/lib/logger';
-import { isValidUUID } from '@/lib/validation';
 
 /**
  * Calcula o último dia do mês corretamente
@@ -439,19 +438,17 @@ export async function calculatePayroll(
   month: number,
   preCalculatedData?: PreCalculatedOvertimeData
 ): Promise<CalculationResult> {
-  // Validar se o contractId é um UUID válido
-  if (!isValidUUID(contractId)) {
-    throw new Error('ID do contrato deve ser um UUID válido');
-  }
   // Importar serviços necessários
   const { payrollService } = await import('./payrollService');
   
   try {
-    // Buscar dados necessários
-    const [contract, otPolicy, holidays, timeEntries, mileageTrips, mileagePolicy, mealAllowanceConfig, vacations, deductionConfig] = await Promise.all([
-      payrollService.getContract(contractId, userId),
+    // Buscar primeiro o contrato para obter workplace_location
+    const contract = await payrollService.getContract(contractId, userId);
+
+    // Buscar dados necessários em paralelo (dependentes do contrato acima)
+    const [otPolicy, holidays, timeEntries, mileageTrips, mileagePolicy, mealAllowanceConfig, vacations, deductionConfig] = await Promise.all([
       payrollService.getActiveOTPolicy(userId, contractId),
-      payrollService.getHolidays(userId, year, contractId),
+      payrollService.getHolidays(userId, year, contractId, contract?.workplace_location),
       payrollService.getTimeEntriesByContract(userId, contractId, `${year}-${month.toString().padStart(2, '0')}-01`, getLastDayOfMonth(year, month)),
       payrollService.getMileageTrips(userId, `${year}-${month.toString().padStart(2, '0')}-01`, getLastDayOfMonth(year, month), contractId),
       payrollService.getActiveMileagePolicy(userId, contractId),

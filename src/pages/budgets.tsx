@@ -79,7 +79,7 @@ const BudgetsPage = () => {
     }
   };
 
-  const _validateForm = () => {
+  const validateForm = () => {
     try {
       budgetSchema.parse({
         ...form,
@@ -91,10 +91,11 @@ const BudgetsPage = () => {
       const errors: Record<string, string> = {};
       if (error instanceof z.ZodError) {
         error.errors?.forEach((err) => {
-        if (err.path) {
-          errors[err.path[0]] = err.message;
-        }
-      });
+          if (err.path) {
+            errors[err.path[0] as string] = err.message;
+          }
+        });
+      }
       setValidationErrors(errors);
       return false;
     }
@@ -479,6 +480,5 @@ const BudgetsPage = () => {
     </div>
   );
 };
-}
 
 export default BudgetsPage;

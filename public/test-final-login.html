@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Final - Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-panel {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+        .logs {
+            background: #000;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .iframe-container {
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            margin: 20px 0;
+            height: 700px;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .status-card {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            border: 2px solid #ddd;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Teste Final - Estado do Login</h1>
+        <p>Este teste verifica se o botão de login está funcionando corretamente após as correções no AuthContext.</p>
+        
+        <div class="status-grid">
+            <div id="authStatus" class="status-card test-panel">🔐 Auth Loading: Verificando...</div>
+            <div id="buttonStatus" class="status-card test-panel">🔘 Botão: Verificando...</div>
+            <div id="formStatus" class="status-card test-panel">📝 Formulário: Verificando...</div>
+            <div id="testStatus" class="status-card test-panel">🧪 Teste: Iniciando...</div>
+        </div>
+
+        <div class="controls">
+            <button onclick="clearLogs()">🗑️ Limpar Logs</button>
+            <button onclick="reloadApp()">🔄 Recarregar App</button>
+            <button onclick="runFullTest()">🧪 Teste Completo</button>
+            <button onclick="fillAndTest()">✏️ Preencher e Testar</button>
+            <button onclick="checkButtonState()">🔘 Verificar Botão</button>
+        </div>
+
+        <div class="logs" id="logs"></div>
+
+        <div class="iframe-container">
+            <iframe id="appFrame" src="/login"></iframe>
+        </div>
+    </div>
+
+    <script>
+        let logCount = 0;
+        let testInterval;
+        
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                'info': '#00ff00',
+                'error': '#ff0000',
+                'warning': '#ffff00',
+                'success': '#00ffff',
+                'debug': '#888888'
+            };
+            
+            logs.innerHTML += `<div style="color: ${colors[type] || '#00ff00'}">[${timestamp}] ${message}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+            logCount++;
+            
+            if (logCount > 150) {
+                const lines = logs.innerHTML.split('</div>');
+                logs.innerHTML = lines.slice(-75).join('</div>');
+                logCount = 75;
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+            logCount = 0;
+            log('📝 Logs limpos', 'info');
+        }
+        
+        function updateStatus(elementId, text, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = text;
+            element.className = `status-card test-panel ${type}`;
+        }
+        
+        function reloadApp() {
+            log('🔄 Recarregando aplicação...', 'info');
+            document.getElementById('appFrame').src = '/login?' + Date.now();
+            updateStatus('testStatus', '🔄 App: Recarregando...', 'warning');
+            setTimeout(() => {
+                updateStatus('testStatus', '✅ App: Recarregado', 'success');
+                setTimeout(runFullTest, 2000);
+            }, 1000);
+        }
+        
+        function getIframeElements() {
+            try {
+                const iframe = document.getElementById('appFrame');
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                const emailInput = iframeDoc.querySelector('input[type="email"]');
+                const passwordInput = iframeDoc.querySelector('input[type="password"]');
+                const submitButton = iframeDoc.querySelector('button[type="submit"]');
+                
+                return { iframeDoc, emailInput, passwordInput, submitButton };
+            } catch (error) {
+                log(`❌ Erro ao acessar elementos do iframe: ${error.message}`, 'error');
+                return {};
+            }
+        }
+        
+        function checkAuthState() {
+            log('🔐 Verificando estado de autenticação...', 'info');
+            
+            const { iframeDoc } = getIframeElements();
+            if (!iframeDoc) {
+                updateStatus('authStatus', '❌ Auth: Erro de acesso', 'error');
+                return false;
+            }
+            
+            // Verificar se há elementos de loading visíveis
+            const loadingElements = iframeDoc.querySelectorAll('[data-loading], .loading, .spinner');
+            const hasLoading = loadingElements.length > 0;
+            
+            log(`🔍 Elementos de loading encontrados: ${loadingElements.length}`, 'debug');
+            
+            if (hasLoading) {
+                updateStatus('authStatus', '⏳ Auth: Carregando...', 'warning');
+                return false;
+            } else {
+                updateStatus('authStatus', '✅ Auth: Pronto', 'success');
+                return true;
+            }
+        }
+        
+        function checkButtonState() {
+            log('🔘 Verificando estado do botão...', 'info');
+            
+            const { submitButton } = getIframeElements();
+            if (!submitButton) {
+                log('❌ Botão de submit não encontrado!', 'error');
+                updateStatus('buttonStatus', '❌ Botão: Não encontrado', 'error');
+                return false;
+            }
+            
+            const isDisabled = submitButton.disabled;
+            const buttonText = submitButton.textContent || submitButton.innerText;
+            const buttonClasses = submitButton.className;
+            
+            log(`🔘 Botão encontrado: "${buttonText}"`, 'info');
+            log(`🔘 Disabled: ${isDisabled}`, isDisabled ? 'warning' : 'success');
+            log(`🔘 Classes: ${buttonClasses}`, 'debug');
+            
+            if (isDisabled) {
+                updateStatus('buttonStatus', '🚫 Botão: DESABILITADO', 'error');
+                return false;
+            } else {
+                updateStatus('buttonStatus', '✅ Botão: HABILITADO', 'success');
+                return true;
+            }
+        }
+        
+        function checkFormState() {
+            log('📝 Verificando estado do formulário...', 'info');
+            
+            const { emailInput, passwordInput } = getIframeElements();
+            if (!emailInput || !passwordInput) {
+                log('❌ Campos do formulário não encontrados!', 'error');
+                updateStatus('formStatus', '❌ Form: Campos não encontrados', 'error');
+                return false;
+            }
+            
+            const emailValue = emailInput.value.trim();
+            const passwordValue = passwordInput.value.trim();
+            const emailValid = emailInput.checkValidity();
+            const passwordValid = passwordInput.checkValidity();
+            
+            log(`📧 Email: "${emailValue}" (válido: ${emailValid})`, 'debug');
+            log(`🔑 Password: "${passwordValue ? '***' : '(vazio)'}" (válido: ${passwordValid})`, 'debug');
+            
+            const formValid = emailValid && passwordValid && emailValue !== '' && passwordValue !== '';
+            
+            if (formValid) {
+                updateStatus('formStatus', '✅ Form: VÁLIDO', 'success');
+                return true;
+            } else {
+                updateStatus('formStatus', '⚠️ Form: Incompleto', 'warning');
+                return false;
+            }
+        }
+        
+        function fillAndTest() {
+            log('✏️ Preenchendo formulário com dados de teste...', 'info');
+            
+            const { emailInput, passwordInput } = getIframeElements();
+            if (!emailInput || !passwordInput) {
+                log('❌ Não foi possível encontrar os campos!', 'error');
+                return;
+            }
+            
+            // Preencher campos
+            emailInput.value = 'teste@exemplo.com';
+            passwordInput.value = '123456789';
+            
+            // Disparar eventos para React
+            ['input', 'change', 'blur'].forEach(eventType => {
+                emailInput.dispatchEvent(new Event(eventType, { bubbles: true }));
+                passwordInput.dispatchEvent(new Event(eventType, { bubbles: true }));
+            });
+            
+            log('✅ Formulário preenchido', 'success');
+            
+            // Verificar estado após preenchimento
+            setTimeout(() => {
+                checkFormState();
+                checkButtonState();
+            }, 500);
+        }
+        
+        function runFullTest() {
+            log('🧪 Iniciando teste completo...', 'info');
+            updateStatus('testStatus', '🧪 Teste: Em execução...', 'warning');
+            
+            let step = 1;
+            const totalSteps = 4;
+            
+            function nextStep() {
+                switch(step) {
+                    case 1:
+                        log(`📋 Passo ${step}/${totalSteps}: Verificando autenticação...`, 'info');
+                        checkAuthState();
+                        break;
+                    case 2:
+                        log(`📋 Passo ${step}/${totalSteps}: Verificando formulário...`, 'info');
+                        checkFormState();
+                        break;
+                    case 3:
+                        log(`📋 Passo ${step}/${totalSteps}: Preenchendo formulário...`, 'info');
+                        fillAndTest();
+                        break;
+                    case 4:
+                        log(`📋 Passo ${step}/${totalSteps}: Verificação final do botão...`, 'info');
+                        const buttonWorking = checkButtonState();
+                        
+                        if (buttonWorking) {
+                            log('🎉 TESTE CONCLUÍDO: Botão está funcionando!', 'success');
+                            updateStatus('testStatus', '🎉 Teste: SUCESSO!', 'success');
+                        } else {
+                            log('❌ TESTE FALHOU: Botão ainda está desabilitado', 'error');
+                            updateStatus('testStatus', '❌ Teste: FALHOU', 'error');
+                        }
+                        return;
+                }
+                
+                step++;
+                setTimeout(nextStep, 1000);
+            }
+            
+            nextStep();
+        }
+        
+        // Inicialização
+        window.addEventListener('load', () => {
+            log('🚀 Teste final de login iniciado', 'success');
+            log('⏳ Aguardando carregamento da aplicação...', 'info');
+            
+            setTimeout(() => {
+                runFullTest();
+            }, 3000);
+        });
+        
+        // Monitoramento contínuo
+        setInterval(() => {
+            checkButtonState();
+        }, 5000);
+    </script>
+</body>
+</html>

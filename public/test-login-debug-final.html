@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Final - Login Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1400px;
+        }
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-secondary { background: #6b7280; color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .logs {
+            height: 400px;
+            overflow-y: auto;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        
+        .log-info { color: #3b82f6; }
+        .log-success { color: #10b981; }
+        .log-warning { color: #f59e0b; }
+        .log-error { color: #ef4444; }
+        .log-debug { color: #8b5cf6; }
+        
+        .timestamp {
+            color: #6b7280;
+            font-size: 10px;
+        }
+        
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .form-group {
+            margin-bottom: 10px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Final - Teste de Login</h1>
+    
+    <div class="container">
+        <div class="panel">
+            <h3>🎮 Controlos de Teste</h3>
+            <div class="controls">
+                <div class="form-group">
+                    <label>Email de Teste:</label>
+                    <input type="email" id="testEmail" value="testetotal@teste.com" placeholder="Email para teste">
+                </div>
+                
+                <div class="form-group">
+                    <label>Password de Teste:</label>
+                    <input type="password" id="testPassword" value="123456" placeholder="Password para teste">
+                </div>
+                
+                <button class="btn-primary" onclick="fillAndSubmitForm()">🚀 Preencher e Submeter</button>
+                <button class="btn-secondary" onclick="checkFormValidation()">✅ Verificar Validação</button>
+                <button class="btn-success" onclick="simulateDirectLogin()">🔐 Teste Login Direto</button>
+                <button class="btn-warning" onclick="inspectFormState()">🔍 Inspecionar Estado</button>
+                <button class="btn-danger" onclick="clearLogs()">🗑️ Limpar Logs</button>
+                
+                <hr>
+                
+                <button class="btn-secondary" onclick="reloadIframe()">🔄 Recarregar Página</button>
+                <button class="btn-warning" onclick="openDevTools()">🛠️ Abrir DevTools</button>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <h3>📱 Aplicação</h3>
+            <iframe id="appFrame" src="http://localhost:8082/login"></iframe>
+        </div>
+    </div>
+    
+    <div class="panel" style="margin-top: 20px;">
+        <h3>📋 Logs de Debug</h3>
+        <div id="logs" class="logs"></div>
+    </div>
+
+    <script>
+        let logCount = 0;
+        
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+            logsDiv.appendChild(logEntry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            logCount++;
+            
+            if (logCount > 100) {
+                logsDiv.removeChild(logsDiv.firstChild);
+                logCount--;
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+            logCount = 0;
+            log('Logs limpos', 'info');
+        }
+        
+        function reloadIframe() {
+            const iframe = document.getElementById('appFrame');
+            iframe.src = iframe.src;
+            log('Página recarregada', 'info');
+        }
+        
+        function openDevTools() {
+            log('Para abrir DevTools: F12 ou Ctrl+Shift+I', 'info');
+        }
+        
+        function getIframeDocument() {
+            const iframe = document.getElementById('appFrame');
+            try {
+                return iframe.contentDocument || iframe.contentWindow.document;
+            } catch (e) {
+                log('❌ Erro ao aceder ao iframe: ' + e.message, 'error');
+                return null;
+            }
+        }
+        
+        function fillAndSubmitForm() {
+            log('🚀 Iniciando preenchimento e submissão do formulário...', 'info');
+            
+            const doc = getIframeDocument();
+            if (!doc) return;
+            
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            
+            // Encontrar campos do formulário
+            const emailField = doc.querySelector('input[type="email"], input[name="email"], #email');
+            const passwordField = doc.querySelector('input[type="password"], input[name="password"], #password');
+            const submitButton = doc.querySelector('button[type="submit"], button:contains("Entrar"), .login-button');
+            
+            if (!emailField || !passwordField) {
+                log('❌ Campos de email ou password não encontrados', 'error');
+                return;
+            }
+            
+            log(`📝 Preenchendo email: ${email}`, 'info');
+            emailField.value = email;
+            emailField.dispatchEvent(new Event('input', { bubbles: true }));
+            emailField.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            log(`🔒 Preenchendo password: ${'*'.repeat(password.length)}`, 'info');
+            passwordField.value = password;
+            passwordField.dispatchEvent(new Event('input', { bubbles: true }));
+            passwordField.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            // Aguardar um pouco para a validação
+            setTimeout(() => {
+                if (submitButton) {
+                    log(`🎯 Botão encontrado: ${submitButton.textContent.trim()}`, 'info');
+                    log(`🔍 Botão desabilitado: ${submitButton.disabled}`, submitButton.disabled ? 'warning' : 'success');
+                    
+                    if (submitButton.disabled) {
+                        log('⚠️ Botão está desabilitado! Verificando razões...', 'warning');
+                        inspectFormState();
+                    } else {
+                        log('✅ Clicando no botão de submit...', 'success');
+                        submitButton.click();
+                        
+                        // Monitorizar mudanças após o clique
+                        setTimeout(() => {
+                            log('📊 Verificando estado após clique...', 'info');
+                            inspectFormState();
+                        }, 1000);
+                    }
+                } else {
+                    log('❌ Botão de submit não encontrado', 'error');
+                }
+            }, 500);
+        }
+        
+        function checkFormValidation() {
+            log('✅ Verificando validação do formulário...', 'info');
+            
+            const doc = getIframeDocument();
+            if (!doc) return;
+            
+            const form = doc.querySelector('form');
+            const emailField = doc.querySelector('input[type="email"], input[name="email"], #email');
+            const passwordField = doc.querySelector('input[type="password"], input[name="password"], #password');
+            
+            if (form) {
+                log(`📋 Formulário válido: ${form.checkValidity()}`, form.checkValidity() ? 'success' : 'error');
+            }
+            
+            if (emailField) {
+                log(`📧 Email válido: ${emailField.checkValidity()} (valor: ${emailField.value})`, emailField.checkValidity() ? 'success' : 'error');
+                if (!emailField.checkValidity()) {
+                    log(`❌ Erro de validação do email: ${emailField.validationMessage}`, 'error');
+                }
+            }
+            
+            if (passwordField) {
+                log(`🔒 Password válida: ${passwordField.checkValidity()} (comprimento: ${passwordField.value.length})`, passwordField.checkValidity() ? 'success' : 'error');
+                if (!passwordField.checkValidity()) {
+                    log(`❌ Erro de validação da password: ${passwordField.validationMessage}`, 'error');
+                }
+            }
+        }
+        
+        function simulateDirectLogin() {
+            log('🔐 Simulando login direto via Supabase...', 'info');
+            
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            
+            // Tentar aceder ao Supabase através do iframe
+            const iframe = document.getElementById('appFrame');
+            try {
+                const iframeWindow = iframe.contentWindow;
+                if (iframeWindow && iframeWindow.supabase) {
+                    log('🎯 Cliente Supabase encontrado no iframe', 'success');
+                    
+                    iframeWindow.supabase.auth.signInWithPassword({
+                        email: email,
+                        password: password
+                    }).then(result => {
+                        if (result.error) {
+                            log(`❌ Erro no login: ${result.error.message}`, 'error');
+                        } else {
+                            log('✅ Login direto bem-sucedido!', 'success');
+                            log(`👤 Utilizador: ${result.data.user?.email}`, 'info');
+                        }
+                    }).catch(error => {
+                        log(`❌ Erro na chamada: ${error.message}`, 'error');
+                    });
+                } else {
+                    log('❌ Cliente Supabase não encontrado no iframe', 'error');
+                }
+            } catch (e) {
+                log(`❌ Erro ao aceder ao Supabase: ${e.message}`, 'error');
+            }
+        }
+        
+        function inspectFormState() {
+            log('🔍 Inspecionando estado completo do formulário...', 'debug');
+            
+            const doc = getIframeDocument();
+            if (!doc) return;
+            
+            // Verificar todos os elementos relevantes
+            const form = doc.querySelector('form');
+            const emailField = doc.querySelector('input[type="email"], input[name="email"], #email');
+            const passwordField = doc.querySelector('input[type="password"], input[name="password"], #password');
+            const submitButton = doc.querySelector('button[type="submit"], button:contains("Entrar"), .login-button');
+            const allButtons = doc.querySelectorAll('button');
+            
+            log('📊 === ESTADO DO FORMULÁRIO ===', 'debug');
+            
+            if (form) {
+                log(`📋 Formulário encontrado: ${form.tagName}`, 'debug');
+                log(`📋 Classes do formulário: ${form.className}`, 'debug');
+            }
+            
+            if (emailField) {
+                log(`📧 Campo email: valor="${emailField.value}", válido=${emailField.checkValidity()}`, 'debug');
+            }
+            
+            if (passwordField) {
+                log(`🔒 Campo password: comprimento=${passwordField.value.length}, válido=${passwordField.checkValidity()}`, 'debug');
+            }
+            
+            log(`🎯 Botões encontrados: ${allButtons.length}`, 'debug');
+            allButtons.forEach((btn, index) => {
+                log(`🎯 Botão ${index + 1}: "${btn.textContent.trim()}" (desabilitado: ${btn.disabled}, tipo: ${btn.type})`, 'debug');
+            });
+            
+            // Verificar estados de loading/submitting
+            const loadingElements = doc.querySelectorAll('[data-loading], .loading, .submitting');
+            if (loadingElements.length > 0) {
+                log(`⏳ Elementos em loading encontrados: ${loadingElements.length}`, 'warning');
+            }
+            
+            // Verificar erros visíveis
+            const errorElements = doc.querySelectorAll('.error, .alert-error, [role="alert"]');
+            if (errorElements.length > 0) {
+                log(`❌ Elementos de erro encontrados: ${errorElements.length}`, 'error');
+                errorElements.forEach((el, index) => {
+                    log(`❌ Erro ${index + 1}: ${el.textContent.trim()}`, 'error');
+                });
+            }
+        }
+        
+        // Inicialização
+        window.addEventListener('load', () => {
+            log('🎬 Teste de debug carregado', 'success');
+            log('📋 Instruções:', 'info');
+            log('1. Clique em "Preencher e Submeter" para testar o fluxo completo', 'info');
+            log('2. Use "Verificar Validação" para verificar se os campos estão válidos', 'info');
+            log('3. "Teste Login Direto" testa a API do Supabase diretamente', 'info');
+            log('4. "Inspecionar Estado" mostra detalhes do formulário', 'info');
+        });
+    </script>
+</body>
+</html>

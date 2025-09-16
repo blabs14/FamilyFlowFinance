@@ -33,6 +33,10 @@ export function CategorySelect({ value, onValueChange, placeholder = "Selecionar
   const createCategoryMutation = useCreateCategory();
   const { toast } = useToast();
 
+  // Debug temporário
+  console.log('CategorySelect - categories:', categories);
+  console.log('CategorySelect - isLoading:', isLoading);
+
   const selectedCategory = categories.find(category => category.id === value);
 
   const handleCreateCategory = async () => {

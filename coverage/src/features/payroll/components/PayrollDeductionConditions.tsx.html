@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/456</span>
+                <span class='fraction'>0/457</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/456</span>
+                <span class='fraction'>0/457</span>
             </div>
         
             
@@ -744,7 +744,9 @@
 <a name='L679'></a><a href='#L679'>679</a>
 <a name='L680'></a><a href='#L680'>680</a>
 <a name='L681'></a><a href='#L681'>681</a>
-<a name='L682'></a><a href='#L682'>682</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L682'></a><a href='#L682'>682</a>
+<a name='L683'></a><a href='#L683'>683</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1441,6 +1443,7 @@
 <span class="cstat-no" title="statement not covered" >import { z } from 'zod';</span>
 <span class="cstat-no" title="statement not covered" >import { useAuth } from '@/contexts/AuthContext';</span>
 <span class="cstat-no" title="statement not covered" >import { useToast } from '@/hooks/use-toast';</span>
+<span class="cstat-no" title="statement not covered" >import { logger } from '@/shared/lib/logger';</span>
 <span class="cstat-no" title="statement not covered" >import { deductionInferenceService } from '../services/deductionInferenceService';</span>
 import { PayrollDeductionConditionsFormData } from '../types';
 &nbsp;
@@ -1550,7 +1553,7 @@ interface InferenceResult {
 <span class="cstat-no" title="statement not covered" >          });</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" >      } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >        console.error('Erro ao carregar condições:', error);</span>
+<span class="cstat-no" title="statement not covered" >        logger.error('Erro ao carregar condições:', error);</span>
 <span class="cstat-no" title="statement not covered" >        toast({</span>
 <span class="cstat-no" title="statement not covered" >          title: 'Erro',</span>
 <span class="cstat-no" title="statement not covered" >          description: 'Não foi possível carregar as condições existentes.',</span>
@@ -1579,7 +1582,7 @@ interface InferenceResult {
 <span class="cstat-no" title="statement not covered" >        description: 'Condições guardadas com sucesso.'</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro ao guardar condições:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Erro ao guardar condições:', error);</span>
 <span class="cstat-no" title="statement not covered" >      toast({</span>
 <span class="cstat-no" title="statement not covered" >        title: 'Erro',</span>
 <span class="cstat-no" title="statement not covered" >        description: 'Não foi possível guardar as condições.',</span>
@@ -1619,7 +1622,7 @@ interface InferenceResult {
 <span class="cstat-no" title="statement not covered" >        description: 'Percentagens recalculadas com base nas condições.'</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro ao recalcular percentagens:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Erro ao recalcular percentagens:', error);</span>
 <span class="cstat-no" title="statement not covered" >      toast({</span>
 <span class="cstat-no" title="statement not covered" >        title: 'Erro',</span>
 <span class="cstat-no" title="statement not covered" >        description: 'Não foi possível recalcular as percentagens.',</span>
@@ -2078,7 +2081,7 @@ interface InferenceResult {
 <span class="cstat-no" title="statement not covered" >                        &lt;AlertDescription&gt;</span>
 <span class="cstat-no" title="statement not covered" >                          &lt;div className="space-y-1"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                            {inferenceResult.warnings.map((warning, index) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >                              &lt;p key={index} className="text-xs"&gt;{warning}&lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >                              &lt;p key={`deduction-warning-${warning.replace(/\s+/g, '-').toLowerCase().slice(0, 20)}-${index}`} className="text-xs"&gt;{warning}&lt;/p&gt;</span>
                             ))}
                           &lt;/div&gt;
                         &lt;/AlertDescription&gt;
@@ -2113,7 +2116,7 @@ interface InferenceResult {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.132Z
+                at 2025-09-14T17:15:08.717Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

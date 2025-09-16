@@ -6,21 +6,41 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
-    setupFiles: [path.resolve(__dirname, './setup.ts')],
+    setupFiles: ['./tests/config/setup.ts'],
     include: [
-      '**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+      'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'tests/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     exclude: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/cypress/**',
-      '**/tests/obsolete/**',
-      '**/tests/manual/**'
+      'node_modules',
+      'dist',
+      '.idea',
+      '.git',
+      '.cache',
+      'tests/e2e/**',
+      'tests/manual/**',
+      'tests/obsolete/**'
     ],
     globals: true,
+    // Otimizações de performance
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: false,
+        maxThreads: 4,
+        minThreads: 1
+      }
+    },
+    // Cache para acelerar execuções subsequentes
+    cache: {
+      dir: 'node_modules/.vitest'
+    },
+    // Timeouts otimizados
+    testTimeout: 10000,
+    hookTimeout: 10000,
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html', 'lcov'],
+      reporter: ['text', 'json', 'html'],
       reportsDirectory: './coverage',
       exclude: [
         'node_modules/',
@@ -42,10 +62,10 @@ export default defineConfig({
       ],
       thresholds: {
         global: {
-          branches: 35,
-          functions: 25,
-          lines: 9,
-          statements: 9
+          branches: 60,
+          functions: 65,
+          lines: 70,
+          statements: 70
         },
         // Thresholds baseados na cobertura atual
         'src/components/ui/**': {

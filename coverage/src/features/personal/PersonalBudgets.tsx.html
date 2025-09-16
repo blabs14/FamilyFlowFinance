@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/451</span>
+                <span class='fraction'>0/452</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/451</span>
+                <span class='fraction'>0/452</span>
             </div>
         
             
@@ -659,8 +659,10 @@
 <a name='L594'></a><a href='#L594'>594</a>
 <a name='L595'></a><a href='#L595'>595</a>
 <a name='L596'></a><a href='#L596'>596</a>
-<a name='L597'></a><a href='#L597'>597</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L597'></a><a href='#L597'>597</a>
+<a name='L598'></a><a href='#L598'>598</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1275,6 +1277,7 @@ import { usePersonal } from './PersonalProvider';
 <span class="cstat-no" title="statement not covered" >import { useAuth } from '../../contexts/AuthContext';</span>
 <span class="cstat-no" title="statement not covered" >import { budgetSchema } from '../../validation/budgetSchema';</span>
 <span class="cstat-no" title="statement not covered" >import { useToast } from '../../hooks/use-toast';</span>
+<span class="cstat-no" title="statement not covered" >import { logger } from '../../shared/lib/logger';</span>
 <span class="cstat-no" title="statement not covered" >import { useConfirmation } from '../../hooks/useConfirmation';</span>
 <span class="cstat-no" title="statement not covered" >import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';</span>
 <span class="cstat-no" title="statement not covered" >import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../components/ui/accordion';</span>
@@ -1387,14 +1390,14 @@ interface BudgetFormData {
 <span class="cstat-no" title="statement not covered" >      } as const;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      if (editBudget) {</span>
-<span class="cstat-no" title="statement not covered" >        const result = await update(editBudget.id, payload as any, user.id);</span>
+<span class="cstat-no" title="statement not covered" >        const result = await update(editBudget.id, payload, user.id);</span>
 <span class="cstat-no" title="statement not covered" >        if (result.error) {</span>
 <span class="cstat-no" title="statement not covered" >          toast({</span>
 <span class="cstat-no" title="statement not covered" >            title: "Erro",</span>
-<span class="cstat-no" title="statement not covered" >            description: (result.error as any)?.message || 'Erro ao atualizar orçamento',</span>
+<span class="cstat-no" title="statement not covered" >            description: result.error?.message || 'Erro ao atualizar orçamento',</span>
 <span class="cstat-no" title="statement not covered" >            variant: "destructive",</span>
 <span class="cstat-no" title="statement not covered" >          });</span>
-<span class="cstat-no" title="statement not covered" >          console.error('[PersonalBudgets] update budget error:', result.error);</span>
+<span class="cstat-no" title="statement not covered" >          logger.error('[PersonalBudgets] update budget error:', result.error);</span>
 <span class="cstat-no" title="statement not covered" >        } else {</span>
 <span class="cstat-no" title="statement not covered" >          toast({</span>
 <span class="cstat-no" title="statement not covered" >            title: "Sucesso",</span>
@@ -1403,14 +1406,14 @@ interface BudgetFormData {
 <span class="cstat-no" title="statement not covered" >          handleClose();</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" >      } else {</span>
-<span class="cstat-no" title="statement not covered" >        const result = await create(payload as any, user.id);</span>
+<span class="cstat-no" title="statement not covered" >        const result = await create(payload, user.id);</span>
 <span class="cstat-no" title="statement not covered" >        if (result.error) {</span>
 <span class="cstat-no" title="statement not covered" >          toast({</span>
 <span class="cstat-no" title="statement not covered" >            title: "Erro",</span>
-<span class="cstat-no" title="statement not covered" >            description: (result.error as any)?.message || 'Erro ao criar orçamento',</span>
+<span class="cstat-no" title="statement not covered" >            description: result.error?.message || 'Erro ao criar orçamento',</span>
 <span class="cstat-no" title="statement not covered" >            variant: "destructive",</span>
 <span class="cstat-no" title="statement not covered" >          });</span>
-<span class="cstat-no" title="statement not covered" >          console.error('[PersonalBudgets] create budget error:', result.error);</span>
+<span class="cstat-no" title="statement not covered" >          logger.error('[PersonalBudgets] create budget error:', result.error);</span>
 <span class="cstat-no" title="statement not covered" >        } else {</span>
 <span class="cstat-no" title="statement not covered" >          toast({</span>
 <span class="cstat-no" title="statement not covered" >            title: "Sucesso",</span>
@@ -1422,7 +1425,7 @@ interface BudgetFormData {
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
 <span class="cstat-no" title="statement not covered" >      toast({</span>
 <span class="cstat-no" title="statement not covered" >        title: "Erro",</span>
-<span class="cstat-no" title="statement not covered" >        description: (error as any)?.message || "Erro inesperado",</span>
+<span class="cstat-no" title="statement not covered" >        description: error?.message || "Erro inesperado",</span>
 <span class="cstat-no" title="statement not covered" >        variant: "destructive",</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
 <span class="cstat-no" title="statement not covered" >      setIsSubmitting(false);</span>
@@ -1570,7 +1573,7 @@ interface BudgetFormData {
         &lt;/div&gt;
 <span class="cstat-no" title="statement not covered" >        &lt;div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;Label&gt;Estado&lt;/Label&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Select value={filterStatus} onValueChange={(v) =&gt; setFilterStatus(v as any)}&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Select value={filterStatus} onValueChange={(v) =&gt; setFilterStatus(v as FilterStatus)}&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;SelectTrigger&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;SelectValue /&gt;</span>
             &lt;/SelectTrigger&gt;
@@ -1626,7 +1629,7 @@ interface BudgetFormData {
 <span class="cstat-no" title="statement not covered" >                    {(() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >                      const categoryName = getCategoryName(budget.categoria_id);</span>
 <span class="cstat-no" title="statement not covered" >                      const iconName = getCategoryIcon(categoryName);</span>
-<span class="cstat-no" title="statement not covered" >                      const IconComponent = (LucideIcons as any)[iconName] || LucideIcons.Target;</span>
+<span class="cstat-no" title="statement not covered" >                      const IconComponent = (LucideIcons as Record&lt;string, React.ComponentType&lt;any&gt;&gt;)[iconName] || LucideIcons.Target;</span>
 <span class="cstat-no" title="statement not covered" >                      return &lt;IconComponent className="h-4 w-4 text-muted-foreground flex-shrink-0" /&gt;;</span>
 <span class="cstat-no" title="statement not covered" >                    })()}</span>
                   &lt;/CardHeader&gt;
@@ -1813,7 +1816,7 @@ interface BudgetFormData {
 <span class="cstat-no" title="statement not covered" >      try {</span>
 <span class="cstat-no" title="statement not covered" >        const { data, error } = await getAuditLogsByRow('budgets', budgetId, 20);</span>
 <span class="cstat-no" title="statement not covered" >        if (!cancelled) {</span>
-<span class="cstat-no" title="statement not covered" >          if (!error &amp;&amp; Array.isArray(data)) setEntries(data as unknown as AuditEntry[]);</span>
+<span class="cstat-no" title="statement not covered" >          if (!error &amp;&amp; Array.isArray(data)) setEntries(data);</span>
 <span class="cstat-no" title="statement not covered" >          else setEntries([]);</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" >      } finally {</span>
@@ -1851,14 +1854,14 @@ interface BudgetFormData {
 <span class="cstat-no" title="statement not covered" >      })}</span>
     &lt;/div&gt;
   );
-<span class="cstat-no" title="statement not covered" >}; </span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >};</span></pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.132Z
+                at 2025-09-14T17:15:08.717Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

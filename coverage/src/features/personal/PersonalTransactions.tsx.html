@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/450</span>
+                <span class='fraction'>0/443</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/450</span>
+                <span class='fraction'>0/443</span>
             </div>
         
             
@@ -678,13 +678,7 @@
 <a name='L613'></a><a href='#L613'>613</a>
 <a name='L614'></a><a href='#L614'>614</a>
 <a name='L615'></a><a href='#L615'>615</a>
-<a name='L616'></a><a href='#L616'>616</a>
-<a name='L617'></a><a href='#L617'>617</a>
-<a name='L618'></a><a href='#L618'>618</a>
-<a name='L619'></a><a href='#L619'>619</a>
-<a name='L620'></a><a href='#L620'>620</a>
-<a name='L621'></a><a href='#L621'>621</a>
-<a name='L622'></a><a href='#L622'>622</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L616'></a><a href='#L616'>616</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -827,13 +821,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1437,7 +1425,7 @@ import { formatCurrency } from '../../lib/utils';
 <span class="cstat-no" title="statement not covered" >        description: `Relatório exportado como ${filename}`,</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error: any) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro na exportação:', error);</span>
+<span class="cstat-no" title="statement not covered" >      // Error logging handled by error boundary</span>
 <span class="cstat-no" title="statement not covered" >      toast({</span>
 <span class="cstat-no" title="statement not covered" >        title: 'Erro na exportação',</span>
 <span class="cstat-no" title="statement not covered" >        description: error.message || 'Ocorreu um erro ao exportar o relatório',</span>
@@ -1448,13 +1436,7 @@ import { formatCurrency } from '../../lib/utils';
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  };</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  // Estado para métricas filtradas</span>
-<span class="cstat-no" title="statement not covered" >  const [filteredMetrics, setFilteredMetrics] = useState({</span>
-<span class="cstat-no" title="statement not covered" >    totalIncome: 0,</span>
-<span class="cstat-no" title="statement not covered" >    totalExpenses: 0,</span>
-<span class="cstat-no" title="statement not covered" >    netBalance: 0,</span>
-<span class="cstat-no" title="statement not covered" >    transactionCount: 0</span>
-<span class="cstat-no" title="statement not covered" >  });</span>
+&nbsp;
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  // Calcular métricas totais (sem filtros)</span>
 <span class="cstat-no" title="statement not covered" >  const totalIncome = transactions</span>
@@ -1552,8 +1534,8 @@ import { formatCurrency } from '../../lib/utils';
 <span class="cstat-no" title="statement not covered" >    });</span>
 <span class="cstat-no" title="statement not covered" >  }, [transactions, searchTerm, selectedAccount, selectedCategory, selectedType, dateFilter, dateRange]);</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  // Calcular e enviar métricas filtradas</span>
-<span class="cstat-no" title="statement not covered" >  React.useEffect(() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  // Remover estado e usar memo para métricas filtradas</span>
+<span class="cstat-no" title="statement not covered" >  const filteredMetrics = React.useMemo(() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    const filteredIncome = filteredTransactions</span>
 <span class="cstat-no" title="statement not covered" >      .filter(t =&gt; t.tipo === 'receita')</span>
 <span class="cstat-no" title="statement not covered" >      .reduce((sum, t) =&gt; sum + t.valor, 0);</span>
@@ -1565,12 +1547,12 @@ import { formatCurrency } from '../../lib/utils';
 <span class="cstat-no" title="statement not covered" >    const filteredNetBalance = filteredIncome - filteredExpenses;</span>
 <span class="cstat-no" title="statement not covered" >    const filteredCount = filteredTransactions.length;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    setFilteredMetrics({</span>
+<span class="cstat-no" title="statement not covered" >    return {</span>
 <span class="cstat-no" title="statement not covered" >      totalIncome: filteredIncome,</span>
 <span class="cstat-no" title="statement not covered" >      totalExpenses: filteredExpenses,</span>
 <span class="cstat-no" title="statement not covered" >      netBalance: filteredNetBalance,</span>
 <span class="cstat-no" title="statement not covered" >      transactionCount: filteredCount</span>
-<span class="cstat-no" title="statement not covered" >    });</span>
+<span class="cstat-no" title="statement not covered" >    };</span>
 <span class="cstat-no" title="statement not covered" >  }, [filteredTransactions]);</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const getDateFilterText = () =&gt; {</span>
@@ -1926,14 +1908,14 @@ import { formatCurrency } from '../../lib/utils';
   );
 <span class="cstat-no" title="statement not covered" >};</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default PersonalTransactions; </span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >export default PersonalTransactions;</span></pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.132Z
+                at 2025-09-14T17:15:08.717Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

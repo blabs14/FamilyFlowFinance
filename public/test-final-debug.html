@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Final - Formulário Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 500px;
+            gap: 20px;
+        }
+        .iframe-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .controls {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+        iframe {
+            width: 100%;
+            height: 700px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px 0;
+            width: 100%;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .log-container {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
+            margin-top: 10px;
+        }
+        .log-entry {
+            margin: 1px 0;
+            padding: 2px 4px;
+            border-radius: 2px;
+            word-wrap: break-word;
+        }
+        .log-info { background: #d1ecf1; color: #0c5460; }
+        .log-success { background: #d4edda; color: #155724; }
+        .log-warning { background: #fff3cd; color: #856404; }
+        .log-error { background: #f8d7da; color: #721c24; }
+        .log-debug { background: #e2e3e5; color: #383d41; }
+        h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.warning { background: #fff3cd; color: #856404; }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .test-group {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .test-group h4 {
+            margin: 0 0 10px 0;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Final - Formulário de Login</h1>
+    
+    <div class="container">
+        <div class="iframe-container">
+            <h3>Página de Login</h3>
+            <iframe id="loginFrame" src="/login"></iframe>
+        </div>
+        
+        <div class="controls">
+            <h3>Controlos de Debug</h3>
+            
+            <div class="test-group">
+                <h4>📝 Dados de Teste</h4>
+                <label for="testEmail">Email:</label>
+                <input type="email" id="testEmail" value="teste@exemplo.com">
+                
+                <label for="testPassword">Password:</label>
+                <input type="password" id="testPassword" value="123456">
+            </div>
+            
+            <div class="test-group">
+                <h4>🧪 Testes Básicos</h4>
+                <button onclick="fillAndSubmit()">🚀 Preencher e Submeter</button>
+                <button onclick="checkFormValidation()">✅ Verificar Validação</button>
+                <button onclick="monitorAuthState()">👁️ Monitorizar AuthContext</button>
+                <button onclick="checkReactHookForm()">📋 Verificar React Hook Form</button>
+            </div>
+            
+            <div class="test-group">
+                <h4>🔧 Testes Avançados</h4>
+                <button onclick="simulateUserFlow()">👤 Simular Fluxo Utilizador</button>
+                <button onclick="checkEventListeners()">🎧 Verificar Event Listeners</button>
+                <button onclick="inspectButtonState()">🔘 Inspecionar Botão</button>
+                <button onclick="testFormSubmission()">📤 Testar Submissão</button>
+            </div>
+            
+            <div class="test-group">
+                <h4>🛠️ Utilitários</h4>
+                <button onclick="reloadPage()">🔄 Recarregar</button>
+                <button onclick="clearLogs()">🧹 Limpar Logs</button>
+                <button onclick="exportLogs()">💾 Exportar Logs</button>
+            </div>
+            
+            <div id="status" class="status warning">Aguardando ação...</div>
+            
+            <div class="log-container" id="logContainer">
+                <div class="log-entry log-info">Sistema de debug iniciado...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logCount = 0;
+        let monitoringInterval = null;
+        
+        function log(message, type = 'info') {
+            logCount++;
+            const timestamp = new Date().toLocaleTimeString();
+            const logContainer = document.getElementById('logContainer');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            if (logCount > 150) {
+                const firstLog = logContainer.querySelector('.log-entry');
+                if (firstLog) firstLog.remove();
+                logCount--;
+            }
+        }
+        
+        function updateStatus(message, type = 'warning') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        function getIframeDocument() {
+            const iframe = document.getElementById('loginFrame');
+            try {
+                return iframe.contentDocument || iframe.contentWindow.document;
+            } catch (e) {
+                log('❌ Erro ao aceder ao iframe: ' + e.message, 'error');
+                return null;
+            }
+        }
+        
+        function getIframeWindow() {
+            const iframe = document.getElementById('loginFrame');
+            try {
+                return iframe.contentWindow;
+            } catch (e) {
+                log('❌ Erro ao aceder à window do iframe: ' + e.message, 'error');
+                return null;
+            }
+        }
+        
+        async function fillAndSubmit() {
+            log('🚀 Iniciando teste completo: preencher e submeter', 'info');
+            updateStatus('Executando teste completo...', 'warning');
+            
+            const doc = getIframeDocument();
+            if (!doc) return;
+            
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            
+            // 1. Preencher campos
+            log('📝 Passo 1: Preenchendo campos...', 'info');
+            const emailInput = doc.querySelector('input[type="email"], input[id="email"]');
+            const passwordInput = doc.querySelector('input[type="password"], input[id="password"]');
+            
+            if (!emailInput || !passwordInput) {
+                log('❌ Campos não encontrados', 'error');
+                updateStatus('Erro: Campos não encontrados', 'error');
+                return;
+            }
+            
+            emailInput.value = email;
+            passwordInput.value = password;
+            
+            // Disparar eventos
+            ['input', 'change', 'blur'].forEach(eventType => {
+                emailInput.dispatchEvent(new Event(eventType, { bubbles: true }));
+                passwordInput.dispatchEvent(new Event(eventType, { bubbles: true }));
+            });
+            
+            log(`✅ Campos preenchidos: ${email} / ${password}`, 'success');
+            
+            // 2. Aguardar um pouco para React processar
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // 3. Verificar estado do botão
+            log('🔘 Passo 2: Verificando estado do botão...', 'info');
+            const submitButton = doc.querySelector('button[type="submit"]');
+            if (submitButton) {
+                log(`Botão: disabled=${submitButton.disabled}, text="${submitButton.textContent?.trim()}"`, 'debug');
+                
+                if (submitButton.disabled) {
+                    log('⚠️ Botão está desabilitado!', 'warning');
+                    updateStatus('Botão desabilitado', 'warning');
+                    return;
+                }
+            }
+            
+            // 4. Submeter formulário
+            log('📤 Passo 3: Submetendo formulário...', 'info');
+            const form = doc.querySelector('form');
+            if (form) {
+                form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                log('✅ Evento submit disparado', 'success');
+                updateStatus('Formulário submetido', 'success');
+            } else {
+                log('❌ Formulário não encontrado', 'error');
+                updateStatus('Erro: Formulário não encontrado', 'error');
+            }
+        }
+        
+        function checkFormValidation() {
+            log('✅ Verificando validação do formulário...', 'info');
+            const doc = getIframeDocument();
+            if (!doc) return;
+            
+            const form = doc.querySelector('form');
+            const emailInput = doc.querySelector('input[type="email"]');
+            const passwordInput = doc.querySelector('input[type="password"]');
+            
+            if (form && emailInput && passwordInput) {
+                log('📋 Estado da validação:', 'debug');
+                log(`  - Form válido: ${form.checkValidity()}`, 'debug');
+                log(`  - Email válido: ${emailInput.checkValidity()}`, 'debug');
+                log(`  - Password válido: ${passwordInput.checkValidity()}`, 'debug');
+                log(`  - Email valor: "${emailInput.value}"`, 'debug');
+                log(`  - Password valor: "${passwordInput.value}" (length: ${passwordInput.value.length})`, 'debug');
+                
+                // Verificar mensagens de erro
+                const errorElements = doc.querySelectorAll('.text-red-600, .text-red-500, [class*="error"]');
+                if (errorElements.length > 0) {
+                    log(`⚠️ Encontrados ${errorElements.length} elementos de erro`, 'warning');
+                    errorElements.forEach((el, i) => {
+                        log(`  Erro ${i+1}: "${el.textContent?.trim()}"`, 'warning');
+                    });
+                } else {
+                    log('✅ Nenhum erro de validação encontrado', 'success');
+                }
+                
+                updateStatus('Validação verificada - ver logs', 'success');
+            } else {
+                log('❌ Elementos do formulário não encontrados', 'error');
+                updateStatus('Erro: Elementos não encontrados', 'error');
+            }
+        }
+        
+        function monitorAuthState() {
+            log('👁️ Iniciando monitorização do AuthContext...', 'info');
+            updateStatus('Monitorizando AuthContext...', 'warning');
+            
+            if (monitoringInterval) {
+                clearInterval(monitoringInterval);
+            }
+            
+            let lastState = null;
+            monitoringInterval = setInterval(() => {
+                const win = getIframeWindow();
+                if (!win) return;
+                
+                try {
+                    // Tentar aceder ao console do iframe para ver os logs
+                    const doc = getIframeDocument();
+                    if (doc) {
+                        // Procurar pelo elemento de debug que mostra o estado
+                        const debugElement = doc.querySelector('.bg-yellow-50');
+                        if (debugElement) {
+                            const currentState = debugElement.textContent;
+                            if (currentState !== lastState) {
+                                log(`🔄 Estado AuthContext: ${currentState.replace(/\s+/g, ' ').trim()}`, 'debug');
+                                lastState = currentState;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // Ignorar erros de acesso
+                }
+            }, 1000);
+            
+            // Parar após 30 segundos
+            setTimeout(() => {
+                if (monitoringInterval) {
+                    clearInterval(monitoringInterval);
+                    monitoringInterval = null;
+                    log('⏹️ Monitorização parada', 'info');
+                    updateStatus('Monitorização concluída', 'success');
+                }
+            }, 30000);
+        }
+        
+        function checkReactHookForm() {
+            log('📋 Verificando React Hook Form...', 'info');
+            const doc = getIframeDocument();
+            if (!doc) return;
+            
+            const form = doc.querySelector('form');
+            if (form) {
+                log('📝 Formulário encontrado', 'success');
+                
+                // Verificar atributos do formulário
+                log(`  - Action: ${form.action || 'não definido'}`, 'debug');
+                log(`  - Method: ${form.method || 'não definido'}`, 'debug');
+                log(`  - NoValidate: ${form.noValidate}`, 'debug');
+                
+                // Verificar inputs
+                const inputs = form.querySelectorAll('input');
+                log(`  - Número de inputs: ${inputs.length}`, 'debug');
+                
+                inputs.forEach((input, i) => {
+                    log(`  Input ${i+1}: type=${input.type}, name=${input.name || 'sem nome'}, value="${input.value}"`, 'debug');
+                });
+                
+                updateStatus('React Hook Form verificado', 'success');
+            } else {
+                log('❌ Formulário não encontrado', 'error');
+                updateStatus('Erro: Formulário não encontrado', 'error');
+            }
+        }
+        
+        function simulateUserFlow() {
+            log('👤 Simulando fluxo completo do utilizador...', 'info');
+            updateStatus('Simulando fluxo utilizador...', 'warning');
+            
+            // Simular digitação lenta
+            setTimeout(() => fillAndSubmit(), 1000);
+        }
+        
+        function checkEventListeners() {
+            log('🎧 Verificando event listeners...', 'info');
+            const doc = getIframeDocument();
+            if (!doc) return;
+            
+            const form = doc.querySelector('form');
+            const submitButton = doc.querySelector('button[type="submit"]');
+            
+            if (form) {
+                log('📋 Formulário tem event listeners (não é possível listar)', 'debug');
+            }
+            
+            if (submitButton) {
+                log('🔘 Botão de submit encontrado', 'debug');
+                log(`  - Disabled: ${submitButton.disabled}`, 'debug');
+                log(`  - Type: ${submitButton.type}`, 'debug');
+                log(`  - Classes: ${submitButton.className}`, 'debug');
+            }
+            
+            updateStatus('Event listeners verificados', 'success');
+        }
+        
+        function inspectButtonState() {
+            log('🔘 Inspecionando estado detalhado do botão...', 'info');
+            const doc = getIframeDocument();
+            if (!doc) return;
+            
+            const submitButton = doc.querySelector('button[type="submit"]');
+            if (submitButton) {
+                log('🔍 Estado detalhado do botão:', 'debug');
+                log(`  - Disabled: ${submitButton.disabled}`, 'debug');
+                log(`  - Text: "${submitButton.textContent?.trim()}"`, 'debug');
+                log(`  - Classes: ${submitButton.className}`, 'debug');
+                log(`  - Style: ${submitButton.style.cssText || 'nenhum'}`, 'debug');
+                log(`  - TabIndex: ${submitButton.tabIndex}`, 'debug');
+                log(`  - Type: ${submitButton.type}`, 'debug');
+                
+                // Verificar se tem loader
+                const loader = submitButton.querySelector('.animate-spin');
+                log(`  - Tem loader: ${!!loader}`, 'debug');
+                
+                updateStatus('Botão inspecionado - ver logs', 'success');
+            } else {
+                log('❌ Botão não encontrado', 'error');
+                updateStatus('Erro: Botão não encontrado', 'error');
+            }
+        }
+        
+        function testFormSubmission() {
+            log('📤 Testando submissão do formulário...', 'info');
+            const doc = getIframeDocument();
+            if (!doc) return;
+            
+            const form = doc.querySelector('form');
+            if (form) {
+                // Adicionar listener temporário
+                const handleSubmit = (e) => {
+                    log('🎯 Evento submit capturado!', 'success');
+                    log(`  - Prevented: ${e.defaultPrevented}`, 'debug');
+                    log(`  - Target: ${e.target.tagName}`, 'debug');
+                    form.removeEventListener('submit', handleSubmit);
+                };
+                
+                form.addEventListener('submit', handleSubmit);
+                
+                // Disparar submit
+                const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                form.dispatchEvent(submitEvent);
+                
+                updateStatus('Teste de submissão executado', 'success');
+            } else {
+                log('❌ Formulário não encontrado', 'error');
+                updateStatus('Erro: Formulário não encontrado', 'error');
+            }
+        }
+        
+        function reloadPage() {
+            log('🔄 Recarregando página...', 'info');
+            const iframe = document.getElementById('loginFrame');
+            iframe.src = iframe.src;
+            updateStatus('Página recarregada', 'success');
+        }
+        
+        function clearLogs() {
+            const logContainer = document.getElementById('logContainer');
+            logContainer.innerHTML = '<div class="log-entry log-info">Logs limpos. Sistema pronto.</div>';
+            logCount = 1;
+            updateStatus('Logs limpos', 'success');
+        }
+        
+        function exportLogs() {
+            const logs = document.getElementById('logContainer').innerText;
+            const blob = new Blob([logs], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `debug-logs-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            log('💾 Logs exportados', 'success');
+            updateStatus('Logs exportados', 'success');
+        }
+        
+        // Monitorizar carregamento do iframe
+        document.getElementById('loginFrame').addEventListener('load', function() {
+            log('🔄 Iframe carregado', 'success');
+            updateStatus('Página carregada', 'success');
+        });
+        
+        // Log inicial
+        log('🚀 Sistema de debug final iniciado', 'success');
+        log('📋 Use os controlos para diagnosticar o problema do formulário', 'info');
+    </script>
+</body>
+</html>

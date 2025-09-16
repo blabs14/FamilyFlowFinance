@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/416</span>
+                <span class='fraction'>0/417</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/416</span>
+                <span class='fraction'>0/417</span>
             </div>
         
             
@@ -629,7 +629,8 @@
 <a name='L564'></a><a href='#L564'>564</a>
 <a name='L565'></a><a href='#L565'>565</a>
 <a name='L566'></a><a href='#L566'>566</a>
-<a name='L567'></a><a href='#L567'>567</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L567'></a><a href='#L567'>567</a>
+<a name='L568'></a><a href='#L568'>568</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -648,6 +649,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1215,6 +1217,7 @@
 <span class="cstat-no" title="statement not covered" >import { deductionInferenceService } from '../services/deductionInferenceService';</span>
 import { PayrollDeductionConfigFormData } from '../types';
 <span class="cstat-no" title="statement not covered" >import { PayrollDeductionConditions } from './PayrollDeductionConditions';</span>
+<span class="cstat-no" title="statement not covered" >import { logger } from '@/shared/lib/logger';</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >// Schema de validação</span>
 <span class="cstat-no" title="statement not covered" >const deductionSchema = z.object({</span>
@@ -1284,7 +1287,7 @@ interface PayrollDeductionConfigProps {
 <span class="cstat-no" title="statement not covered" >          setAutoDeductionsEnabled(false);</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" >      } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >        console.error('Erro ao carregar configuração de descontos:', error);</span>
+<span class="cstat-no" title="statement not covered" >        logger.error('Erro ao carregar configuração de descontos:', error);</span>
 <span class="cstat-no" title="statement not covered" >        toast({</span>
 <span class="cstat-no" title="statement not covered" >          title: 'Erro',</span>
 <span class="cstat-no" title="statement not covered" >          description: 'Não foi possível carregar a configuração de descontos.',</span>
@@ -1316,7 +1319,7 @@ interface PayrollDeductionConfigProps {
 <span class="cstat-no" title="statement not covered" >        description: 'Configuração de descontos guardada com sucesso.'</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro ao guardar configuração de descontos:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Erro ao guardar configuração de descontos:', error);</span>
 <span class="cstat-no" title="statement not covered" >      toast({</span>
 <span class="cstat-no" title="statement not covered" >        title: 'Erro',</span>
 <span class="cstat-no" title="statement not covered" >        description: 'Não foi possível guardar a configuração de descontos.',</span>
@@ -1342,7 +1345,7 @@ interface PayrollDeductionConfigProps {
 <span class="cstat-no" title="statement not covered" >          : 'Cálculo automático desativado. Pode agora editar as percentagens manualmente.'</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro ao alterar modo automático:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Erro ao alterar modo automático:', error);</span>
 <span class="cstat-no" title="statement not covered" >      toast({</span>
 <span class="cstat-no" title="statement not covered" >        title: 'Erro',</span>
 <span class="cstat-no" title="statement not covered" >        description: 'Não foi possível alterar o modo de cálculo.',</span>
@@ -1768,7 +1771,7 @@ interface PayrollDeductionConfigProps {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.132Z
+                at 2025-09-14T17:15:08.717Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

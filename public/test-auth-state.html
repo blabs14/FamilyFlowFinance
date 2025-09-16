@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Estado Auth</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            background: #f3f4f6;
+            border-left: 4px solid #3b82f6;
+        }
+        .error {
+            background: #fef2f2;
+            border-left-color: #ef4444;
+            color: #dc2626;
+        }
+        .success {
+            background: #f0fdf4;
+            border-left-color: #22c55e;
+            color: #16a34a;
+        }
+        .log {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        .button:hover {
+            background: #2563eb;
+        }
+        .button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Teste Estado AuthContext</h1>
+        <p>Este teste verifica o estado do Supabase Auth e simula o comportamento do AuthContext.</p>
+        
+        <div id="authStatus" class="status">
+            <strong>Estado Auth:</strong> Carregando...
+        </div>
+        
+        <button id="checkAuthBtn" class="button">Verificar Estado Auth</button>
+        <button id="testLoginBtn" class="button">Testar Login</button>
+        <button id="clearLogsBtn" class="button">Limpar Logs</button>
+        
+        <h3>📋 Logs Detalhados:</h3>
+        <div id="logs" class="log"></div>
+    </div>
+
+    <script type="module">
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://hnqkqjqjvjqjqjqjqjqj.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhucWtxanFqdmpxanFqcWpxanFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NzI4NzQsImV4cCI6MjA1MDU0ODg3NH0.Ey_Ej8Ey_Ej8Ey_Ej8Ey_Ej8Ey_Ej8Ey_Ej8Ey_Ej8';
+        
+        let supabase;
+        let authState = {
+            loading: true,
+            user: null,
+            session: null,
+            error: null
+        };
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('logs');
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            logElement.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(`${prefix} ${message}`);
+        }
+        
+        function updateAuthStatus() {
+            const statusElement = document.getElementById('authStatus');
+            const testLoginBtn = document.getElementById('testLoginBtn');
+            
+            let statusClass = 'status';
+            let statusText = '';
+            
+            if (authState.error) {
+                statusClass += ' error';
+                statusText = `❌ Erro: ${authState.error}`;
+            } else if (authState.loading) {
+                statusText = '⏳ Carregando...';
+            } else if (authState.user) {
+                statusClass += ' success';
+                statusText = `✅ Autenticado: ${authState.user.email}`;
+            } else {
+                statusText = '🔓 Não autenticado';
+            }
+            
+            statusElement.className = statusClass;
+            statusElement.innerHTML = `
+                <strong>Estado Auth:</strong> ${statusText}<br>
+                <small>
+                    Loading: <strong>${authState.loading}</strong> | 
+                    User: <strong>${authState.user ? 'Sim' : 'Não'}</strong> | 
+                    Session: <strong>${authState.session ? 'Sim' : 'Não'}</strong>
+                </small>
+            `;
+            
+            // Desabilitar botão se estiver carregando
+            testLoginBtn.disabled = authState.loading;
+        }
+        
+        async function initializeSupabase() {
+            try {
+                log('🚀 Inicializando Supabase...');
+                
+                // Simular importação do Supabase (já que não temos módulos)
+                // Em produção seria: import { createClient } from '@supabase/supabase-js'
+                log('📦 Configuração Supabase:', 'info');
+                log(`   URL: ${SUPABASE_URL}`);
+                log(`   Key: ${SUPABASE_ANON_KEY.substring(0, 20)}...`);
+                
+                // Simular criação do cliente
+                supabase = {
+                    auth: {
+                        getSession: async () => {
+                            log('📋 Simulando getSession...');
+                            return { data: { session: null }, error: null };
+                        },
+                        signInWithPassword: async ({ email, password }) => {
+                            log(`🔐 Simulando login com ${email}`);
+                            // Simular delay
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            
+                            if (email === 'testetotal@teste.com' && password === 'teste14') {
+                                const mockUser = { id: '123', email };
+                                const mockSession = { user: mockUser, access_token: 'mock_token' };
+                                return { data: { user: mockUser, session: mockSession }, error: null };
+                            } else {
+                                return { data: { user: null, session: null }, error: { message: 'Credenciais inválidas' } };
+                            }
+                        },
+                        onAuthStateChange: (callback) => {
+                            log('👂 Configurando listener de mudanças de auth...');
+                            return { data: { subscription: { unsubscribe: () => {} } } };
+                        }
+                    }
+                };
+                
+                log('✅ Supabase inicializado com sucesso');
+                return true;
+            } catch (error) {
+                log(`💥 Erro ao inicializar Supabase: ${error.message}`, 'error');
+                authState.error = error.message;
+                return false;
+            }
+        }
+        
+        async function checkAuthState() {
+            try {
+                log('🔍 Verificando estado de autenticação...');
+                authState.loading = true;
+                updateAuthStatus();
+                
+                const { data, error } = await supabase.auth.getSession();
+                
+                if (error) {
+                    log(`❌ Erro ao obter sessão: ${error.message}`, 'error');
+                    authState.error = error.message;
+                } else {
+                    log('📋 Sessão obtida com sucesso');
+                    authState.user = data.session?.user || null;
+                    authState.session = data.session;
+                    authState.error = null;
+                }
+                
+                authState.loading = false;
+                updateAuthStatus();
+                
+                log(`📊 Estado final - User: ${authState.user ? 'Sim' : 'Não'}, Loading: ${authState.loading}`);
+                
+            } catch (error) {
+                log(`💥 Erro inesperado: ${error.message}`, 'error');
+                authState.error = error.message;
+                authState.loading = false;
+                updateAuthStatus();
+            }
+        }
+        
+        async function testLogin() {
+            try {
+                log('🔐 Iniciando teste de login...');
+                authState.loading = true;
+                updateAuthStatus();
+                
+                const email = 'testetotal@teste.com';
+                const password = 'teste14';
+                
+                log(`📧 Email: ${email}`);
+                log(`🔑 Password: ${'*'.repeat(password.length)}`);
+                
+                const result = await supabase.auth.signInWithPassword({ email, password });
+                
+                if (result.error) {
+                    log(`❌ Login falhou: ${result.error.message}`, 'error');
+                    authState.error = result.error.message;
+                } else {
+                    log('✅ Login bem-sucedido!', 'success');
+                    authState.user = result.data.user;
+                    authState.session = result.data.session;
+                    authState.error = null;
+                }
+                
+                authState.loading = false;
+                updateAuthStatus();
+                
+            } catch (error) {
+                log(`💥 Erro no login: ${error.message}`, 'error');
+                authState.error = error.message;
+                authState.loading = false;
+                updateAuthStatus();
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').textContent = '';
+            log('🧹 Logs limpos');
+        }
+        
+        // Event listeners
+        document.getElementById('checkAuthBtn').addEventListener('click', checkAuthState);
+        document.getElementById('testLoginBtn').addEventListener('click', testLogin);
+        document.getElementById('clearLogsBtn').addEventListener('click', clearLogs);
+        
+        // Inicialização
+        async function init() {
+            log('🚀 Iniciando teste do AuthContext...');
+            
+            const success = await initializeSupabase();
+            if (success) {
+                await checkAuthState();
+            } else {
+                authState.loading = false;
+                updateAuthStatus();
+            }
+        }
+        
+        init();
+    </script>
+</body>
+</html>

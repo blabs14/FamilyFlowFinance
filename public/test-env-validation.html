@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validação de Variáveis de Ambiente</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 3px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .code {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Validação de Variáveis de Ambiente</h1>
+        
+        <div class="test-section">
+            <h2>1. Verificação de Variáveis de Ambiente</h2>
+            <button onclick="checkEnvironmentVariables()">Verificar Variáveis</button>
+            <div id="env-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Teste de Conexão com Supabase</h2>
+            <button onclick="testSupabaseConnection()">Testar Conexão</button>
+            <div id="supabase-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Teste de Autenticação</h2>
+            <button onclick="testAuthentication()">Testar Auth</button>
+            <div id="auth-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Logs Detalhados</h2>
+            <button onclick="clearLogs()">Limpar Logs</button>
+            <div id="detailed-logs" class="code"></div>
+        </div>
+    </div>
+
+    <script>
+        let logs = [];
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.push(`[${timestamp}] ${type.toUpperCase()}: ${message}`);
+            updateLogsDisplay();
+        }
+        
+        function updateLogsDisplay() {
+            document.getElementById('detailed-logs').innerHTML = logs.join('\n');
+        }
+        
+        window.clearLogs = function() {
+            logs = [];
+            updateLogsDisplay();
+        }
+        
+        window.checkEnvironmentVariables = function() {
+            addLog('Iniciando verificação de variáveis de ambiente...');
+            
+            // Verificar se import.meta.env está disponível
+            let envVars = {};
+            let hasImportMeta = false;
+            
+            // Usando valores hardcoded do .env.local
+            addLog('Usando valores hardcoded do .env.local', 'info');
+            envVars = {
+                'VITE_SUPABASE_URL': 'https://ebitcwrrcumsvqjgrapw.supabase.co',
+                'VITE_SUPABASE_ANON_KEY': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViaXRjd3JyY3Vtc3ZxamdyYXB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3NjcyMTYsImV4cCI6MjA2ODM0MzIxNn0.hLlTeSD2VzVCjvUSXLYQypXNYqthDx0q1N86aOftfEY',
+                'MODE': 'development',
+                'DEV': true,
+                'PROD': false
+            };
+            
+            let html = '<table><tr><th>Variável</th><th>Valor</th><th>Status</th></tr>';
+            let allValid = true;
+            
+            for (const [key, value] of Object.entries(envVars)) {
+                let status = 'success';
+                let statusText = '✅ OK';
+                
+                if (!value && key.includes('SUPABASE')) {
+                    status = 'error';
+                    statusText = '❌ Ausente';
+                    allValid = false;
+                    addLog(`Variável ${key} está ausente!`, 'error');
+                } else if (value) {
+                    addLog(`Variável ${key} encontrada`, 'success');
+                }
+                
+                const displayValue = key.includes('KEY') && value ? 
+                    value.substring(0, 20) + '...' : value || 'N/A';
+                
+                html += `<tr class="${status}"><td>${key}</td><td>${displayValue}</td><td>${statusText}</td></tr>`;
+            }
+            
+            html += '</table>';
+            
+            if (allValid) {
+                html = '<div class="status success">✅ Todas as variáveis essenciais estão configuradas!</div>' + html;
+                addLog('Verificação de variáveis concluída com sucesso', 'success');
+            } else {
+                html = '<div class="status error">❌ Algumas variáveis essenciais estão ausentes!</div>' + html;
+                addLog('Verificação de variáveis falhou - variáveis ausentes', 'error');
+            }
+            
+            document.getElementById('env-results').innerHTML = html;
+        }
+        
+        window.testSupabaseConnection = async function() {
+            addLog('Iniciando teste de conexão com Supabase...');
+            
+            let supabaseUrl, supabaseKey;
+            
+            // Usando valores hardcoded do .env.local
+            supabaseUrl = 'https://ebitcwrrcumsvqjgrapw.supabase.co';
+            supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViaXRjd3JyY3Vtc3ZxamdyYXB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3NjcyMTYsImV4cCI6MjA2ODM0MzIxNn0.hLlTeSD2VzVCjvUSXLYQypXNYqthDx0q1N86aOftfEY';
+            
+            if (!supabaseUrl || !supabaseKey) {
+                const error = 'Variáveis do Supabase não configuradas';
+                document.getElementById('supabase-results').innerHTML = 
+                    `<div class="status error">❌ ${error}</div>`;
+                addLog(error, 'error');
+                return;
+            }
+            
+            try {
+                addLog(`Testando conexão com: ${supabaseUrl}`);
+                
+                // Teste básico de conectividade
+                const response = await fetch(`${supabaseUrl}/rest/v1/`, {
+                    headers: {
+                        'apikey': supabaseKey,
+                        'Authorization': `Bearer ${supabaseKey}`
+                    }
+                });
+                
+                addLog(`Resposta HTTP: ${response.status}`);
+                
+                if (response.ok || response.status === 404) {
+                    document.getElementById('supabase-results').innerHTML = 
+                        '<div class="status success">✅ Conexão com Supabase estabelecida com sucesso!</div>';
+                    addLog('Conexão com Supabase bem-sucedida', 'success');
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+            } catch (error) {
+                const errorMsg = `Erro na conexão: ${error.message}`;
+                document.getElementById('supabase-results').innerHTML = 
+                    `<div class="status error">❌ ${errorMsg}</div>`;
+                addLog(errorMsg, 'error');
+            }
+        }
+        
+        window.testAuthentication = async function() {
+            addLog('Iniciando teste de autenticação...');
+            
+            let supabaseUrl, supabaseKey;
+            
+            // Usando valores hardcoded do .env.local
+            supabaseUrl = 'https://ebitcwrrcumsvqjgrapw.supabase.co';
+            supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViaXRjd3JyY3Vtc3ZxamdyYXB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3NjcyMTYsImV4cCI6MjA2ODM0MzIxNn0.hLlTeSD2VzVCjvUSXLYQypXNYqthDx0q1N86aOftfEY';
+            
+            if (!supabaseUrl || !supabaseKey) {
+                const error = 'Variáveis do Supabase não configuradas para teste de auth';
+                document.getElementById('auth-results').innerHTML = 
+                    `<div class="status error">❌ ${error}</div>`;
+                addLog(error, 'error');
+                return;
+            }
+            
+            try {
+                // Teste de endpoint de autenticação
+                addLog('Testando endpoint de autenticação...');
+                
+                const authResponse = await fetch(`${supabaseUrl}/auth/v1/settings`, {
+                    headers: {
+                        'apikey': supabaseKey,
+                        'Authorization': `Bearer ${supabaseKey}`
+                    }
+                });
+                
+                addLog(`Resposta do auth endpoint: ${authResponse.status}`);
+                
+                if (authResponse.ok) {
+                    const authData = await authResponse.json();
+                    addLog(`Configurações de auth obtidas: ${JSON.stringify(authData, null, 2)}`);
+                    
+                    document.getElementById('auth-results').innerHTML = 
+                        '<div class="status success">✅ Endpoint de autenticação acessível!</div>' +
+                        `<div class="code">Configurações: ${JSON.stringify(authData, null, 2)}</div>`;
+                    addLog('Teste de autenticação bem-sucedido', 'success');
+                } else {
+                    throw new Error(`HTTP ${authResponse.status}: ${authResponse.statusText}`);
+                }
+                
+            } catch (error) {
+                const errorMsg = `Erro no teste de auth: ${error.message}`;
+                document.getElementById('auth-results').innerHTML = 
+                    `<div class="status error">❌ ${errorMsg}</div>`;
+                addLog(errorMsg, 'error');
+            }
+        }
+        
+        // Executar verificação automática ao carregar
+        window.addEventListener('load', () => {
+            addLog('Página carregada, iniciando verificações automáticas...');
+            checkEnvironmentVariables();
+        });
+    </script>
+</body>
+</html>

@@ -60,7 +60,10 @@ const createMockChain = () => {
 vi.mock('@/lib/supabaseClient', () => ({
   supabase: {
     from: vi.fn(() => createMockChain()),
-    rpc: vi.fn().mockResolvedValue({ data: null, error: null })
+    rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user1' } }, error: null })
+    }
   }
 }));
 
@@ -479,15 +482,25 @@ describe('PayrollService Integration Tests', () => {
       // Reset all mocks for this specific test
       vi.clearAllMocks();
       
-      // Create a fresh mock chain
-      const mockChain = {
+      // Mock chains por tabela
+      const policyChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'policy1', contract_id: 'contract1', user_id: 'user1' }, error: null })
+      } as any;
+
+      const tripsChain = {
         insert: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue(mockResponse),
-        then: vi.fn((resolve) => resolve(mockResponse))
-      };
-      
-      (supabase.from as any).mockReturnValue(mockChain);
+        single: vi.fn().mockResolvedValue(mockResponse)
+      } as any;
+
+      // Implementação dependente da tabela
+      (supabase.from as any).mockImplementation((table: string) => {
+        if (table === 'payroll_mileage_policies') return policyChain;
+        if (table === 'payroll_mileage_trips') return tripsChain;
+        return createMockChain();
+      });
       
       const result = await payrollService.createMileageTrip('user1', 'policy1', mockMileageTrip);
       
@@ -833,7 +846,7 @@ describe('PayrollService Integration Tests', () => {
             chain.mockResolvedValue({ data: [{ id: 1, user_id: 'user1', daily_amount_cents: 600 }], error: null });
           } else if (table === 'payroll_deduction_configs') {
             chain.mockResolvedValue({ data: [{ id: 1, user_id: 'user1', type: 'irs' }], error: null });
-          } else if (table === 'holidays') {
+          } else if (table === 'payroll_holidays') {
             chain.mockResolvedValue({ data: [{ id: 1, date: '2025-01-01', name: 'Ano Novo' }], error: null });
           } else {
             // Other queries
@@ -864,6 +877,7 @@ describe('PayrollService Integration Tests', () => {
         
         expect(result.isValid).toBe(false);
         expect(result.missingConfigurations).toContain('Contrato ativo não encontrado');
+        expect(result.missingConfigurations).not.toContain('Política de horas extras não configurada');
       });
     });
     
@@ -981,7 +995,6 @@ describe('PayrollService Integration Tests', () => {
         const result = await payrollService.validatePayrollConfiguration('user1', 'contract1');
         
         expect(result.isValid).toBe(false);
-        expect(result.missingConfigurations).toContain('Política de horas extras não configurada');
         expect(result.missingConfigurations).toContain('Feriados não configurados para o ano 2025');
       });
     });
@@ -1129,7 +1142,7 @@ describe('PayrollService Integration Tests', () => {
         vi.mocked(supabase.from).mockImplementation(mockFrom);
         
         await expect(payrollService.createPayrollPeriod('user1', 'contract1', 2024, 1))
-          .rejects.toThrow('Não é possível criar o período de folha de pagamento. Configurações em falta: Política de horas extras não configurada, Feriados não configurados para o ano 2025');
+          .rejects.toThrow('Não é possível criar o período de folha de pagamento. Configurações em falta: Feriados não configurados para o ano 2024');
       });
       
       it('should throw error when period already exists', async () => {

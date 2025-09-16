@@ -14,5 +14,6 @@
       "API_KEY": "sk-user-FaHyyGN1WCgPpjxPQb-BMllJkPDyJWWyFaY_hwooMOgoF5MzkziW5q4vamoMEwkXOrz0AHPceC5aOu2pNe__21Krbu6reWW3tD99b7wzcTX0OYL1Ba0bkZHr5FR5hbQ4ndY"
     }
   },
-  "proxy": "http://7c5284de-db30-42f7-803c-f948f7cad30b:5grNQDjzVBWLBGSlVT3z67syA3Wznnmw@tun.testsprite.com:8080"
+  "proxy": "http://7c5284de-db30-42f7-803c-f948f7cad30b:5grNQDjzVBWLBGSlVT3z67syA3Wznnmw@tun.testsprite.com:8080",
+  "serverPort": 52298
 }

@@ -489,16 +489,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -507,8 +497,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -523,6 +511,19 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -613,7 +614,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -735,7 +735,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 &nbsp;
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const handleEdit = (account: AccountWithBalances) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    console.log('[AccountsPage] handleEdit called with account:', account);</span>
+<span class="cstat-no" title="statement not covered" >    // Debug: handleEdit called</span>
     
 <span class="cstat-no" title="statement not covered" >    // Para cartões de crédito, usar o saldo da conta diretamente</span>
 <span class="cstat-no" title="statement not covered" >    // Para outras contas, usar o saldo calculado</span>
@@ -755,16 +755,16 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 <span class="cstat-no" title="statement not covered" >      saldoAtual,</span>
 <span class="cstat-no" title="statement not covered" >    };</span>
     
-<span class="cstat-no" title="statement not covered" >    console.log('[AccountsPage] editData created:', editData);</span>
+<span class="cstat-no" title="statement not covered" >    // Debug: editData created</span>
 <span class="cstat-no" title="statement not covered" >    setEditingAccount(editData);</span>
 <span class="cstat-no" title="statement not covered" >    setShowCreateModal(true);</span>
 <span class="cstat-no" title="statement not covered" >  };</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const handleSuccess = () =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    console.log('[AccountsPage] handleSuccess called');</span>
+<span class="cstat-no" title="statement not covered" >    // Debug: handleSuccess called</span>
 <span class="cstat-no" title="statement not covered" >    setShowCreateModal(false);</span>
 <span class="cstat-no" title="statement not covered" >    setEditingAccount(null);</span>
-<span class="cstat-no" title="statement not covered" >    console.log('[AccountsPage] Forcing refetch...');</span>
+<span class="cstat-no" title="statement not covered" >    // Debug: Forcing refetch</span>
 <span class="cstat-no" title="statement not covered" >    refetch();</span>
 <span class="cstat-no" title="statement not covered" >  };</span>
 &nbsp;
@@ -787,10 +787,11 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 <span class="cstat-no" title="statement not covered" >      });</span>
 <span class="cstat-no" title="statement not covered" >      setShowDeleteConfirmation(false);</span>
 <span class="cstat-no" title="statement not covered" >      setAccountToDelete(null);</span>
-<span class="cstat-no" title="statement not covered" >    } catch (error: any) {</span>
+<span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
+<span class="cstat-no" title="statement not covered" >      const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro ao eliminar a conta.';</span>
 <span class="cstat-no" title="statement not covered" >      toast({</span>
 <span class="cstat-no" title="statement not covered" >        title: 'Erro ao eliminar conta',</span>
-<span class="cstat-no" title="statement not covered" >        description: error.message || 'Ocorreu um erro ao eliminar a conta.',</span>
+<span class="cstat-no" title="statement not covered" >        description: errorMessage,</span>
 <span class="cstat-no" title="statement not covered" >        variant: 'destructive',</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
@@ -812,7 +813,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 <span class="cstat-no" title="statement not covered" >      &lt;div className="flex items-center justify-center min-h-[400px]"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="text-center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;p className="text-destructive mb-4"&gt;Erro ao carregar contas&lt;/p&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Button onClick={() =&gt; refetch()} variant="outline"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Button onClick={() =&gt; refetch()} variant="outline" aria-label="Atualizar lista de contas"&gt;</span>
             Tentar novamente
           &lt;/Button&gt;
         &lt;/div&gt;
@@ -848,7 +849,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 <span class="cstat-no" title="statement not covered" >          &lt;p className="text-muted-foreground mb-4"&gt;</span>
             Comece criando sua primeira conta para começar a gerir suas finanças.
           &lt;/p&gt;
-<span class="cstat-no" title="statement not covered" >          &lt;Button onClick={handleNew}&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Button onClick={handleNew} aria-label="Criar nova conta bancária"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;Plus className="h-4 w-4 mr-2" /&gt;</span>
             Criar Primeira Conta
           &lt;/Button&gt;
@@ -920,12 +921,11 @@ import { Alert, AlertDescription } from '../components/ui/alert';
             &lt;/DialogDescription&gt;
           &lt;/DialogHeader&gt;
 <span class="cstat-no" title="statement not covered" >          {(() =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >            console.log('[AccountsPage] Modal rendering - editingAccount:', editingAccount);</span>
-<span class="cstat-no" title="statement not covered" >            console.log('[AccountsPage] editingAccount?.tipo:', editingAccount?.tipo);</span>
+<span class="cstat-no" title="statement not covered" >            // Debug: Modal rendering</span>
             
 <span class="cstat-no" title="statement not covered" >            // TODO: Implementar mais tarde</span>
 <span class="cstat-no" title="statement not covered" >            // if (editingAccount?.tipo === 'cartão de crédito') {</span>
-<span class="cstat-no" title="statement not covered" >            //   console.log('[AccountsPage] Rendering CreditCardForm');</span>
+<span class="cstat-no" title="statement not covered" >            //   logger.debug('[AccountsPage] Rendering CreditCardForm');</span>
 <span class="cstat-no" title="statement not covered" >            //   return (</span>
 <span class="cstat-no" title="statement not covered" >            //     &lt;CreditCardForm</span>
 <span class="cstat-no" title="statement not covered" >            //       initialData={editingAccount}</span>
@@ -935,7 +935,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 <span class="cstat-no" title="statement not covered" >            //   );</span>
 <span class="cstat-no" title="statement not covered" >            // } else </span>
 <span class="cstat-no" title="statement not covered" >            if (editingAccount) {</span>
-<span class="cstat-no" title="statement not covered" >              console.log('[AccountsPage] Rendering RegularAccountForm');</span>
+<span class="cstat-no" title="statement not covered" >              // Debug: Rendering RegularAccountForm</span>
 <span class="cstat-no" title="statement not covered" >              return (</span>
 <span class="cstat-no" title="statement not covered" >                &lt;RegularAccountForm</span>
 <span class="cstat-no" title="statement not covered" >                  initialData={editingAccount}</span>
@@ -944,7 +944,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
                 /&gt;
               );
 <span class="cstat-no" title="statement not covered" >            } else {</span>
-<span class="cstat-no" title="statement not covered" >              console.log('[AccountsPage] Rendering AccountForm');</span>
+<span class="cstat-no" title="statement not covered" >              // Debug: Rendering AccountForm</span>
 <span class="cstat-no" title="statement not covered" >              return (</span>
 <span class="cstat-no" title="statement not covered" >                &lt;AccountForm</span>
 <span class="cstat-no" title="statement not covered" >                  initialData={editingAccount}</span>
@@ -988,7 +988,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.132Z
+                at 2025-09-14T17:15:08.717Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

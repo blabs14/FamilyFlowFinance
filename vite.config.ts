@@ -146,6 +146,7 @@ export default defineConfig(({ mode }) => {
         reporter: ["text", "json", "html"],
         exclude: ["node_modules/", "src/setupTests.ts"],
       },
+      env: loadEnv(mode, process.cwd(), ''),
     },
   };
 });

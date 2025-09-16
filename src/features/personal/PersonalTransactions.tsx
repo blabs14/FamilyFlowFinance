@@ -141,13 +141,7 @@ const PersonalTransactions: React.FC = () => {
     }
   };
 
-  // Estado para métricas filtradas
-  const [filteredMetrics, setFilteredMetrics] = useState({
-    totalIncome: 0,
-    totalExpenses: 0,
-    netBalance: 0,
-    transactionCount: 0
-  });
+
 
   // Calcular métricas totais (sem filtros)
   const totalIncome = transactions
@@ -245,8 +239,8 @@ const PersonalTransactions: React.FC = () => {
     });
   }, [transactions, searchTerm, selectedAccount, selectedCategory, selectedType, dateFilter, dateRange]);
 
-  // Calcular e enviar métricas filtradas
-  React.useEffect(() => {
+  // Remover estado e usar memo para métricas filtradas
+  const filteredMetrics = React.useMemo(() => {
     const filteredIncome = filteredTransactions
       .filter(t => t.tipo === 'receita')
       .reduce((sum, t) => sum + t.valor, 0);
@@ -258,12 +252,12 @@ const PersonalTransactions: React.FC = () => {
     const filteredNetBalance = filteredIncome - filteredExpenses;
     const filteredCount = filteredTransactions.length;
 
-    setFilteredMetrics({
+    return {
       totalIncome: filteredIncome,
       totalExpenses: filteredExpenses,
       netBalance: filteredNetBalance,
       transactionCount: filteredCount
-    });
+    };
   }, [filteredTransactions]);
 
   const getDateFilterText = () => {

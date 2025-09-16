@@ -7,12 +7,13 @@ import {
   updateAccount, 
   deleteAccount, 
   getAccountsWithBalances, 
-  getAccountsWithBalancesDomain
+  getAccountsWithBalancesDomain,
+  getFamilyAccountsWithBalances
 } from '../services/accounts';
 import { getCreditCardSummary } from '../services/transactions';
 import { AccountInsert, AccountUpdateExtended, AccountWithBalances } from '../integrations/supabase/types';
 import { useCrudMutation } from './useMutationWithFeedback';
-import { logger } from '@/shared/lib/logger';
+import { logger } from '../shared/lib/logger';
 
 export const useAccounts = () => {
   const { user } = useAuth();
@@ -158,6 +159,45 @@ export const useDeleteAccount = () => {
       }
     }
   );
+};
+
+export const useAllAccountsWithBalances = () => {
+  const { user } = useAuth();
+  
+  return useQuery<AccountWithBalances[] | []>({
+    queryKey: ['allAccountsWithBalances', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      // Obter contas pessoais e familiares em paralelo
+      const [personalResult, familyResult] = await Promise.all([
+        getAccountsWithBalances(user.id),
+        getFamilyAccountsWithBalances(user.id)
+      ]);
+      
+      if (personalResult.error && familyResult.error) {
+        throw personalResult.error;
+      }
+      
+      const personalAccounts = personalResult.data || [];
+      const familyAccounts = familyResult.data || [];
+      
+      // Combinar as contas, adicionando uma propriedade para distinguir o tipo
+      const allAccounts = [
+        ...personalAccounts.map(account => ({ ...account, scope: 'personal' as const })),
+        ...familyAccounts.map(account => ({ ...account, scope: 'family' as const }))
+      ];
+      
+      // Ordenar por nome
+      return allAccounts.sort((a, b) => a.nome.localeCompare(b.nome));
+    },
+    enabled: !!user?.id,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
+  });
 };
 
 export const useCreditCardSummary = (accountId: string) => {

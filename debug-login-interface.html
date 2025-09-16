@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Login Interface</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 3px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+        .logs { background: #f8f9fa; padding: 10px; border-radius: 3px; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug Login Interface</h1>
+        
+        <div class="test-section">
+            <h3>1. Teste de Conectividade Supabase</h3>
+            <button onclick="testSupabaseConnection()">Testar Conexão</button>
+            <div id="connection-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Teste de Login Manual</h3>
+            <input type="email" id="email" placeholder="Email" value="testetotal@teste.com">
+            <input type="password" id="password" placeholder="Password" value="teste14">
+            <button onclick="testLogin()">Testar Login</button>
+            <div id="login-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Estado da Sessão</h3>
+            <button onclick="checkSession()">Verificar Sessão</button>
+            <button onclick="clearSession()">Limpar Sessão</button>
+            <div id="session-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Logs de Debug</h3>
+            <button onclick="clearLogs()">Limpar Logs</button>
+            <div id="debug-logs" class="logs"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2';
+        
+        // Configuração do Supabase (usando as mesmas variáveis do .env.local)
+        const supabaseUrl = 'https://ebitcwrrcumsvqjgrapw.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViaXRjd3JyY3Vtc3ZxamdyYXB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3NjcyMTYsImV4cCI6MjA2ODM0MzIxNn0.hLlTeSD2VzVCjvUSXLYQypXNYqthDx0q1N86aOftfEY';
+        
+        const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+            auth: {
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true,
+                flowType: 'pkce',
+            },
+        });
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('debug-logs');
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            logElement.textContent += logEntry;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(`[Debug] ${logEntry}`);
+        }
+
+        window.testSupabaseConnection = async function() {
+            const resultDiv = document.getElementById('connection-result');
+            log('Testando conectividade com Supabase...');
+            
+            try {
+                const { data, error } = await supabase.from('profiles').select('count').limit(1);
+                
+                if (error) {
+                    resultDiv.innerHTML = `<div class="result error">❌ Erro de conexão: ${error.message}</div>`;
+                    log(`Erro de conexão: ${error.message}`, 'error');
+                } else {
+                    resultDiv.innerHTML = `<div class="result success">✅ Conexão bem-sucedida!</div>`;
+                    log('Conexão com Supabase bem-sucedida', 'success');
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<div class="result error">❌ Erro crítico: ${err.message}</div>`;
+                log(`Erro crítico: ${err.message}`, 'error');
+            }
+        };
+
+        window.testLogin = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('login-result');
+            
+            log(`Tentando login com: ${email}`);
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) {
+                    resultDiv.innerHTML = `<div class="result error">❌ Erro no login: ${error.message}<br>Código: ${error.status || 'N/A'}</div>`;
+                    log(`Erro no login: ${error.message} (${error.status})`, 'error');
+                } else {
+                    resultDiv.innerHTML = `<div class="result success">✅ Login bem-sucedido!<br>User ID: ${data.user?.id}<br>Email: ${data.user?.email}</div>`;
+                    log(`Login bem-sucedido para: ${data.user?.email}`, 'success');
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<div class="result error">❌ Erro crítico: ${err.message}</div>`;
+                log(`Erro crítico no login: ${err.message}`, 'error');
+            }
+        };
+
+        window.checkSession = async function() {
+            const resultDiv = document.getElementById('session-result');
+            log('Verificando sessão atual...');
+            
+            try {
+                const { data, error } = await supabase.auth.getSession();
+                
+                if (error) {
+                    resultDiv.innerHTML = `<div class="result error">❌ Erro ao verificar sessão: ${error.message}</div>`;
+                    log(`Erro ao verificar sessão: ${error.message}`, 'error');
+                } else if (data.session) {
+                    const expiresAt = new Date(data.session.expires_at * 1000).toLocaleString();
+                    resultDiv.innerHTML = `<div class="result success">✅ Sessão ativa!<br>User: ${data.session.user.email}<br>Expira em: ${expiresAt}</div>`;
+                    log(`Sessão ativa para: ${data.session.user.email}`, 'success');
+                } else {
+                    resultDiv.innerHTML = `<div class="result info">ℹ️ Nenhuma sessão ativa</div>`;
+                    log('Nenhuma sessão ativa', 'info');
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<div class="result error">❌ Erro crítico: ${err.message}</div>`;
+                log(`Erro crítico ao verificar sessão: ${err.message}`, 'error');
+            }
+        };
+
+        window.clearSession = async function() {
+            const resultDiv = document.getElementById('session-result');
+            log('Limpando sessão...');
+            
+            try {
+                const { error } = await supabase.auth.signOut();
+                
+                if (error) {
+                    resultDiv.innerHTML = `<div class="result error">❌ Erro ao limpar sessão: ${error.message}</div>`;
+                    log(`Erro ao limpar sessão: ${error.message}`, 'error');
+                } else {
+                    resultDiv.innerHTML = `<div class="result success">✅ Sessão limpa com sucesso!</div>`;
+                    log('Sessão limpa com sucesso', 'success');
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<div class="result error">❌ Erro crítico: ${err.message}</div>`;
+                log(`Erro crítico ao limpar sessão: ${err.message}`, 'error');
+            }
+        };
+
+        window.clearLogs = function() {
+            document.getElementById('debug-logs').textContent = '';
+        };
+
+        // Auto-verificar sessão ao carregar
+        window.addEventListener('load', () => {
+            log('Debug interface carregada');
+            checkSession();
+        });
+    </script>
+</body>
+</html>

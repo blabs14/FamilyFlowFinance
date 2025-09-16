@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Switch } from '../../components/ui/switch';
-import { Settings, User, Shield, Bell, Palette, Eye, EyeOff, Moon, Sun, Smartphone, Mail, Calendar, Save, BarChart3, TrendingUp, Globe, DollarSign } from 'lucide-react';
+import { Settings, User, Shield, Bell, Palette, Eye, EyeOff, Moon, Sun, Smartphone, Mail, Calendar, Save, BarChart3, TrendingUp, Globe, DollarSign, Tag } from 'lucide-react';
 import { notifySuccess, notifyError } from '../../lib/notify';
 import { useAuth } from '../../contexts/AuthContext';
 import { logger } from '@/shared/lib/logger';
@@ -17,6 +17,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '..
 import { getAuditLogsByRow } from '../../services/audit_logs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { getCurrencies } from '../../services/currencies';
+import { CategoryManagement } from '../../components/CategoryManagement';
 
 type AuditEntry = { 
   id: string; 
@@ -62,6 +63,7 @@ const PersonalSettings: React.FC = () => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [isPersonalOpen, setIsPersonalOpen] = useState(false);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   // Estados para moedas
@@ -814,6 +816,33 @@ const PersonalSettings: React.FC = () => {
                     </Button>
                   </div>
                 </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Gestão de Categorias */}
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="flex items-center gap-3">
+              <Tag className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <h3 className="font-medium">Categorias</h3>
+                <p className="text-sm text-muted-foreground">
+                  Gerir categorias customizadas
+                </p>
+              </div>
+            </div>
+            <Dialog open={isCategoriesOpen} onOpenChange={setIsCategoriesOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">Gerir</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Gestão de Categorias</DialogTitle>
+                  <DialogDescription>
+                    Crie, edite e elimine as suas categorias customizadas
+                  </DialogDescription>
+                </DialogHeader>
+                <CategoryManagement />
               </DialogContent>
             </Dialog>
           </div>

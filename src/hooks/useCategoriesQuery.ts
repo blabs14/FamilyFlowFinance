@@ -1,5 +1,6 @@
+import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getCategories, getCategoriesDomain, createCategory, updateCategory, deleteCategory } from '../services/categories';
+import { getCategories, getCategoriesDomain, createCategory, updateCategory, deleteCategory, isCategoryInUse, isDefaultCategory, getCategoriesWithCustomizations } from '../services/categories';
 import { useAuth } from '../contexts/AuthContext';
 import type { CategoryDomain } from '../shared/types/categories';
 import type { Category, CategoryInsert, CategoryUpdate } from '../integrations/supabase/types';
@@ -9,21 +10,20 @@ import { logger } from '@/shared/lib/logger';
 export const useCategories = (tipo?: string) => {
   const { user } = useAuth();
   
-  return useQuery<CategoryDomain[]>({
+  return useQuery<Category[]>({
     queryKey: ['categories', user?.id, tipo],
     queryFn: async () => {
-      // Trazer categorias default (user_id null) + do utilizador
-      const { data, error } = await (async ()=>{
-        const d1 = await getCategories(undefined, tipo); // defaults
-        const d2 = await getCategories(user?.id || '', tipo);
-        return { data: [ ...(d1.data||[]), ...(d2.data||[]) ], error: (d1.error||d2.error) };
-      })();
+      if (!user?.id) {
+        // Se não há utilizador, retornar apenas categorias padrão
+        const { data, error } = await getCategories(undefined, tipo);
+        if (error) throw error;
+        return data || [];
+      }
+      
+      // Usar a nova função que aplica personalizações
+      const { data, error } = await getCategoriesWithCustomizations(user.id, tipo);
       if (error) throw error;
-      // map para domínio
-      const merged = (data || []);
-      // ordenar por nome
-      merged.sort((a,b)=> String(a.nome||'').localeCompare(String(b.nome||'')));
-      return merged;
+      return data || [];
     },
     enabled: !!user?.id,
     refetchOnWindowFocus: true,
@@ -36,31 +36,64 @@ export const useCategories = (tipo?: string) => {
 
 export const useCategoriesDomain = (tipo?: string) => {
   const { user } = useAuth();
-  return useQuery<CategoryDomain[]>({
-    queryKey: ['categories-domain', user?.id, tipo],
+  
+  // Buscar categorias padrão (user_id IS NULL)
+  const defaultCategoriesQuery = useQuery({
+    queryKey: ['categories', 'default', tipo],
     queryFn: async () => {
-      try {
-        // defaults + user
-        const d1 = await getCategories(undefined, undefined);
-        const d2 = await getCategories(user?.id || '', undefined);
-        
-        // Verificar se houve erros nas queries
-        if (d1.error && d2.error) {
-          throw d1.error || d2.error;
-        }
-        
-        const all = [ ...(d1.data||[]), ...(d2.data||[]) ];
-        return all.map((row: any) => ({ id: row.id, nome: row.nome, cor: row.cor }));
-      } catch (err: any) {
-        logger.error('Failed to fetch categories domain', err);
-        showError(err?.message || 'Falha ao obter categorias');
-        return [] as CategoryDomain[];
+      const result = await getCategoriesDomain(undefined, tipo);
+      if (result.error) {
+        throw result.error;
       }
+      return result.data;
+    },
+    staleTime: 0, // Forçar atualização imediata
+    refetchOnMount: true,
+  });
+
+  // Buscar categorias do usuário (se estiver logado)
+  const userCategoriesQuery = useQuery({
+    queryKey: ['categories', 'user', user?.id, tipo],
+    queryFn: async () => {
+      const result = await getCategoriesDomain(user?.id, tipo);
+      if (result.error) {
+        throw result.error;
+      }
+      return result.data;
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 0, // Forçar atualização imediata
+    refetchOnMount: true,
   });
+
+  // Combinar as categorias usando useMemo
+  const combinedCategories = useMemo(() => {
+    const defaultData = defaultCategoriesQuery.data || [];
+    const userData = userCategoriesQuery.data || [];
+
+    // Debug temporário
+    console.log('useCategoriesDomain - defaultData:', defaultData);
+    console.log('useCategoriesDomain - userData:', userData);
+    console.log('useCategoriesDomain - user:', user);
+
+    // Criar um Set com os nomes das categorias do usuário para deduplicação
+    const userCategoryNames = new Set(userData.map(cat => cat.nome));
+
+    // Filtrar categorias padrão que não existem nas categorias do usuário
+    const filteredDefaultCategories = defaultData.filter(cat => !userCategoryNames.has(cat.nome));
+
+    // Combinar: categorias do usuário primeiro, depois categorias padrão filtradas
+    const combined = [...userData, ...filteredDefaultCategories];
+
+    return combined;
+  }, [defaultCategoriesQuery.data, userCategoriesQuery.data, user?.id]);
+
+  return {
+    data: combinedCategories,
+    isLoading: defaultCategoriesQuery.isLoading || userCategoriesQuery.isLoading,
+    isError: defaultCategoriesQuery.isError || userCategoriesQuery.isError,
+    error: defaultCategoriesQuery.error || userCategoriesQuery.error,
+  };
 };
 
 export const useCreateCategory = (onSuccess?: (created: Category) => void) => {
@@ -111,6 +144,23 @@ export const useDeleteCategory = (onSuccess?: () => void) => {
   
   return useMutation({
     mutationFn: async (id: string) => {
+      // Verificar se é uma categoria padrão
+      const { data: isDefault, error: defaultError } = await isDefaultCategory(id);
+      if (defaultError) throw defaultError;
+      
+      if (isDefault) {
+        throw new Error('Não é possível eliminar categorias padrão do sistema.');
+      }
+
+      // Verificar se a categoria está em uso
+      const { data: inUse, error: useError } = await isCategoryInUse(id);
+      if (useError) throw useError;
+      
+      if (inUse) {
+        throw new Error('Não é possível eliminar uma categoria que está a ser utilizada em transações.');
+      }
+
+      // Se passou nas validações, proceder com a eliminação
       const { data, error } = await deleteCategory(id);
       if (error) throw error as any;
       return data;

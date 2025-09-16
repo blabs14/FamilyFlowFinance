@@ -10,6 +10,7 @@ import { FamilyContext } from '@/features/family/FamilyContext';
 import { createRecurringRule, listRecurringRules, RecurringRule, pauseRecurringRule, resumeRecurringRule, cancelAtPeriodEnd, skipNextOccurrence } from '@/services/recurrents';
 import { advanceNextRunDate, makePeriodKey } from '@/lib/recurrents';
 import { useCategoriesDomain } from '@/hooks/useCategoriesQuery';
+import { useAllAccountsWithBalances } from '../hooks/useAccountsQuery';
 import { useToast } from '@/hooks/use-toast';
 import { useConfirmation } from '@/hooks/useConfirmation';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -22,6 +23,7 @@ export default function RecurrentsPage() {
   const scope: 'personal' | 'family' = family ? 'family' : 'personal';
   const [rules, setRules] = React.useState<any[]>([]);
   const { data: categories = [] } = useCategoriesDomain();
+  const { data: accounts = [] } = useAllAccountsWithBalances();
   const [filters, setFilters] = React.useState<{ status?: string; subscription?: string; category?: string; method?: string }>({});
   const [sort, setSort] = React.useState<string>('next_asc');
   const [page, setPage] = React.useState<number>(1);
@@ -40,7 +42,8 @@ export default function RecurrentsPage() {
     next_run_date: new Date().toISOString().slice(0,10),
     status: 'active',
     is_subscription: true,
-    vendor: 'Netflix'
+    vendor: 'Netflix',
+    transaction_type: 'expense'
   });
   const { isOpen, options, confirm, close, onConfirm, onCancel } = useConfirmation();
 
@@ -82,17 +85,61 @@ export default function RecurrentsPage() {
     } catch { return []; }
   }, [form.next_run_date, form.interval_unit, form.interval_count]);
 
+  // Detectar transferências cross-scope
+  const isCrossScopeTransfer = React.useMemo(() => {
+    if (form.transaction_type !== 'transfer' || !form.from_account_id || !form.to_account_id) return false;
+    
+    const fromAccount = accounts.find((acc:any) => acc.id === form.from_account_id);
+    const toAccount = accounts.find((acc:any) => acc.id === form.to_account_id);
+    
+    return fromAccount && toAccount && fromAccount.scope !== toAccount.scope;
+  }, [form.transaction_type, form.from_account_id, form.to_account_id, accounts]);
+
   const onCreate = async () => {
     if (!user) return;
-    const payload: RecurringRule = {
-      ...(form as RecurringRule),
-      scope,
-      user_id: user.id,
-      family_id: scope==='family' ? family?.id || null : null,
-    };
-    await createRecurringRule(payload);
-    setOpen(false);
-    await load();
+    
+    // Validação para transferências
+    if (form.transaction_type === 'transfer') {
+      if (!form.from_account_id || !form.to_account_id) {
+        toast({ title: 'Erro', description: 'Por favor, selecione as contas de origem e destino para a transferência.', variant: 'destructive' });
+        return;
+      }
+      if (form.from_account_id === form.to_account_id) {
+        toast({ title: 'Erro', description: 'A conta de origem e destino não podem ser a mesma.', variant: 'destructive' });
+        return;
+      }
+    }
+    
+    try {
+      setLoading(true);
+      const payload = {
+        ...form,
+        scope,
+        user_id: user.id,
+        family_id: scope==='family' ? family?.id || null : null,
+      };
+      await createRecurringRule(payload);
+      setForm({
+         description: '',
+         amount_cents: 0,
+         currency: 'EUR',
+         interval_unit: 'month',
+         interval_count: 1,
+         category_id: '',
+         next_run_date: '',
+         end_date: '',
+         payment_method_id: '',
+         transaction_type: 'expense',
+         from_account_id: '',
+         to_account_id: ''
+       });
+      setOpen(false);
+        await load();
+    } catch (error) {
+      toast({ title: 'Erro', description: 'Erro ao criar regra recorrente.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -225,7 +272,73 @@ export default function RecurrentsPage() {
           </DialogHeader>
           <div className="space-y-3">
             <Input placeholder="Descrição/Vendor" value={form.vendor || form.description || ''} onChange={(e)=>setForm(f=>({...f, vendor: e.target.value}))} />
-            <div className="flex gap-2">
+            
+            <Select value={form.transaction_type} onValueChange={(v)=>setForm(f=>({...f, transaction_type: v as 'expense' | 'income' | 'transfer'}))}>
+              <SelectTrigger><SelectValue placeholder="Tipo de Transação" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="expense">Despesa</SelectItem>
+                <SelectItem value="income">Receita</SelectItem>
+                <SelectItem value="transfer">Transferência</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {form.transaction_type === 'transfer' && (
+              <div className="space-y-2">
+                <Select value={form.from_account_id || undefined} onValueChange={(v)=>setForm(f=>({...f, from_account_id: v}))}>
+                  <SelectTrigger><SelectValue placeholder="Conta de Origem" /></SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((account:any)=>(
+                      <SelectItem key={account.id} value={account.id}>
+                        <div className="flex items-center gap-2">
+                          <span>{account.name}</span>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${account.scope === 'family' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
+                            {account.scope === 'family' ? 'Familiar' : 'Pessoal'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {(account.balance_cents / 100).toFixed(2)} €
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={form.to_account_id || undefined} onValueChange={(v)=>setForm(f=>({...f, to_account_id: v}))}>
+                  <SelectTrigger><SelectValue placeholder="Conta de Destino" /></SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((account:any)=>(
+                      <SelectItem key={account.id} value={account.id}>
+                        <div className="flex items-center gap-2">
+                          <span>{account.name}</span>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${account.scope === 'family' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
+                            {account.scope === 'family' ? 'Familiar' : 'Pessoal'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {(account.balance_cents / 100).toFixed(2)} €
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+             )}
+             
+             {isCrossScopeTransfer && (
+               <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                 <div className="flex items-center gap-2 text-amber-800">
+                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                   </svg>
+                   <span className="font-medium">Transferência entre âmbitos</span>
+                 </div>
+                 <p className="text-sm text-amber-700 mt-1">
+                   Esta transferência será entre uma conta pessoal e uma conta familiar. Certifique-se de que tem as permissões necessárias.
+                 </p>
+               </div>
+             )}
+             
+             <div className="flex gap-2">
               <Input type="number" placeholder="Valor (cêntimos)" value={form.amount_cents} onChange={(e)=>setForm(f=>({...f, amount_cents: Number(e.target.value||0)}))} />
               <Input placeholder="Moeda" value={form.currency} onChange={(e)=>setForm(f=>({...f, currency: e.target.value}))} />
             </div>

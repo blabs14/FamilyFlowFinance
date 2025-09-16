@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Validação de Email</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste de Validação de Email</h1>
+        <p>Este teste verifica se o email 'testetotal@teste.com' é válido segundo o schema de validação.</p>
+        
+        <div class="test-section">
+            <h3>Teste Manual</h3>
+            <input type="email" id="testEmail" placeholder="Digite o email para testar" value="testetotal@teste.com">
+            <button onclick="testEmailValidation()">Testar Email</button>
+            <div id="manualResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Testes Automáticos</h3>
+            <button onclick="runAllTests()">Executar Todos os Testes</button>
+            <div id="autoResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Log de Debug</h3>
+            <button onclick="clearLog()">Limpar Log</button>
+            <div id="debugLog" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        // Recriar o schema de validação Zod aqui
+        function validateEmail(email) {
+            const log = [];
+            
+            // 1. Verificar se não está vazio
+            if (!email || email.length === 0) {
+                log.push('❌ Email é obrigatório');
+                return { valid: false, errors: ['Email é obrigatório'], log };
+            }
+            log.push('✅ Email não está vazio');
+            
+            // 2. Verificar formato básico de email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                log.push('❌ Formato de email inválido');
+                return { valid: false, errors: ['Formato de email inválido'], log };
+            }
+            log.push('✅ Formato básico de email válido');
+            
+            // 3. Verificar se não tem espaços
+            if (email.includes(' ')) {
+                log.push('❌ Email não pode conter espaços');
+                return { valid: false, errors: ['Email não pode conter espaços'], log };
+            }
+            log.push('✅ Email não contém espaços');
+            
+            // 4. Verificar domínio básico
+            const parts = email.split('@');
+            if (parts.length !== 2) {
+                log.push('❌ Email deve ter exatamente um @');
+                return { valid: false, errors: ['Email deve ter exatamente um @'], log };
+            }
+            
+            const domain = parts[1];
+            if (!domain || !domain.includes('.')) {
+                log.push('❌ Domínio de email inválido (deve conter pelo menos um ponto)');
+                return { valid: false, errors: ['Domínio de email inválido'], log };
+            }
+            log.push('✅ Domínio contém ponto');
+            
+            // 5. Verificar se o domínio tem pelo menos uma parte após o ponto
+            const domainParts = domain.split('.');
+            const lastPart = domainParts[domainParts.length - 1];
+            if (!lastPart || lastPart.length === 0) {
+                log.push('❌ Domínio deve ter extensão válida');
+                return { valid: false, errors: ['Domínio deve ter extensão válida'], log };
+            }
+            log.push('✅ Domínio tem extensão');
+            
+            // 6. Verificar tamanho máximo
+            if (email.length > 254) {
+                log.push('❌ Email demasiado longo (máximo 254 caracteres)');
+                return { valid: false, errors: ['Email demasiado longo'], log };
+            }
+            log.push('✅ Email não é demasiado longo');
+            
+            log.push('🎉 Email válido!');
+            return { valid: true, errors: [], log };
+        }
+        
+        function testEmailValidation() {
+            const email = document.getElementById('testEmail').value;
+            const result = validateEmail(email);
+            const resultDiv = document.getElementById('manualResult');
+            
+            if (result.valid) {
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = `✅ Email "${email}" é VÁLIDO`;
+            } else {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `❌ Email "${email}" é INVÁLIDO<br>Erros: ${result.errors.join(', ')}`;
+            }
+            
+            // Adicionar ao log
+            addToLog(`\n🧪 Teste manual para: "${email}"`);
+            result.log.forEach(logEntry => addToLog(logEntry));
+        }
+        
+        function runAllTests() {
+            const testCases = [
+                { email: 'testetotal@teste.com', expected: false, description: 'Email da imagem (testetotal@teste.com)' },
+                { email: 'teste@teste', expected: false, description: 'Email sem extensão' },
+                { email: 'teste@teste.', expected: false, description: 'Email com ponto final mas sem extensão' },
+                { email: 'teste@teste.com', expected: true, description: 'Email válido básico' },
+                { email: 'user@example.org', expected: true, description: 'Email válido com .org' },
+                { email: 'test@domain', expected: false, description: 'Email sem TLD' },
+                { email: 'test @example.com', expected: false, description: 'Email com espaços' },
+                { email: '', expected: false, description: 'Email vazio' },
+                { email: 'invalid-email-format', expected: false, description: 'Email sem @ e domínio' }
+            ];
+            
+            const resultsDiv = document.getElementById('autoResults');
+            resultsDiv.innerHTML = '';
+            
+            addToLog('\n🚀 Executando testes automáticos...');
+            
+            testCases.forEach(({ email, expected, description }) => {
+                const result = validateEmail(email);
+                const testPassed = result.valid === expected;
+                
+                const testResult = document.createElement('div');
+                testResult.className = `result ${testPassed ? 'success' : 'error'}`;
+                
+                if (testPassed) {
+                    testResult.innerHTML = `✅ ${description}: PASSOU`;
+                    addToLog(`✅ ${description}: PASSOU`);
+                } else {
+                    testResult.innerHTML = `❌ ${description}: FALHOU<br>Email: "${email}"<br>Esperado: ${expected ? 'válido' : 'inválido'}, Obtido: ${result.valid ? 'válido' : 'inválido'}<br>Erros: ${result.errors.join(', ')}`;
+                    addToLog(`❌ ${description}: FALHOU`);
+                    addToLog(`   Email: "${email}"`);
+                    addToLog(`   Esperado: ${expected ? 'válido' : 'inválido'}, Obtido: ${result.valid ? 'válido' : 'inválido'}`);
+                    addToLog(`   Erros: ${result.errors.join(', ')}`);
+                }
+                
+                resultsDiv.appendChild(testResult);
+            });
+        }
+        
+        function addToLog(message) {
+            const logDiv = document.getElementById('debugLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('debugLog').textContent = '';
+        }
+        
+        // Executar teste inicial
+        window.onload = function() {
+            addToLog('🔧 Sistema de teste de validação de email carregado');
+            addToLog('📧 Email a testar: testetotal@teste.com');
+            testEmailValidation();
+        };
+    </script>
+</body>
+</html>

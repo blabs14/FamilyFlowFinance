@@ -1,0 +1,10 @@
+// Teste simples para verificar variáveis de ambiente
+console.log('=== DEBUG VARIÁVEIS DE AMBIENTE ===')
+console.log('VITE_SUPABASE_URL:', process.env.VITE_SUPABASE_URL)
+console.log('VITE_SUPABASE_ANON_KEY:', process.env.VITE_SUPABASE_ANON_KEY ? 'DEFINIDA' : 'NÃO DEFINIDA')
+console.log('VITE_SUPABASE_SERVICE_ROLE_KEY:', process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ? 'DEFINIDA' : 'NÃO DEFINIDA')
+console.log('SUPABASE_URL:', process.env.SUPABASE_URL)
+console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? 'DEFINIDA' : 'NÃO DEFINIDA')
+console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'DEFINIDA' : 'NÃO DEFINIDA')
+console.log('NODE_ENV:', process.env.NODE_ENV)
+console.log('=================================')

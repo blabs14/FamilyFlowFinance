@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useFamily } from '../features/family/FamilyContext';
+import { useOptionalFamily } from '../features/family/FamilyContext';
 import { useCreateTransaction } from '../hooks/useTransactionsQuery';
-import { useAccountsWithBalances } from '../hooks/useAccountsQuery';
+import { useAllAccountsWithBalances } from '../hooks/useAccountsQuery';
 import { useCategoriesDomain } from '../hooks/useCategoriesQuery';
 import { ensureTransferCategory } from '../services/categories';
 import { Input } from './ui/input';
@@ -35,12 +35,13 @@ interface TransferModalProps {
 
 const TransferModal = ({ isOpen, onClose }: TransferModalProps) => {
   const { user } = useAuth();
-  const { canEdit } = useFamily();
+  const family = useOptionalFamily();
   const queryClient = useQueryClient();
   const { mutateAsync: createTransaction, isPending: isCreating } = useCreateTransaction();
-  const { data: accounts = [] } = useAccountsWithBalances();
+  const { data: accounts = [] } = useAllAccountsWithBalances();
   const { data: categories = [] } = useCategoriesDomain();
   const { toast } = useToast();
+  const canEditTransaction = family?.canEdit?.('transaction') ?? true;
   
   const [fromAccountId, setFromAccountId] = useState('');
   const [toAccountId, setToAccountId] = useState('');
@@ -48,9 +49,16 @@ const TransferModal = ({ isOpen, onClose }: TransferModalProps) => {
   const [description, setDescription] = useState('');
   const [validationError, setValidationError] = useState('');
 
+  // Filtrar contas com saldo disponível
+  const availableAccounts = accounts.filter(account => account.saldo_disponivel > 0);
+
   // Usar as propriedades corretas das contas com saldos
-  const fromAccount = accounts.find(acc => acc.account_id === fromAccountId);
+  const fromAccount = availableAccounts.find(acc => acc.account_id === fromAccountId);
   const toAccount = accounts.find(acc => acc.account_id === toAccountId);
+  
+  // Detectar transferência cross-scope
+  const isCrossScopeTransfer = fromAccount && toAccount && 
+    (fromAccount as any).scope !== (toAccount as any).scope;
 
   // Buscar categoria de transferência ou usar a primeira categoria disponível
   const transferCategory = categories.find(cat => 
@@ -75,8 +83,8 @@ const TransferModal = ({ isOpen, onClose }: TransferModalProps) => {
     e.preventDefault();
     setValidationError('');
 
-    // Verificar permissões RBAC
-    if (!canEdit('transaction')) {
+    // Verificar permissões RBAC (usar contexto de família se disponível)
+    if (!canEditTransaction) {
       setValidationError('Não tem permissões para realizar transferências');
       toast({
         title: 'Acesso negado',
@@ -196,9 +204,7 @@ const TransferModal = ({ isOpen, onClose }: TransferModalProps) => {
     setAmount(numericValue);
   };
 
-  // Filtrar contas com saldo disponível
-  const availableAccounts = accounts.filter(account => account.saldo_disponivel > 0);
-  const hasEditPermission = canEdit('transaction');
+  const hasEditPermission = canEditTransaction;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open)=>{ if (!open) onClose(); }}>
@@ -233,7 +239,19 @@ const TransferModal = ({ isOpen, onClose }: TransferModalProps) => {
                 <SelectContent>
                   {availableAccounts.map(account => (
                     <SelectItem key={account.account_id} value={account.account_id}>
-                      {account.nome} - €{(account.saldo_disponivel || 0).toFixed(2)} disponível
+                      <div className="flex items-center justify-between w-full">
+                        <span>{account.nome}</span>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className={`px-2 py-1 rounded-full ${
+                            (account as any).scope === 'family' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {(account as any).scope === 'family' ? 'Familiar' : 'Pessoal'}
+                          </span>
+                          <span>€{(account.saldo_disponivel || 0).toFixed(2)} disponível</span>
+                        </div>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -251,12 +269,45 @@ const TransferModal = ({ isOpen, onClose }: TransferModalProps) => {
                 <SelectContent>
                   {accounts.map(account => (
                     <SelectItem key={account.account_id} value={account.account_id}>
-                      {account.nome} - €{(account.saldo_atual || 0).toFixed(2)} saldo atual
+                      <div className="flex items-center justify-between w-full">
+                        <span>{account.nome}</span>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className={`px-2 py-1 rounded-full ${
+                            (account as any).scope === 'family' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {(account as any).scope === 'family' ? 'Familiar' : 'Pessoal'}
+                          </span>
+                          <span>€{(account.saldo_atual || 0).toFixed(2)} saldo atual</span>
+                        </div>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Aviso para transferências cross-scope */}
+            {isCrossScopeTransfer && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-blue-600 text-xs font-bold">!</span>
+                  </div>
+                  <div className="text-sm">
+                    <p className="font-medium text-blue-800 mb-1">
+                      Transferência entre âmbitos diferentes
+                    </p>
+                    <p className="text-blue-700">
+                      Está a transferir entre uma conta {(fromAccount as any)?.scope === 'family' ? 'familiar' : 'pessoal'} 
+                      {' '}e uma conta {(toAccount as any)?.scope === 'family' ? 'familiar' : 'pessoal'}. 
+                      Esta operação será registada em ambos os âmbitos.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <label htmlFor="amount" className="text-sm font-medium">

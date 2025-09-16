@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Validação Formulário Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+        }
+        .iframe-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .controls {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px 0;
+            width: 100%;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .log-container {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        .log-info { background: #d1ecf1; color: #0c5460; }
+        .log-success { background: #d4edda; color: #155724; }
+        .log-warning { background: #fff3cd; color: #856404; }
+        .log-error { background: #f8d7da; color: #721c24; }
+        .log-debug { background: #e2e3e5; color: #383d41; }
+        h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.warning { background: #fff3cd; color: #856404; }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste de Validação do Formulário de Login</h1>
+    
+    <div class="container">
+        <div class="iframe-container">
+            <h3>Página de Login</h3>
+            <iframe id="loginFrame" src="/login"></iframe>
+        </div>
+        
+        <div class="controls">
+            <h3>Controlos de Teste</h3>
+            
+            <label for="testEmail">Email de Teste:</label>
+            <input type="email" id="testEmail" value="teste@exemplo.com" placeholder="Email para testar">
+            
+            <label for="testPassword">Password de Teste:</label>
+            <input type="password" id="testPassword" value="123456" placeholder="Password para testar">
+            
+            <button onclick="fillForm()">📝 Preencher Formulário</button>
+            <button onclick="submitForm()">🚀 Submeter Formulário</button>
+            <button onclick="checkFormState()">🔍 Verificar Estado do Formulário</button>
+            <button onclick="checkButtonState()">🔘 Verificar Estado do Botão</button>
+            <button onclick="simulateClick()">👆 Simular Clique no Botão</button>
+            <button onclick="reloadPage()">🔄 Recarregar Página</button>
+            <button onclick="clearLogs()">🧹 Limpar Logs</button>
+            
+            <div id="status" class="status warning">Aguardando ação...</div>
+            
+            <div class="log-container" id="logContainer">
+                <div class="log-entry log-info">Sistema iniciado. Aguardando comandos...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logCount = 0;
+        
+        function log(message, type = 'info') {
+            logCount++;
+            const timestamp = new Date().toLocaleTimeString();
+            const logContainer = document.getElementById('logContainer');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            if (logCount > 100) {
+                const firstLog = logContainer.querySelector('.log-entry');
+                if (firstLog) firstLog.remove();
+                logCount--;
+            }
+        }
+        
+        function updateStatus(message, type = 'warning') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        function getIframeDocument() {
+            const iframe = document.getElementById('loginFrame');
+            try {
+                return iframe.contentDocument || iframe.contentWindow.document;
+            } catch (e) {
+                log('❌ Erro ao aceder ao documento do iframe: ' + e.message, 'error');
+                return null;
+            }
+        }
+        
+        function fillForm() {
+            log('📝 Tentando preencher formulário...', 'info');
+            const doc = getIframeDocument();
+            if (!doc) return;
+            
+            const emailInput = doc.querySelector('input[type="email"], input[id="email"]');
+            const passwordInput = doc.querySelector('input[type="password"], input[id="password"]');
+            const testEmail = document.getElementById('testEmail').value;
+            const testPassword = document.getElementById('testPassword').value;
+            
+            if (emailInput && passwordInput) {
+                emailInput.value = testEmail;
+                passwordInput.value = testPassword;
+                
+                // Disparar eventos para React Hook Form
+                emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+                emailInput.dispatchEvent(new Event('change', { bubbles: true }));
+                passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+                passwordInput.dispatchEvent(new Event('change', { bubbles: true }));
+                
+                log(`✅ Formulário preenchido: ${testEmail} / ${testPassword}`, 'success');
+                updateStatus('Formulário preenchido com sucesso', 'success');
+            } else {
+                log('❌ Campos de email ou password não encontrados', 'error');
+                updateStatus('Erro: Campos não encontrados', 'error');
+            }
+        }
+        
+        function submitForm() {
+            log('🚀 Tentando submeter formulário...', 'info');
+            const doc = getIframeDocument();
+            if (!doc) return;
+            
+            const form = doc.querySelector('form');
+            if (form) {
+                log('📋 Formulário encontrado, submetendo...', 'info');
+                form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                updateStatus('Formulário submetido', 'success');
+            } else {
+                log('❌ Formulário não encontrado', 'error');
+                updateStatus('Erro: Formulário não encontrado', 'error');
+            }
+        }
+        
+        function checkFormState() {
+            log('🔍 Verificando estado do formulário...', 'info');
+            const doc = getIframeDocument();
+            if (!doc) return;
+            
+            const emailInput = doc.querySelector('input[type="email"], input[id="email"]');
+            const passwordInput = doc.querySelector('input[type="password"], input[id="password"]');
+            const submitButton = doc.querySelector('button[type="submit"]');
+            
+            if (emailInput) {
+                log(`📧 Email: "${emailInput.value}" (válido: ${emailInput.checkValidity()})`, 'debug');
+            }
+            if (passwordInput) {
+                log(`🔑 Password: "${passwordInput.value}" (length: ${passwordInput.value.length})`, 'debug');
+            }
+            if (submitButton) {
+                log(`🔘 Botão: disabled=${submitButton.disabled}, text="${submitButton.textContent?.trim()}"`, 'debug');
+            }
+            
+            updateStatus('Estado verificado - ver logs', 'success');
+        }
+        
+        function checkButtonState() {
+            log('🔘 Verificando estado específico do botão...', 'info');
+            const doc = getIframeDocument();
+            if (!doc) return;
+            
+            const submitButton = doc.querySelector('button[type="submit"]');
+            if (submitButton) {
+                const isDisabled = submitButton.disabled;
+                const buttonText = submitButton.textContent?.trim();
+                const hasLoader = submitButton.querySelector('.animate-spin') !== null;
+                
+                log(`🔘 Botão encontrado:`, 'debug');
+                log(`   - Disabled: ${isDisabled}`, 'debug');
+                log(`   - Texto: "${buttonText}"`, 'debug');
+                log(`   - Tem loader: ${hasLoader}`, 'debug');
+                log(`   - Classes: ${submitButton.className}`, 'debug');
+                
+                if (isDisabled) {
+                    log('⚠️ Botão está desabilitado!', 'warning');
+                    updateStatus('Botão desabilitado', 'warning');
+                } else {
+                    log('✅ Botão está habilitado!', 'success');
+                    updateStatus('Botão habilitado', 'success');
+                }
+            } else {
+                log('❌ Botão de submit não encontrado', 'error');
+                updateStatus('Erro: Botão não encontrado', 'error');
+            }
+        }
+        
+        function simulateClick() {
+            log('👆 Simulando clique no botão...', 'info');
+            const doc = getIframeDocument();
+            if (!doc) return;
+            
+            const submitButton = doc.querySelector('button[type="submit"]');
+            if (submitButton) {
+                if (submitButton.disabled) {
+                    log('⚠️ Botão está desabilitado, não é possível clicar', 'warning');
+                    updateStatus('Botão desabilitado - clique ignorado', 'warning');
+                } else {
+                    log('🖱️ Clicando no botão...', 'info');
+                    submitButton.click();
+                    updateStatus('Clique simulado', 'success');
+                }
+            } else {
+                log('❌ Botão não encontrado para clique', 'error');
+                updateStatus('Erro: Botão não encontrado', 'error');
+            }
+        }
+        
+        function reloadPage() {
+            log('🔄 Recarregando página...', 'info');
+            const iframe = document.getElementById('loginFrame');
+            iframe.src = iframe.src;
+            updateStatus('Página recarregada', 'success');
+        }
+        
+        function clearLogs() {
+            const logContainer = document.getElementById('logContainer');
+            logContainer.innerHTML = '<div class="log-entry log-info">Logs limpos. Sistema pronto.</div>';
+            logCount = 1;
+            updateStatus('Logs limpos', 'success');
+        }
+        
+        // Monitorizar mudanças no iframe
+        document.getElementById('loginFrame').addEventListener('load', function() {
+            log('🔄 Iframe carregado', 'success');
+            updateStatus('Página carregada', 'success');
+        });
+        
+        // Log inicial
+        log('🚀 Sistema de teste iniciado', 'success');
+        log('📋 Use os controlos para testar o formulário de login', 'info');
+    </script>
+</body>
+</html>

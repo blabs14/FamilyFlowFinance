@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/77</span>
+                <span class='fraction'>0/78</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/77</span>
+                <span class='fraction'>0/78</span>
             </div>
         
             
@@ -154,7 +154,8 @@
 <a name='L89'></a><a href='#L89'>89</a>
 <a name='L90'></a><a href='#L90'>90</a>
 <a name='L91'></a><a href='#L91'>91</a>
-<a name='L92'></a><a href='#L92'>92</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -165,6 +166,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -257,6 +259,7 @@
   GoalFundingRuleUpdate
 } from '../services/goalFunding';
 <span class="cstat-no" title="statement not covered" >import { showError } from '../lib/utils';</span>
+<span class="cstat-no" title="statement not covered" >import { logger } from '@/shared/lib/logger';</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const useGoalFunding = (goalId: string | null | undefined) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  const { user } = useAuth();</span>
@@ -271,7 +274,7 @@
 <span class="cstat-no" title="statement not covered" >        if (error) throw error;</span>
 <span class="cstat-no" title="statement not covered" >        return data || [];</span>
 <span class="cstat-no" title="statement not covered" >      } catch (err: any) {</span>
-<span class="cstat-no" title="statement not covered" >        console.error('Failed to fetch goal funding rules', err);</span>
+<span class="cstat-no" title="statement not covered" >        logger.error('Failed to fetch goal funding rules', err);</span>
 <span class="cstat-no" title="statement not covered" >        showError(err?.message || 'Falha ao obter regras de funding');</span>
 <span class="cstat-no" title="statement not covered" >        return [] as any[];</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
@@ -288,7 +291,7 @@
 <span class="cstat-no" title="statement not covered" >        if (error) throw error;</span>
 <span class="cstat-no" title="statement not covered" >        return data || [];</span>
 <span class="cstat-no" title="statement not covered" >      } catch (err: any) {</span>
-<span class="cstat-no" title="statement not covered" >        console.error('Failed to fetch goal contributions', err);</span>
+<span class="cstat-no" title="statement not covered" >        logger.error('Failed to fetch goal contributions', err);</span>
 <span class="cstat-no" title="statement not covered" >        showError(err?.message || 'Falha ao obter contribuições');</span>
 <span class="cstat-no" title="statement not covered" >        return [] as any[];</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
@@ -302,7 +305,7 @@
 <span class="cstat-no" title="statement not covered" >      queryClient.invalidateQueries({ queryKey: ['goalFundingRules'] });</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    onError: (err: any) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Failed to create funding rule', err);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Failed to create funding rule', err);</span>
 <span class="cstat-no" title="statement not covered" >      showError(err?.message || 'Falha ao criar regra');</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  });</span>
@@ -313,7 +316,7 @@
 <span class="cstat-no" title="statement not covered" >      queryClient.invalidateQueries({ queryKey: ['goalFundingRules'] });</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    onError: (err: any) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Failed to update funding rule', err);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Failed to update funding rule', err);</span>
 <span class="cstat-no" title="statement not covered" >      showError(err?.message || 'Falha ao atualizar regra');</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  });</span>
@@ -324,7 +327,7 @@
 <span class="cstat-no" title="statement not covered" >      queryClient.invalidateQueries({ queryKey: ['goalFundingRules'] });</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    onError: (err: any) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Failed to delete funding rule', err);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Failed to delete funding rule', err);</span>
 <span class="cstat-no" title="statement not covered" >      showError(err?.message || 'Falha ao eliminar regra');</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  });</span>
@@ -343,7 +346,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.525Z
+                at 2025-09-14T17:15:09.625Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

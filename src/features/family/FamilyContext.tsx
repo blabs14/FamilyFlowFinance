@@ -10,3 +10,7 @@ export const useFamily = () => {
   }
   return context;
 }; 
+
+export const useOptionalFamily = () => {
+  return useContext(FamilyContext);
+};

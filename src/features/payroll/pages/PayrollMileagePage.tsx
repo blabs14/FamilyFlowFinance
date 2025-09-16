@@ -150,17 +150,31 @@ const PayrollMileagePage: React.FC = () => {
     
     setIsSaving(true);
     try {
-      if (selectedTrip) {
+      // Se o formulário já persistiu e devolveu a entidade com id, evitar duplicar chamadas
+      if ((tripData as PayrollMileageTrip)?.id) {
+        const saved = tripData as PayrollMileageTrip;
+        setTrips(prev => {
+          const exists = prev.some(t => t.id === saved.id);
+          return exists
+            ? prev.map(t => (t.id === saved.id ? { ...t, ...saved } : t))
+            : [saved, ...prev];
+        });
+        toast({
+          title: 'Sucesso',
+          description: selectedTrip ? 'Viagem atualizada com sucesso.' : 'Viagem criada com sucesso.',
+          variant: 'default'
+        });
+      } else if (selectedTrip) {
         await payrollService.updateMileageTrip(selectedTrip.id, tripData);
-        setTrips(prev => prev.map(t => t.id === selectedTrip.id ? { ...t, ...tripData } : t));
+        setTrips(prev => prev.map(t => (t.id === selectedTrip.id ? { ...t, ...tripData } as PayrollMileageTrip : t)));
         toast({
           title: 'Sucesso',
           description: 'Viagem atualizada com sucesso.',
           variant: 'default'
         });
       } else {
-        const { policy_id, id, user_id, created_at, updated_at, ...cleanTripData } = tripData;
-        const newTrip = await payrollService.createMileageTrip(user.id, policy_id!, cleanTripData);
+        const { policy_id, id, user_id, created_at, updated_at, ...cleanTripData } = tripData as PayrollMileageTrip;
+        const newTrip = await payrollService.createMileageTrip(user.id, policy_id!, cleanTripData as any);
         setTrips(prev => [newTrip, ...prev]);
         toast({
           title: 'Sucesso',
@@ -335,7 +349,7 @@ const PayrollMileagePage: React.FC = () => {
             <Euro className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(monthlyStats.totalAmount * 100, 'pt-PT', activeContract?.currency || 'EUR')}</div>
+            <div className="text-2xl font-bold">{formatCurrency(monthlyStats.totalAmount, 'pt-PT', activeContract?.currency || 'EUR')}</div>
           </CardContent>
         </Card>
       </div>

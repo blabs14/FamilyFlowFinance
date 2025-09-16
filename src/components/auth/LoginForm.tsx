@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '../../contexts/AuthContext';
@@ -18,34 +18,45 @@ export default function LoginForm() {
   const [error, setError] = useState('');
   const { login, loading, user } = useAuth();
   const navigate = useNavigate();
-  const emailRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isSubmitted, touchedFields },
     setError: setFormError,
-    clearErrors
+    clearErrors,
+    setFocus,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    mode: 'onBlur'
+    mode: 'onChange',
+    defaultValues: { email: '', password: '' },
   });
 
   const handleLogin = async (data: LoginFormData) => {
+    console.log('🔐 [LoginForm] Iniciando processo de login...');
+    console.log('📧 [LoginForm] Email:', data.email);
+    console.log('🔑 [LoginForm] Password length:', data.password?.length);
+    
+
+    
     setError('');
     clearErrors();
-    
-    const { error } = await login(data.email, data.password) || {};
-    if (error) {
-      setError(error.message);
-      showError('Erro ao iniciar sessão: ' + error.message);
-      emailRef.current?.focus();
-    } else {
-      navigate('/app');
+    try {
+      const result = (await login(data.email, data.password)) || {};
+      if (result.error) {
+        setError(result.error.message);
+        showError('Erro ao iniciar sessão: ' + result.error.message);
+        setFocus('email');
+      } else {
+        navigate('/app');
+      }
+    } catch (err) {
+      setError('Erro inesperado. Tente novamente.');
     }
   };
 
   const handleOAuth = async (provider: 'google' | 'apple' | 'facebook') => {
+    console.log(`🔗 [LoginForm] Iniciando login OAuth com ${provider}...`);
     setError('');
     try {
       if (provider === 'google') await signInWithGoogle();
@@ -59,10 +70,11 @@ export default function LoginForm() {
   };
 
   useEffect(() => {
-    if (user) {
-      navigate('/app');
-    }
+    if (user) navigate('/app');
   }, [user, navigate]);
+
+  const showEmailError = (!!errors.email && (touchedFields.email || isSubmitted));
+  const showPasswordError = (!!errors.password && (touchedFields.password || isSubmitted));
 
   return (
     <div className="space-y-6">
@@ -72,11 +84,9 @@ export default function LoginForm() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        
+
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm font-medium">
-            Email
-          </Label>
+          <Label htmlFor="email" className="text-sm font-medium">Email</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
@@ -84,22 +94,19 @@ export default function LoginForm() {
               type="email"
               placeholder="exemplo@email.com"
               {...register('email')}
-              ref={emailRef}
               autoFocus
-              className={`pl-10 ${errors.email ? 'border-red-500 focus:border-red-500' : ''}`}
-              aria-invalid={!!errors.email}
+              className={`pl-10 ${showEmailError ? 'border-red-500 focus:border-red-500' : ''}`}
+              aria-invalid={showEmailError}
             />
           </div>
-          {errors.email && (
-            <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
+          {showEmailError && (
+            <p className="text-sm text-red-600 mt-1">{errors.email?.message}</p>
           )}
           <p className="text-xs text-muted-foreground">O seu email de acesso.</p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-sm font-medium">
-            Password
-          </Label>
+          <Label htmlFor="password" className="text-sm font-medium">Password</Label>
           <div className="relative">
             <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
@@ -107,22 +114,17 @@ export default function LoginForm() {
               type="password"
               placeholder="Password"
               {...register('password')}
-              className={`pl-10 ${errors.password ? 'border-red-500 focus:border-red-500' : ''}`}
-              aria-invalid={!!errors.password}
+              className={`pl-10 ${showPasswordError ? 'border-red-500 focus:border-red-500' : ''}`}
+              aria-invalid={showPasswordError}
             />
           </div>
-          {errors.password && (
-            <p className="text-sm text-red-600 mt-1">{errors.password.message}</p>
+          {showPasswordError && (
+            <p className="text-sm text-red-600 mt-1">{errors.password?.message}</p>
           )}
           <p className="text-xs text-muted-foreground">Deve ter pelo menos 6 caracteres.</p>
         </div>
 
-        <Button 
-          type="submit" 
-          disabled={isSubmitting || loading} 
-          className="w-full"
-          variant="default"
-        >
+        <Button type="submit" disabled={isSubmitting || loading} className="w-full" variant="default">
           {(isSubmitting || loading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {(isSubmitting || loading) ? 'A entrar...' : 'Entrar'}
         </Button>
@@ -139,39 +141,21 @@ export default function LoginForm() {
         </div>
 
         <div className="space-y-2">
-          <Button 
-            type="button" 
-            onClick={() => handleOAuth('google')} 
-            disabled={loading} 
-            variant="outline"
-            className="w-full"
-          >
+          <Button type="button" onClick={() => handleOAuth('google')} disabled={loading} variant="outline" className="w-full">
             <div className="w-4 h-4 mr-2 bg-[#4285f4] rounded-sm flex items-center justify-center">
               <span className="text-white text-xs font-bold">G</span>
             </div>
             Entrar com Google
           </Button>
 
-          <Button 
-            type="button" 
-            onClick={() => handleOAuth('apple')} 
-            disabled={loading} 
-            variant="outline"
-            className="w-full"
-          >
+          <Button type="button" onClick={() => handleOAuth('apple')} disabled={loading} variant="outline" className="w-full">
             <div className="w-4 h-4 mr-2 bg-black rounded-sm flex items-center justify-center">
               <span className="text-white text-xs">🍎</span>
             </div>
             Entrar com Apple
           </Button>
 
-          <Button 
-            type="button" 
-            onClick={() => handleOAuth('facebook')} 
-            disabled={loading} 
-            variant="outline"
-            className="w-full"
-          >
+          <Button type="button" onClick={() => handleOAuth('facebook')} disabled={loading} variant="outline" className="w-full">
             <div className="w-4 h-4 mr-2 bg-[#1877f2] rounded-sm flex items-center justify-center">
               <span className="text-white text-xs font-bold">f</span>
             </div>

@@ -16,13 +16,16 @@ interface LocaleContextType {
 
 const LocaleContext = createContext<LocaleContextType | undefined>(undefined);
 
-export const useLocale = (): LocaleContextType => {
+// Hook separado para resolver problemas de Fast Refresh
+const useLocale = (): LocaleContextType => {
   const context = useContext(LocaleContext);
   if (!context) {
     throw new Error('useLocale deve ser usado dentro de LocaleProvider');
   }
   return context;
 };
+
+export { useLocale };
 
 interface LocaleProviderProps {
   children: ReactNode;

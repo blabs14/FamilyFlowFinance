@@ -9,5 +9,5 @@ export const transactionSchema = z.object({
   categoria_id: z.string().trim().min(1, 'Categoria obrigatória'),
   data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida (YYYY-MM-DD)').min(1, 'Data obrigatória'),
   descricao: z.string().trim().max(255, 'Descrição demasiado longa').optional(),
-  tipo: z.enum(['receita', 'despesa'], { message: 'Tipo obrigatório' }),
-}); 
+  tipo: z.enum(['receita', 'despesa']),
+});

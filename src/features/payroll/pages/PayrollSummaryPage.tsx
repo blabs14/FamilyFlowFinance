@@ -129,55 +129,50 @@ const PayrollSummaryPage: React.FC = () => {
 
   // Função para carregar entradas da timesheet por mês
   const loadTimesheetEntries = async (userId: string, contractId: string, month: number, year: number): Promise<TimesheetEntry[]> => {
-    try {
-      // Calcular primeiro e último dia do mês
-      const firstDay = new Date(year, month - 1, 1);
-      const lastDay = new Date(year, month, 0);
-      
-      // Buscar todas as entradas do mês
-      const entries = await payrollService.getTimeEntries(
+    // Calcular primeiro e último dia do mês
+    const firstDay = new Date(year, month - 1, 1);
+    const lastDay = new Date(year, month, 0);
+    
+    // Buscar todas as entradas do mês
+    const entries = await payrollService.getTimeEntries(
+      userId,
+      contractId,
+      firstDay.toISOString().split('T')[0],
+      lastDay.toISOString().split('T')[0]
+    );
+
+    // Buscar dados complementares
+    const [leaves, holidays, vacations] = await Promise.all([
+      payrollService.getLeavesForWeek(
         userId,
-        contractId,
         firstDay.toISOString().split('T')[0],
-        lastDay.toISOString().split('T')[0]
-      );
+        lastDay.toISOString().split('T')[0],
+        contractId
+      ),
+      payrollService.getHolidays(userId, year, contractId, activeContract?.workplace_location),
+      payrollService.getVacations(userId, contractId, year)
+    ]);
 
-      // Buscar dados complementares
-      const [leaves, holidays, vacations] = await Promise.all([
-        payrollService.getLeavesForWeek(
-          userId,
-          firstDay.toISOString().split('T')[0],
-          lastDay.toISOString().split('T')[0],
-          contractId
-        ),
-        payrollService.getHolidays(userId, year, contractId),
-        payrollService.getVacations(userId, contractId, year)
-      ]);
+    // Converter para TimesheetEntry
+    const timesheetEntries: TimesheetEntry[] = entries.map(entry => {
+      const dateStr = entry.date;
+      const isHoliday = holidays.some(h => h.date === dateStr);
+      const leave = leaves.find(l => l.date === dateStr);
+      
+      return {
+        date: dateStr,
+        startTime: entry.start_time || '',
+        endTime: entry.end_time || '',
+        breakMinutes: entry.break_minutes || 0,
+        description: entry.description || '',
+        isHoliday,
+        isSick: leave?.is_sick || false,
+        isVacation: leave?.is_vacation || false,
+        isException: entry.is_exception || false
+      };
+    });
 
-      // Converter para TimesheetEntry
-      const timesheetEntries: TimesheetEntry[] = entries.map(entry => {
-        const dateStr = entry.date;
-        const isHoliday = holidays.some(h => h.date === dateStr);
-        const leave = leaves.find(l => l.date === dateStr);
-        
-        return {
-          date: dateStr,
-          startTime: entry.start_time || '',
-          endTime: entry.end_time || '',
-          breakMinutes: entry.break_minutes || 0,
-          description: entry.description || '',
-          isHoliday,
-          isSick: leave?.is_sick || false,
-          isVacation: leave?.is_vacation || false,
-          isException: entry.is_exception || false
-        };
-      });
-
-      return timesheetEntries;
-    } catch (error) {
-      console.error('Erro ao carregar entradas da timesheet:', error);
-      return [];
-    }
+    return timesheetEntries;
   };
 
   const loadMonthlyTotals = async () => {
@@ -231,14 +226,41 @@ const PayrollSummaryPage: React.FC = () => {
         console.log('[PayrollSummary] 📋 Extracting overtime from timesheet...');
         
         // Buscar entradas da timesheet para o mês selecionado
-        const timesheetEntries = await loadTimesheetEntries(user.id, activeContract.id, selectedMonth, selectedYear);
+        let timesheetEntries = [];
+        try {
+          timesheetEntries = await loadTimesheetEntries(user.id, activeContract.id, selectedMonth, selectedYear);
+        } catch (timesheetError) {
+          console.error('[PayrollSummary] ❌ Error loading timesheet entries:', timesheetError);
+          toast({
+            title: "Erro ao carregar dados da timesheet",
+            description: "Não foi possível carregar os dados da timesheet. Usando cálculo tradicional.",
+            variant: "destructive",
+          });
+          // Continue with empty timesheet entries to fallback to traditional calculation
+          timesheetEntries = [];
+        }
         
         if (timesheetEntries.length > 0) {
           // Buscar política de horas extras e feriados
-          const [otPolicy, holidays] = await Promise.all([
-            payrollService.getActiveOTPolicy(user.id, activeContract.id),
-            payrollService.getHolidays(user.id, selectedYear, activeContract.id)
-          ]);
+          let otPolicy = null;
+          let holidays = [];
+          
+          try {
+            [otPolicy, holidays] = await Promise.all([
+              payrollService.getActiveOTPolicy(user.id, activeContract.id),
+              payrollService.getHolidays(user.id, selectedYear, activeContract.id, activeContract?.workplace_location)
+            ]);
+          } catch (policyError) {
+            console.error('[PayrollSummary] ❌ Error loading overtime policy:', policyError);
+            toast({
+              title: "Erro ao carregar política de horas extras",
+              description: "Não foi possível carregar a política de horas extras. Usando cálculo tradicional.",
+              variant: "destructive",
+            });
+            // Continue with null policy to fallback to traditional calculation
+            otPolicy = null;
+            holidays = [];
+          }
           
           if (otPolicy) {
             // Calcular taxa horária

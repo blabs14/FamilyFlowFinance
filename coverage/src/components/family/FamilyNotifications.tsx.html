@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/334</span>
+                <span class='fraction'>0/335</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/334</span>
+                <span class='fraction'>0/335</span>
             </div>
         
             
@@ -496,7 +496,8 @@
 <a name='L431'></a><a href='#L431'>431</a>
 <a name='L432'></a><a href='#L432'>432</a>
 <a name='L433'></a><a href='#L433'>433</a>
-<a name='L434'></a><a href='#L434'>434</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L434'></a><a href='#L434'>434</a>
+<a name='L435'></a><a href='#L435'>435</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -505,6 +506,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -942,6 +944,7 @@ import { FamilyNotification } from '../../types/family';
 <span class="cstat-no" title="statement not covered" >import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';</span>
 <span class="cstat-no" title="statement not covered" >import { useConfirmation } from '../../hooks/useConfirmation';</span>
 <span class="cstat-no" title="statement not covered" >import { ConfirmationDialog } from '../ui/confirmation-dialog';</span>
+<span class="cstat-no" title="statement not covered" >import { logger } from '../../shared/lib/logger';</span>
 &nbsp;
 interface FamilyNotificationsProps {
   familyId: string;
@@ -961,7 +964,7 @@ interface FamilyNotificationsProps {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const updateUnreadCount = useCallback((notifList?: FamilyNotification[]) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    const list = notifList || notifications;</span>
-<span class="cstat-no" title="statement not covered" >    const unread = list.filter(n =&gt; !n.read).length;</span>
+<span class="cstat-no" title="statement not covered" >    const unread = list.filter(n =&gt; !n.lida).length;</span>
 <span class="cstat-no" title="statement not covered" >    setUnreadCount(unread);</span>
 <span class="cstat-no" title="statement not covered" >  }, [notifications]);</span>
 &nbsp;
@@ -983,7 +986,7 @@ interface FamilyNotificationsProps {
 <span class="cstat-no" title="statement not covered" >      setNotifications(typedData);</span>
 <span class="cstat-no" title="statement not covered" >      updateUnreadCount(typedData);</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro ao carregar notificações familiares:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Erro ao carregar notificações familiares:', error);</span>
 <span class="cstat-no" title="statement not covered" >      toast({</span>
 <span class="cstat-no" title="statement not covered" >        title: 'Erro',</span>
 <span class="cstat-no" title="statement not covered" >        description: 'Não foi possível carregar as notificações',</span>
@@ -998,19 +1001,19 @@ interface FamilyNotificationsProps {
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      const { error } = await supabase</span>
 <span class="cstat-no" title="statement not covered" >        .from('notifications')</span>
-<span class="cstat-no" title="statement not covered" >        .update({ read: true })</span>
+<span class="cstat-no" title="statement not covered" >        .update({ lida: true })</span>
 <span class="cstat-no" title="statement not covered" >        .eq('id', notificationId);</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      if (error) throw error;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      setNotifications(prev =&gt; </span>
 <span class="cstat-no" title="statement not covered" >        prev.map(notif =&gt; </span>
-<span class="cstat-no" title="statement not covered" >          notif.id === notificationId ? { ...notif, read: true } : notif</span>
+<span class="cstat-no" title="statement not covered" >          notif.id === notificationId ? { ...notif, lida: true } : notif</span>
         )
       );
 <span class="cstat-no" title="statement not covered" >      updateUnreadCount();</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro ao marcar notificação como lida:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Erro ao marcar notificação como lida:', error);</span>
 <span class="cstat-no" title="statement not covered" >      toast({</span>
 <span class="cstat-no" title="statement not covered" >        title: 'Erro',</span>
 <span class="cstat-no" title="statement not covered" >        description: 'Não foi possível marcar a notificação como lida',</span>
@@ -1025,18 +1028,18 @@ interface FamilyNotificationsProps {
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      const { error } = await supabase</span>
 <span class="cstat-no" title="statement not covered" >        .from('notifications')</span>
-<span class="cstat-no" title="statement not covered" >        .update({ read: true })</span>
+<span class="cstat-no" title="statement not covered" >        .update({ lida: true })</span>
 <span class="cstat-no" title="statement not covered" >        .eq('family_id', familyId)</span>
-<span class="cstat-no" title="statement not covered" >        .eq('read', false);</span>
+<span class="cstat-no" title="statement not covered" >        .eq('lida', false);</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      if (error) throw error;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      setNotifications(prev =&gt; </span>
-<span class="cstat-no" title="statement not covered" >        prev.map(notif =&gt; ({ ...notif, read: true }))</span>
+<span class="cstat-no" title="statement not covered" >        prev.map(notif =&gt; ({ ...notif, lida: true }))</span>
       );
 <span class="cstat-no" title="statement not covered" >      setUnreadCount(0);</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro ao marcar todas as notificações como lidas:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Erro ao marcar todas as notificações como lidas:', error);</span>
 <span class="cstat-no" title="statement not covered" >      toast({</span>
 <span class="cstat-no" title="statement not covered" >        title: 'Erro',</span>
 <span class="cstat-no" title="statement not covered" >        description: 'Não foi possível marcar todas as notificações como lidas',</span>
@@ -1057,7 +1060,7 @@ interface FamilyNotificationsProps {
 <span class="cstat-no" title="statement not covered" >      setNotifications(prev =&gt; prev.filter(notif =&gt; notif.id !== notificationId));</span>
 <span class="cstat-no" title="statement not covered" >      updateUnreadCount();</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro ao eliminar notificação:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Erro ao eliminar notificação:', error);</span>
 <span class="cstat-no" title="statement not covered" >      toast({</span>
 <span class="cstat-no" title="statement not covered" >        title: 'Erro',</span>
 <span class="cstat-no" title="statement not covered" >        description: 'Não foi possível eliminar a notificação',</span>
@@ -1113,8 +1116,8 @@ interface FamilyNotificationsProps {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const filteredNotifications = useMemo(() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    return (notifications || [])</span>
-<span class="cstat-no" title="statement not covered" >      .filter(n =&gt; (filterType === 'all' ? true : n.type === filterType))</span>
-<span class="cstat-no" title="statement not covered" >      .filter(n =&gt; (filterRead === 'all' ? true : filterRead === 'unread' ? !n.read : n.read))</span>
+<span class="cstat-no" title="statement not covered" >      .filter(n =&gt; (filterType === 'all' ? true : n.tipo === filterType))</span>
+<span class="cstat-no" title="statement not covered" >      .filter(n =&gt; (filterRead === 'all' ? true : filterRead === 'unread' ? !n.lida : n.lida))</span>
 <span class="cstat-no" title="statement not covered" >      .filter(n =&gt; (filterCategory === 'all' ? true : n.category === filterCategory));</span>
 <span class="cstat-no" title="statement not covered" >  }, [notifications, filterType, filterRead, filterCategory]);</span>
 &nbsp;
@@ -1143,12 +1146,12 @@ interface FamilyNotificationsProps {
 <span class="cstat-no" title="statement not covered" >          setUnreadCount(prev =&gt; prev + 1);</span>
           
 <span class="cstat-no" title="statement not covered" >          // Mostrar toast para nova notificação</span>
-<span class="cstat-no" title="statement not covered" >          if (newNotification.type === 'error') {</span>
-<span class="cstat-no" title="statement not covered" >            notifyError({ title: newNotification.title, description: newNotification.message });</span>
-<span class="cstat-no" title="statement not covered" >          } else if (newNotification.type === 'success') {</span>
-<span class="cstat-no" title="statement not covered" >            notifySuccess({ title: newNotification.title, description: newNotification.message });</span>
+<span class="cstat-no" title="statement not covered" >          if (newNotification.tipo === 'error') {</span>
+<span class="cstat-no" title="statement not covered" >            notifyError({ title: newNotification.titulo, description: newNotification.mensagem });</span>
+<span class="cstat-no" title="statement not covered" >          } else if (newNotification.tipo === 'success') {</span>
+<span class="cstat-no" title="statement not covered" >            notifySuccess({ title: newNotification.titulo, description: newNotification.mensagem });</span>
 <span class="cstat-no" title="statement not covered" >          } else {</span>
-<span class="cstat-no" title="statement not covered" >            notifyInfo({ title: newNotification.title, description: newNotification.message });</span>
+<span class="cstat-no" title="statement not covered" >            notifyInfo({ title: newNotification.titulo, description: newNotification.mensagem });</span>
 <span class="cstat-no" title="statement not covered" >          }</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
       )
@@ -1290,27 +1293,27 @@ interface FamilyNotificationsProps {
 <span class="cstat-no" title="statement not covered" >                  &lt;div</span>
 <span class="cstat-no" title="statement not covered" >                    key={notification.id}</span>
 <span class="cstat-no" title="statement not covered" >                    className={`p-4 hover:bg-gray-50 transition-colors ${</span>
-<span class="cstat-no" title="statement not covered" >                      !notification.read ? 'bg-blue-50' : ''</span>
+<span class="cstat-no" title="statement not covered" >                      !notification.lida ? 'bg-blue-50' : ''</span>
 <span class="cstat-no" title="statement not covered" >                    }`}</span>
                   &gt;
 <span class="cstat-no" title="statement not covered" >                    &lt;div className="flex items-start gap-3"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;div className={`p-2 rounded-full ${getNotificationColor(notification.type)}`}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                      &lt;div className={`p-2 rounded-full ${getNotificationColor(notification.tipo)}`}&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        {getNotificationIcon(notification.category)}</span>
                       &lt;/div&gt;
 <span class="cstat-no" title="statement not covered" >                      &lt;div className="flex-1 min-w-0"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;div className="flex justify-between items-start"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                          &lt;p className="text-sm font-medium text-gray-900 flex items-center gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                            {notification.title}</span>
-<span class="cstat-no" title="statement not covered" >                            {!notification.read &amp;&amp; (</span>
+<span class="cstat-no" title="statement not covered" >                            {notification.titulo}</span>
+<span class="cstat-no" title="statement not covered" >                            {!notification.lida &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                              &lt;Badge variant="secondary" className="text-[10px]"&gt;Por ler&lt;/Badge&gt;</span>
                             )}
-<span class="cstat-no" title="statement not covered" >                            &lt;Badge variant="outline" className="text-[10px] capitalize"&gt;{notification.type}&lt;/Badge&gt;</span>
+<span class="cstat-no" title="statement not covered" >                            &lt;Badge variant="outline" className="text-[10px] capitalize"&gt;{notification.tipo}&lt;/Badge&gt;</span>
 <span class="cstat-no" title="statement not covered" >                            {notification.category &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                              &lt;Badge variant="outline" className="text-[10px] capitalize"&gt;{notification.category}&lt;/Badge&gt;</span>
                             )}
                           &lt;/p&gt;
 <span class="cstat-no" title="statement not covered" >                          &lt;div className="flex gap-1"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                            {!notification.read &amp;&amp; (</span>
+<span class="cstat-no" title="statement not covered" >                            {!notification.lida &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                              &lt;Button</span>
 <span class="cstat-no" title="statement not covered" >                                variant="ghost"</span>
 <span class="cstat-no" title="statement not covered" >                                size="sm"</span>
@@ -1333,11 +1336,11 @@ interface FamilyNotificationsProps {
                           &lt;/div&gt;
                         &lt;/div&gt;
 <span class="cstat-no" title="statement not covered" >                        &lt;p className="text-sm text-gray-600 mt-1"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                          {notification.message}</span>
+<span class="cstat-no" title="statement not covered" >                          {notification.mensagem}</span>
                         &lt;/p&gt;
 <span class="cstat-no" title="statement not covered" >                        &lt;p className="text-xs text-gray-400 mt-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                          {new Date(notification.created_at).toLocaleString('pt-PT')}</span>
-                        &lt;/p&gt;
+<span class="cstat-no" title="statement not covered" >                           {new Date(notification.created_at).toLocaleString('pt-PT')}</span>
+                         &lt;/p&gt;
                       &lt;/div&gt;
                     &lt;/div&gt;
                   &lt;/div&gt;
@@ -1362,14 +1365,14 @@ interface FamilyNotificationsProps {
       /&gt;
     &lt;/div&gt;
   );
-<span class="cstat-no" title="statement not covered" >}; </span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >};</span></pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.132Z
+                at 2025-09-14T17:15:08.717Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

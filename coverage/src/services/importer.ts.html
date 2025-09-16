@@ -302,7 +302,7 @@
 &nbsp;
 export type IngestionJob = z.infer&lt;typeof ingestionJobSchema&gt; &amp; { id?: string };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >const sb: any = supabase as any;</span>
+<span class="cstat-no" title="statement not covered" >const sb = supabase;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export async function createIngestionJob(input: IngestionJob){</span>
 <span class="cstat-no" title="statement not covered" >  const parsed = ingestionJobSchema.parse(input);</span>
@@ -329,7 +329,7 @@ export type IngestionJob = z.infer&lt;typeof ingestionJobSchema&gt; &amp; { id?:
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export async function edgeIngestCSV(jobId: string, mapping?: any){</span>
-<span class="cstat-no" title="statement not covered" >  const { data, error } = await (supabase as any).functions.invoke('ingest_csv', {</span>
+<span class="cstat-no" title="statement not covered" >  const { data, error } = await supabase.functions.invoke('ingest_csv', {</span>
 <span class="cstat-no" title="statement not covered" >    body: { job_id: jobId, mapping }</span>
 <span class="cstat-no" title="statement not covered" >  });</span>
 <span class="cstat-no" title="statement not covered" >  if (error) throw error;</span>
@@ -342,7 +342,7 @@ export type IngestionJob = z.infer&lt;typeof ingestionJobSchema&gt; &amp; { id?:
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export async function edgeIngestReceipt(jobId: string, fileId: string){</span>
-<span class="cstat-no" title="statement not covered" >  const { data, error } = await (supabase as any).functions.invoke('ingest_receipt', {</span>
+<span class="cstat-no" title="statement not covered" >  const { data, error } = await supabase.functions.invoke('ingest_receipt', {</span>
 <span class="cstat-no" title="statement not covered" >    body: { job_id: jobId, file_id: fileId }</span>
 <span class="cstat-no" title="statement not covered" >  });</span>
 <span class="cstat-no" title="statement not covered" >  if (error) throw error;</span>
@@ -355,14 +355,14 @@ export type IngestionJob = z.infer&lt;typeof ingestionJobSchema&gt; &amp; { id?:
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export async function edgePostStaging(jobId: string, ids: string[]){</span>
 <span class="cstat-no" title="statement not covered" >  // Tentar primeiro com JWT do utilizador</span>
-<span class="cstat-no" title="statement not covered" >  const { data, error } = await (supabase as any).functions.invoke('post_staging', {</span>
+<span class="cstat-no" title="statement not covered" >  const { data, error } = await supabase.functions.invoke('post_staging', {</span>
 <span class="cstat-no" title="statement not covered" >    body: { job_id: jobId, ids }</span>
 <span class="cstat-no" title="statement not covered" >  });</span>
 <span class="cstat-no" title="statement not covered" >  if (!error &amp;&amp; data?.posted&gt;0) return data;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  // Fallback: se não postou nada mas há linhas únicas selecionadas, tentar via RPC com sessão do utilizador</span>
 <span class="cstat-no" title="statement not covered" >  if (Array.isArray(ids) &amp;&amp; ids.length&gt;0) {</span>
-<span class="cstat-no" title="statement not covered" >    const { data: staging } = await (supabase as any).from('staging_transactions').select('*').in('id', ids);</span>
+<span class="cstat-no" title="statement not covered" >    const { data: staging } = await supabase.from('staging_transactions').select('*').in('id', ids);</span>
 <span class="cstat-no" title="statement not covered" >    if (Array.isArray(staging) &amp;&amp; staging.length&gt;0) {</span>
 <span class="cstat-no" title="statement not covered" >      let posted = 0; const errors: any[] = [];</span>
 <span class="cstat-no" title="statement not covered" >      for (const r of staging) {</span>
@@ -370,7 +370,7 @@ export type IngestionJob = z.infer&lt;typeof ingestionJobSchema&gt; &amp; { id?:
 <span class="cstat-no" title="statement not covered" >        const n = r.normalized_json || {};</span>
 <span class="cstat-no" title="statement not covered" >        if (!n.account_id || !n.category_id || !n.date || !n.amount_cents) { errors.push({ id: r.id, error:'missing_fields' }); continue; }</span>
 <span class="cstat-no" title="statement not covered" >        const payload = {</span>
-<span class="cstat-no" title="statement not covered" >          p_user_id: (await (supabase as any).auth.getUser()).data?.user?.id,</span>
+<span class="cstat-no" title="statement not covered" >          p_user_id: (await supabase.auth.getUser()).data?.user?.id,</span>
 <span class="cstat-no" title="statement not covered" >          p_account_id: n.account_id,</span>
 <span class="cstat-no" title="statement not covered" >          p_categoria_id: n.category_id,</span>
 <span class="cstat-no" title="statement not covered" >          p_valor: Math.abs(Number(n.amount_cents)/100.0),</span>
@@ -378,9 +378,9 @@ export type IngestionJob = z.infer&lt;typeof ingestionJobSchema&gt; &amp; { id?:
 <span class="cstat-no" title="statement not covered" >          p_data: n.date,</span>
 <span class="cstat-no" title="statement not covered" >          p_tipo: (n.tipo &amp;&amp; String(n.tipo)) || (Number(n.amount_cents)&gt;=0 ? 'despesa':'receita')</span>
 <span class="cstat-no" title="statement not covered" >        };</span>
-<span class="cstat-no" title="statement not covered" >        const { data: created, error: rpcErr } = await (supabase as any).rpc('create_regular_transaction', payload);</span>
-<span class="cstat-no" title="statement not covered" >        if (rpcErr || !created || !(created as any).transaction_id) { errors.push({ id: r.id, error: String(rpcErr||'insert_failed'), payload }); continue; }</span>
-<span class="cstat-no" title="statement not covered" >        await (supabase as any).from('staging_transactions').update({ posted_txn_id: (created as any).transaction_id }).eq('id', r.id);</span>
+<span class="cstat-no" title="statement not covered" >        const { data: created, error: rpcErr } = await supabase.rpc('create_regular_transaction', payload);</span>
+<span class="cstat-no" title="statement not covered" >        if (rpcErr || !created || !created.transaction_id) { errors.push({ id: r.id, error: String(rpcErr||'insert_failed'), payload }); continue; }</span>
+<span class="cstat-no" title="statement not covered" >        await supabase.from('staging_transactions').update({ posted_txn_id: created.transaction_id }).eq('id', r.id);</span>
 <span class="cstat-no" title="statement not covered" >        posted++;</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 <span class="cstat-no" title="statement not covered" >      return { ok: true, posted, errors, fallback: true };</span>
@@ -396,14 +396,14 @@ export type IngestionJob = z.infer&lt;typeof ingestionJobSchema&gt; &amp; { id?:
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export async function insertIngestionFile(jobId: string, bucket: string, path: string, file: File, sha256?: string){</span>
 <span class="cstat-no" title="statement not covered" >  return sb.from('ingestion_files').insert({ job_id: jobId, storage_bucket: bucket, storage_path: path, original_filename: file.name, mime_type: file.type, size_bytes: file.size, sha256 }).select('*').single();</span>
-<span class="cstat-no" title="statement not covered" >} </span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.132Z
+                at 2025-09-14T17:15:08.717Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

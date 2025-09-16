@@ -879,6 +879,42 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
     refetchAll,
     canEdit,
     canDelete,
+    
+    // Função para trocar de família
+    switchFamily: async (familyId: string) => {
+      if (!user?.id) throw new Error('Utilizador não autenticado');
+      
+      try {
+        // Verificar se o utilizador é membro da família
+        const { data: memberData, error } = await supabase
+          .from('family_members')
+          .select('*')
+          .eq('family_id', familyId)
+          .eq('user_id', user.id)
+          .single();
+        
+        if (error || !memberData) {
+          throw new Error('Não tem permissão para aceder a esta família');
+        }
+        
+        // Armazenar a família atual no localStorage
+        localStorage.setItem('currentFamilyId', familyId);
+        
+        // Invalidar queries para forçar recarregamento com nova família
+        queryClient.invalidateQueries({ queryKey: ['family', 'current', user.id] });
+        queryClient.invalidateQueries({ queryKey: ['family'] });
+        
+        // Aguardar um pouco para garantir que as queries são invalidadas
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Forçar refetch dos dados da família
+        await queryClient.refetchQueries({ queryKey: ['family', 'current', user.id] });
+        
+      } catch (error: unknown) {
+        logger.error('Erro ao trocar de família:', error);
+        throw error instanceof Error ? error : new Error('Erro ao trocar de família');
+      }
+    },
   } as const satisfies FamilyContextType;
 
   return (

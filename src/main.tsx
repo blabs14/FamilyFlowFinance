@@ -4,7 +4,7 @@ import App from './App';
 import './index.css';
 // Registo do Service Worker (Vite PWA)
 import { registerSW } from 'virtual:pwa-register';
-import { logger } from '@/shared/lib/logger';
+import { logger } from './shared/lib/logger';
 
 const isDev = import.meta.env.DEV;
 

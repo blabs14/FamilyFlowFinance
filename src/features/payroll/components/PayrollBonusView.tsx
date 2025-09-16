@@ -152,7 +152,7 @@ export function PayrollBonusView() {
   }, 0) + (performanceBonus?.isActive ? (performanceBonus.amount || 0) * 4 : 0);
 
   const formatCurrencyUtil = (amount: number) => {
-    return formatCurrency(amount * 100);
+    return formatCurrency(amount);
   };
 
   const formatDate = (dateString: string) => {

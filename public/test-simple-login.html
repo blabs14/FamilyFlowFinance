@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Login Simples</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .button {
+            width: 100%;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .button:hover {
+            background: #2563eb;
+        }
+        .button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .debug {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        .log {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Teste Login Simples</h1>
+        <p>Este teste simula exatamente o comportamento do formulário React sem dependências.</p>
+        
+        <div id="debugInfo" class="debug">
+            <strong>🔍 Estado Debug:</strong><br>
+            Loading: <span id="loadingState">true</span><br>
+            isSubmitting: <span id="submittingState">false</span><br>
+            Button Disabled: <span id="buttonState">true</span>
+        </div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" value="testetotal@teste.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" value="teste14" required>
+            </div>
+            
+            <button type="submit" id="loginButton" class="button" disabled>
+                <span id="buttonText">A carregar...</span>
+            </button>
+            
+            <button type="button" id="toggleLoadingBtn" class="button" style="background: #6b7280;">
+                Toggle Loading State
+            </button>
+        </form>
+        
+        <div id="result" class="debug" style="display: none;"></div>
+        
+        <h3>📋 Logs:</h3>
+        <div id="logs" class="log"></div>
+    </div>
+
+    <script>
+        let state = {
+            loading: true,
+            isSubmitting: false,
+            user: null
+        };
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('logs');
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            logElement.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(`${prefix} ${message}`);
+        }
+        
+        function updateUI() {
+            const loadingSpan = document.getElementById('loadingState');
+            const submittingSpan = document.getElementById('submittingState');
+            const buttonStateSpan = document.getElementById('buttonState');
+            const loginButton = document.getElementById('loginButton');
+            const buttonText = document.getElementById('buttonText');
+            
+            const isDisabled = state.loading || state.isSubmitting;
+            
+            loadingSpan.textContent = state.loading;
+            loadingSpan.style.color = state.loading ? '#dc2626' : '#16a34a';
+            
+            submittingSpan.textContent = state.isSubmitting;
+            submittingSpan.style.color = state.isSubmitting ? '#dc2626' : '#16a34a';
+            
+            buttonStateSpan.textContent = isDisabled;
+            buttonStateSpan.style.color = isDisabled ? '#dc2626' : '#16a34a';
+            
+            loginButton.disabled = isDisabled;
+            
+            if (state.isSubmitting) {
+                buttonText.textContent = 'A entrar...';
+            } else if (state.loading) {
+                buttonText.textContent = 'A carregar...';
+            } else {
+                buttonText.textContent = 'Entrar';
+            }
+            
+            log(`🔄 UI atualizada - Loading: ${state.loading}, Submitting: ${state.isSubmitting}, Disabled: ${isDisabled}`);
+        }
+        
+        function simulateAuthContextInit() {
+            log('🚀 Simulando inicialização do AuthContext...');
+            log('📊 Estado inicial - Loading: true (como no React)');
+            
+            // Simular o tempo que o AuthContext demora a inicializar
+            setTimeout(() => {
+                state.loading = false;
+                log('✅ AuthContext inicializado - Loading agora é false');
+                updateUI();
+            }, 2000);
+        }
+        
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            log('🔐 handleLogin chamado!');
+            log(`📊 Estado antes do login - Loading: ${state.loading}, Submitting: ${state.isSubmitting}`);
+            
+            if (state.loading || state.isSubmitting) {
+                log('⚠️ Login bloqueado - botão está desabilitado', 'warning');
+                return;
+            }
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            log(`📧 Email: ${email}`);
+            log(`🔑 Password: ${'*'.repeat(password.length)}`);
+            
+            state.isSubmitting = true;
+            updateUI();
+            
+            try {
+                log('📞 Simulando chamada ao Supabase...');
+                
+                // Simular delay da API
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                if (email === 'testetotal@teste.com' && password === 'teste14') {
+                    log('✅ Login bem-sucedido!', 'success');
+                    state.user = { email };
+                    
+                    const resultDiv = document.getElementById('result');
+                    resultDiv.className = 'debug success';
+                    resultDiv.innerHTML = '<strong>✅ Sucesso!</strong> Login realizado com sucesso.';
+                    resultDiv.style.display = 'block';
+                } else {
+                    throw new Error('Credenciais inválidas');
+                }
+                
+            } catch (error) {
+                log(`❌ Erro no login: ${error.message}`, 'error');
+                
+                const resultDiv = document.getElementById('result');
+                resultDiv.className = 'debug error';
+                resultDiv.innerHTML = `<strong>❌ Erro!</strong> ${error.message}`;
+                resultDiv.style.display = 'block';
+            } finally {
+                state.isSubmitting = false;
+                updateUI();
+                log('🏁 Login finalizado');
+            }
+        }
+        
+        function toggleLoading() {
+            state.loading = !state.loading;
+            log(`🔄 Loading state alterado para: ${state.loading}`);
+            updateUI();
+        }
+        
+        // Event listeners
+        document.getElementById('loginForm').addEventListener('submit', handleLogin);
+        document.getElementById('loginButton').addEventListener('click', (e) => {
+            log('🚨 Botão de login clicado!');
+            log(`🚨 Event type: ${e.type}`);
+            log(`🚨 Button disabled: ${e.target.disabled}`);
+        });
+        document.getElementById('toggleLoadingBtn').addEventListener('click', toggleLoading);
+        
+        // Inicialização
+        log('🔍 Teste de login simples iniciado');
+        log('📊 Simulando comportamento exato do React Hook Form + AuthContext');
+        updateUI();
+        simulateAuthContextInit();
+    </script>
+</body>
+</html>

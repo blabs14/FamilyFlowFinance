@@ -420,6 +420,39 @@ export function calcMonth(
     overtimePayWeekend = preCalculatedData.overtimePayWeekend;
     overtimePayHoliday = preCalculatedData.overtimePayHoliday;
     overtimePay = preCalculatedData.totalOvertimePay;
+  } else if (!otPolicy) {
+    // Sem política de horas extra: considerar todas as horas como regulares (OT=0)
+    timeEntries.forEach(entry => {
+      const entryDate = new Date(entry.date);
+      const isWeekend = entryDate.getDay() === 0 || entryDate.getDay() === 6;
+      const isHoliday = holidays.some(h => h.date === entry.date);
+      const segments = segmentEntry(entry, otPolicy);
+
+      segments.forEach(segment => {
+        // Somar todas as horas como regulares
+        regularHours += segment.hours;
+
+        const segmentPay = calcHourly(
+          segment.hours,
+          contract.hourly_rate_cents,
+          false, // nunca tratar como OT
+          isWeekend,
+          isHoliday,
+          segment.isNightShift,
+          false,
+          undefined
+        );
+        regularPay += segmentPay;
+      });
+    });
+
+    // Garantir que todos os campos de OT ficam a zero
+    overtimeHours = 0;
+    overtimePay = 0;
+    overtimePayDay = 0;
+    overtimePayNight = 0;
+    overtimePayWeekend = 0;
+    overtimePayHoliday = 0;
   } else {
     // Processar todas as entradas de tempo (método tradicional)
     timeEntries.forEach(entry => {
@@ -522,7 +555,7 @@ export function calcMonth(
       });
     });
   }
-  
+
   // Calcular subsídios de refeição por dia trabalhado
   let mealAllowance = 0;
   const processedDates = new Set<string>();
@@ -567,7 +600,7 @@ export function calcMonth(
       
       mealAllowance += calcMeal(
         entry.date,
-        dayRegularHours,
+        !otPolicy ? dayTotalHours : dayRegularHours, // sem política, considerar todas as horas como "regulares" para subsídio
         dayTotalHours,
         mealAllowanceConfig?.daily_amount_cents ?? 1020,
         excludedMonths,

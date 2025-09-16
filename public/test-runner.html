@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Runner - Login Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        #results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Test Runner - Login Form</h1>
+        <div class="test-status info">
+            <strong>Status:</strong> Preparando testes...
+        </div>
+        
+        <div>
+            <button class="btn" onclick="runTests()">▶️ Executar Testes</button>
+            <button class="btn" onclick="openLoginPage()">🔗 Abrir Página de Login</button>
+            <button class="btn" onclick="clearResults()">🗑️ Limpar Resultados</button>
+        </div>
+        
+        <div id="results">Aguardando execução dos testes...</div>
+    </div>
+
+    <script src="test-login-form-detailed.js"></script>
+    <script>
+        let testWindow = null;
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.querySelector('.test-status');
+            statusDiv.className = `test-status ${type}`;
+            statusDiv.innerHTML = `<strong>Status:</strong> ${message}`;
+        }
+        
+        function logResult(message) {
+            const resultsDiv = document.getElementById('results');
+            const timestamp = new Date().toLocaleTimeString();
+            resultsDiv.textContent += `[${timestamp}] ${message}\n`;
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        function clearResults() {
+            document.getElementById('results').textContent = 'Resultados limpos. Pronto para novos testes...';
+            updateStatus('Pronto para executar testes', 'info');
+        }
+        
+        function openLoginPage() {
+            if (testWindow && !testWindow.closed) {
+                testWindow.focus();
+                logResult('Focando janela existente da página de login');
+            } else {
+                testWindow = window.open('http://localhost:8082/login', 'loginTest', 'width=1200,height=800');
+                logResult('Nova janela da página de login aberta');
+            }
+        }
+        
+        async function runTests() {
+            updateStatus('Executando testes...', 'warning');
+            logResult('=== INICIANDO TESTES DO FORMULÁRIO DE LOGIN ===');
+            
+            try {
+                // Abrir página de login se não estiver aberta
+                if (!testWindow || testWindow.closed) {
+                    openLoginPage();
+                    logResult('Aguardando carregamento da página...');
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                }
+                
+                // Verificar se a janela está acessível
+                if (!testWindow || testWindow.closed) {
+                    throw new Error('Não foi possível abrir a página de login');
+                }
+                
+                // Injetar e executar testes na janela de login
+                logResult('Injetando scripts de teste na página de login...');
+                
+                // Injetar o script de teste
+                const script = testWindow.document.createElement('script');
+                script.textContent = `
+                    // Copiar funções de teste para a janela de login
+                    ${waitForElement.toString()}
+                    ${testPageStructure.toString()}
+                    ${testFormElements.toString()}
+                    ${testReactDevTools.toString()}
+                    ${testFormInteraction.toString()}
+                    ${runCompleteTest.toString()}
+                    
+                    // Executar testes
+                    console.log('🧪 Executando testes na página de login...');
+                    runCompleteTest().then(results => {
+                        window.parent.postMessage({
+                            type: 'testResults',
+                            results: results
+                        }, '*');
+                    }).catch(error => {
+                        window.parent.postMessage({
+                            type: 'testError',
+                            error: error.message
+                        }, '*');
+                    });
+                `;
+                testWindow.document.head.appendChild(script);
+                
+                logResult('Scripts injetados. Aguardando resultados...');
+                
+            } catch (error) {
+                logResult(`❌ Erro ao executar testes: ${error.message}`);
+                updateStatus('Erro na execução dos testes', 'error');
+            }
+        }
+        
+        // Escutar mensagens da janela de teste
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'testResults') {
+                const results = event.data.results;
+                logResult('=== RESULTADOS DOS TESTES ===');
+                logResult(`✅ Testes bem-sucedidos: ${results.passed}`);
+                logResult(`❌ Testes falharam: ${results.failed}`);
+                logResult(`📊 Total de testes: ${results.total}`);
+                
+                if (results.details && results.details.length > 0) {
+                    logResult('\n📋 Detalhes dos testes:');
+                    results.details.forEach(detail => {
+                        logResult(`  ${detail}`);
+                    });
+                }
+                
+                if (results.failed === 0) {
+                    updateStatus('Todos os testes passaram!', 'success');
+                } else {
+                    updateStatus(`${results.failed} teste(s) falharam`, 'error');
+                }
+                
+                logResult('=== FIM DOS RESULTADOS ===\n');
+            } else if (event.data.type === 'testError') {
+                logResult(`❌ Erro nos testes: ${event.data.error}`);
+                updateStatus('Erro na execução dos testes', 'error');
+            }
+        });
+        
+        // Executar testes automaticamente após 2 segundos
+        setTimeout(() => {
+            logResult('🚀 Iniciando testes automaticamente...');
+            runTests();
+        }, 2000);
+    </script>
+</body>
+</html>

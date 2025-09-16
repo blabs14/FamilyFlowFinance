@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/488</span>
+                <span class='fraction'>0/489</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/488</span>
+                <span class='fraction'>0/489</span>
             </div>
         
             
@@ -739,7 +739,8 @@
 <a name='L674'></a><a href='#L674'>674</a>
 <a name='L675'></a><a href='#L675'>675</a>
 <a name='L676'></a><a href='#L676'>676</a>
-<a name='L677'></a><a href='#L677'>677</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L677'></a><a href='#L677'>677</a>
+<a name='L678'></a><a href='#L678'>678</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -757,6 +758,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1441,6 +1443,7 @@ import { GoalFundingSection } from '../../components/GoalFundingSection';
 <span class="cstat-no" title="statement not covered" >import { FormSubmitButton } from '../../components/ui/loading-button';</span>
 <span class="cstat-no" title="statement not covered" >import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../components/ui/accordion';</span>
 <span class="cstat-no" title="statement not covered" >import { getAuditLogsByRow } from '../../services/audit_logs';</span>
+<span class="cstat-no" title="statement not covered" >import { logger } from '../../shared/lib/logger';</span>
 type AuditEntry = { id: string; timestamp: string; operation: string; old_data?: any; new_data?: any; details?: any };
 &nbsp;
 <span class="cstat-no" title="statement not covered" >const FamilyGoals: React.FC = () =&gt; {</span>
@@ -1579,7 +1582,7 @@ type AuditEntry = { id: string; timestamp: string; operation: string; old_data?:
       
 <span class="cstat-no" title="statement not covered" >      handleAllocationSuccess();</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error: any) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro na alocação:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Erro na alocação:', error);</span>
 <span class="cstat-no" title="statement not covered" >      setAllocationError(error.message || 'Erro ao processar alocação');</span>
 <span class="cstat-no" title="statement not covered" >    } finally {</span>
 <span class="cstat-no" title="statement not covered" >      setIsAllocating(false);</span>
@@ -2039,13 +2042,13 @@ type AuditEntry = { id: string; timestamp: string; operation: string; old_data?:
 <span class="cstat-no" title="statement not covered" >        const { data, error } = await getAuditLogsByRow('goals', goalId, 20);</span>
 <span class="cstat-no" title="statement not covered" >        if (!active) return;</span>
 <span class="cstat-no" title="statement not covered" >        if (error) {</span>
-<span class="cstat-no" title="statement not covered" >          console.debug('[GoalAuditList] erro a obter logs:', error);</span>
+<span class="cstat-no" title="statement not covered" >          logger.debug('[GoalAuditList] erro a obter logs:', error);</span>
 <span class="cstat-no" title="statement not covered" >          setLogs([]);</span>
 <span class="cstat-no" title="statement not covered" >        } else {</span>
 <span class="cstat-no" title="statement not covered" >          setLogs(Array.isArray(data) ? (data as unknown as AuditEntry[]) : []);</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" >      } catch (e) {</span>
-<span class="cstat-no" title="statement not covered" >        console.debug('[GoalAuditList] exceção a obter logs:', e);</span>
+<span class="cstat-no" title="statement not covered" >        logger.debug('[GoalAuditList] exceção a obter logs:', e);</span>
 <span class="cstat-no" title="statement not covered" >        setLogs([]);</span>
 <span class="cstat-no" title="statement not covered" >      } finally {</span>
 <span class="cstat-no" title="statement not covered" >        if (active) {</span>
@@ -2091,14 +2094,14 @@ type AuditEntry = { id: string; timestamp: string; operation: string; old_data?:
       ))}
     &lt;/div&gt;
   );
-<span class="cstat-no" title="statement not covered" >}; </span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >};</span></pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.132Z
+                at 2025-09-14T17:15:08.717Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

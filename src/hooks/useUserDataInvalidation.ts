@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { User } from '@supabase/supabase-js';
-import { logger } from '@/shared/lib/logger';
+import { logger } from '../shared/lib/logger';
 
 /**
  * Hook que invalida todas as queries relacionadas com dados do utilizador

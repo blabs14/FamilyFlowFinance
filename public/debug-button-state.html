@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Estado do Botão de Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.true { background: #ffebee; color: #c62828; }
+        .status.false { background: #e8f5e8; color: #2e7d32; }
+        .logs {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-primary { background: #2196F3; color: white; }
+        .btn-secondary { background: #757575; color: white; }
+        .btn-danger { background: #f44336; color: white; }
+        .iframe-container {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 600px;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug - Estado do Botão de Login</h1>
+    
+    <div class="grid">
+        <div>
+            <div class="container">
+                <h2>📊 Estados em Tempo Real</h2>
+                <div id="authStates">
+                    <div class="status" id="loadingState">Loading: Verificando...</div>
+                    <div class="status" id="userState">User: Verificando...</div>
+                    <div class="status" id="sessionState">Session: Verificando...</div>
+                    <div class="status" id="buttonState">Button Disabled: Verificando...</div>
+                </div>
+                
+                <h3>🎛️ Controlos</h3>
+                <button class="btn-primary" onclick="refreshStates()">🔄 Atualizar Estados</button>
+                <button class="btn-secondary" onclick="clearLogs()">🧹 Limpar Logs</button>
+                <button class="btn-danger" onclick="forceReload()">⚡ Recarregar App</button>
+                
+                <h3>📝 Logs do Console</h3>
+                <div class="logs" id="consoleLogs">Aguardando logs...</div>
+            </div>
+        </div>
+        
+        <div>
+            <div class="container">
+                <h2>🖥️ Aplicação de Login</h2>
+                <div class="iframe-container">
+                    <iframe id="loginFrame" src="/login"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logs = [];
+        let originalConsole = {};
+        
+        // Interceptar logs do console
+        function setupConsoleInterception() {
+            ['log', 'warn', 'error', 'info'].forEach(method => {
+                originalConsole[method] = console[method];
+                console[method] = function(...args) {
+                    const timestamp = new Date().toLocaleTimeString();
+                    const message = args.map(arg => 
+                        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                    ).join(' ');
+                    
+                    logs.push(`[${timestamp}] ${method.toUpperCase()}: ${message}`);
+                    updateLogsDisplay();
+                    
+                    // Chamar o console original
+                    originalConsole[method].apply(console, args);
+                };
+            });
+        }
+        
+        function updateLogsDisplay() {
+            const logsElement = document.getElementById('consoleLogs');
+            logsElement.textContent = logs.slice(-50).join('\n');
+            logsElement.scrollTop = logsElement.scrollHeight;
+        }
+        
+        function clearLogs() {
+            logs = [];
+            updateLogsDisplay();
+        }
+        
+        function forceReload() {
+            const iframe = document.getElementById('loginFrame');
+            iframe.src = iframe.src;
+        }
+        
+        // Função para verificar estados via postMessage
+        function refreshStates() {
+            const iframe = document.getElementById('loginFrame');
+            
+            // Tentar acessar o contexto React através do iframe
+            try {
+                iframe.contentWindow.postMessage({
+                    type: 'GET_AUTH_STATE'
+                }, '*');
+            } catch (e) {
+                console.log('Erro ao comunicar com iframe:', e);
+            }
+            
+            // Verificar estados através de injeção de script
+            setTimeout(() => {
+                try {
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    
+                    // Procurar elementos de debug no DOM
+                    const debugElement = iframeDoc.querySelector('[data-testid="debug-info"]');
+                    if (debugElement) {
+                        const debugText = debugElement.textContent;
+                        console.log('Debug info encontrada:', debugText);
+                        
+                        // Extrair estados do texto de debug
+                        const loadingMatch = debugText.match(/Loading: (TRUE|FALSE)/);
+                        const submittingMatch = debugText.match(/isSubmitting: (TRUE|FALSE)/);
+                        const disabledMatch = debugText.match(/Button Disabled: (TRUE|FALSE)/);
+                        
+                        if (loadingMatch) {
+                            updateStateDisplay('loadingState', 'Loading', loadingMatch[1]);
+                        }
+                        if (submittingMatch) {
+                            updateStateDisplay('submittingState', 'isSubmitting', submittingMatch[1]);
+                        }
+                        if (disabledMatch) {
+                            updateStateDisplay('buttonState', 'Button Disabled', disabledMatch[1]);
+                        }
+                    }
+                    
+                    // Verificar se o botão existe e está desabilitado
+                    const submitButton = iframeDoc.querySelector('button[type="submit"]');
+                    if (submitButton) {
+                        const isDisabled = submitButton.disabled;
+                        updateStateDisplay('buttonState', 'Button Disabled', isDisabled ? 'TRUE' : 'FALSE');
+                        console.log('Botão encontrado - disabled:', isDisabled);
+                    }
+                    
+                } catch (e) {
+                    console.log('Erro ao acessar iframe DOM:', e);
+                }
+            }, 1000);
+        }
+        
+        function updateStateDisplay(elementId, label, value) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = `${label}: ${value}`;
+                element.className = `status ${value.toLowerCase()}`;
+            }
+        }
+        
+        // Escutar mensagens do iframe
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'AUTH_STATE_RESPONSE') {
+                const { loading, user, session, isSubmitting } = event.data;
+                
+                updateStateDisplay('loadingState', 'Loading', loading ? 'TRUE' : 'FALSE');
+                updateStateDisplay('userState', 'User', user ? 'TRUE' : 'FALSE');
+                updateStateDisplay('sessionState', 'Session', session ? 'TRUE' : 'FALSE');
+                
+                console.log('Estados recebidos do iframe:', event.data);
+            }
+        });
+        
+        // Inicializar
+        setupConsoleInterception();
+        
+        // Atualizar estados periodicamente
+        setInterval(refreshStates, 3000);
+        
+        // Primeira verificação após carregamento
+        setTimeout(refreshStates, 2000);
+        
+        console.log('🔍 Debug tool inicializado - monitorando estados do botão de login');
+    </script>
+</body>
+</html>

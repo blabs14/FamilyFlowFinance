@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/184</span>
+                <span class='fraction'>0/183</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/184</span>
+                <span class='fraction'>0/183</span>
             </div>
         
             
@@ -310,8 +310,7 @@
 <a name='L245'></a><a href='#L245'>245</a>
 <a name='L246'></a><a href='#L246'>246</a>
 <a name='L247'></a><a href='#L247'>247</a>
-<a name='L248'></a><a href='#L248'>248</a>
-<a name='L249'></a><a href='#L249'>249</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L248'></a><a href='#L248'>248</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -319,6 +318,13 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -335,12 +341,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -361,8 +361,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -574,6 +572,7 @@
   SelectItem,
   SelectValue,
 } from './ui/select';
+<span class="cstat-no" title="statement not covered" >import { logger } from '@/shared/lib/logger';</span>
 &nbsp;
 interface RegularAccountFormData {
   id: string;
@@ -609,21 +608,19 @@ interface RegularAccountFormProps {
   
 <span class="cstat-no" title="statement not covered" >  const isSubmitting = updateAccountMutation.isPending;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  console.log('[RegularAccountForm] initialData:', initialData);</span>
-<span class="cstat-no" title="statement not covered" >  console.log('[RegularAccountForm] form state:', form);</span>
-<span class="cstat-no" title="statement not covered" >  console.log('[RegularAccountForm] isSubmitting:', isSubmitting);</span>
+<span class="cstat-no" title="statement not covered" >  // Debug: initialData, form state, isSubmitting</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    console.log('[RegularAccountForm] useEffect triggered with initialData:', initialData);</span>
+<span class="cstat-no" title="statement not covered" >    // Debug: useEffect triggered with initialData</span>
 <span class="cstat-no" title="statement not covered" >    if (initialData) {</span>
-<span class="cstat-no" title="statement not covered" >      console.log('[RegularAccountForm] Setting form with:', initialData);</span>
+<span class="cstat-no" title="statement not covered" >      // Debug: Setting form with initialData</span>
 <span class="cstat-no" title="statement not covered" >      setForm(initialData);</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  }, [initialData]);</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const handleChange = (e: React.ChangeEvent&lt;HTMLInputElement&gt;) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    const { name, value } = e.target;</span>
-<span class="cstat-no" title="statement not covered" >    console.log('[RegularAccountForm] handleChange:', { name, value, currentForm: form });</span>
+<span class="cstat-no" title="statement not covered" >    // Debug: handleChange</span>
     
 <span class="cstat-no" title="statement not covered" >    if (name === 'saldoAtual' || name === 'ajusteSaldo') {</span>
 <span class="cstat-no" title="statement not covered" >      // Permitir valores vazios</span>
@@ -648,7 +645,7 @@ interface RegularAccountFormProps {
 <span class="cstat-no" title="statement not covered" >        setForm({ ...form, [name]: value });</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 <span class="cstat-no" title="statement not covered" >    } else {</span>
-<span class="cstat-no" title="statement not covered" >      console.log('[RegularAccountForm] Updating form with:', { ...form, [name]: value });</span>
+<span class="cstat-no" title="statement not covered" >      // Debug: Updating form</span>
 <span class="cstat-no" title="statement not covered" >      setForm({ ...form, [name]: value });</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  };</span>
@@ -710,7 +707,7 @@ interface RegularAccountFormProps {
 <span class="cstat-no" title="statement not covered" >      await doUpdate();</span>
 <span class="cstat-no" title="statement not covered" >      onSuccess?.();</span>
 <span class="cstat-no" title="statement not covered" >    } catch (err: any) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro ao guardar conta:', err);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Erro ao guardar conta:', err);</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  };</span>
 &nbsp;
@@ -728,7 +725,7 @@ interface RegularAccountFormProps {
       /&gt;
 <span class="cstat-no" title="statement not covered" >      {validationErrors.nome &amp;&amp; &lt;div id="nome-error" className="text-red-600 text-sm"&gt;{validationErrors.nome}&lt;/div&gt;}</span>
       
-<span class="cstat-no" title="statement not covered" >      &lt;Select value={form.tipo} onValueChange={handleTipoChange}&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;Select value={form.tipo} onValueChange={(value) =&gt; setValue('tipo', value as 'corrente' | 'poupanca' | 'investimento' | 'cartao_credito')}&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;SelectTrigger className="w-full"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;SelectValue placeholder="Tipo de Conta" /&gt;</span>
         &lt;/SelectTrigger&gt;
@@ -807,14 +804,14 @@ interface RegularAccountFormProps {
   );
 <span class="cstat-no" title="statement not covered" >};</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default RegularAccountForm; </span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >export default RegularAccountForm;</span></pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.525Z
+                at 2025-09-14T17:15:09.625Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

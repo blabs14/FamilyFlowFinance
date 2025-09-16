@@ -478,11 +478,13 @@ export const PersonalProvider: React.FC<PersonalProviderProps> = ({ children }) 
   );
 };
 
-// Hook para usar o contexto
-export const usePersonal = () => {
+// Hook separado para resolver problemas de Fast Refresh
+const usePersonal = () => {
   const context = useContext(PersonalContext);
   if (context === undefined) {
     throw new Error('usePersonal must be used within a PersonalProvider');
   }
   return context;
 };
+
+export { usePersonal };

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔬 Teste Exato do Schema Zod</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #1e293b;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+        .test-section h2 {
+            color: #475569;
+            margin-bottom: 15px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #dcfce7;
+            border: 1px solid #16a34a;
+            color: #15803d;
+        }
+        .error {
+            background: #fef2f2;
+            border: 1px solid #dc2626;
+            color: #dc2626;
+        }
+        .info {
+            background: #eff6ff;
+            border: 1px solid #3b82f6;
+            color: #1d4ed8;
+        }
+        .log {
+            background: #f1f5f9;
+            border: 1px solid #64748b;
+            color: #334155;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 6px;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 3px solid #3b82f6;
+            background: #f8fafc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Teste Exato do Schema Zod</h1>
+        
+        <div class="test-section">
+            <h2>Replicação Exata do emailValidation</h2>
+            <div class="info result">
+Schema real do arquivo authSchema.ts:
+
+const emailValidation = z
+  .string()
+  .min(1, 'Email é obrigatório')
+  .email('Formato de email inválido')
+  .max(254, 'Email demasiado longo')
+  .refine((email) => !email.includes(' '), { message: 'Email não pode conter espaços' })
+  .refine((email) => {
+    const domain = email.split('@')[1];
+    return domain && domain.includes('.');
+  }, { message: 'Domínio de email inválido' });
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Teste do Email "testetotal@exemplo.com"</h2>
+            <input type="email" id="testEmail" value="testetotal@exemplo.com" placeholder="Email para testar">
+            <input type="password" id="testPassword" value="teste14" placeholder="Password para testar">
+            <button onclick="testExactZodSchema()">🧪 Testar Schema Exato</button>
+            <button onclick="testStepByStep()">📋 Teste Passo a Passo</button>
+            <button onclick="clearLogs()">🗑️ Limpar</button>
+            
+            <div id="validationResult" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Logs Detalhados</h2>
+            <div id="debugLogs" class="log">Aguardando testes...</div>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('debugLogs');
+            const typeIcon = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            logElement.innerHTML += `[${timestamp}] ${typeIcon} ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('debugLogs').innerHTML = 'Logs limpos...\n';
+            document.getElementById('validationResult').innerHTML = '';
+        }
+
+        // Replicação EXATA do schema Zod
+        function createExactEmailValidation() {
+            return {
+                validate: (email) => {
+                    log(`🔬 INICIANDO VALIDAÇÃO EXATA DO ZOD`);
+                    log(`📧 Email testado: "${email}"`);
+                    
+                    // Passo 1: z.string() - já é string por natureza do input
+                    log(`1️⃣ z.string() - ✅ É string`);
+                    
+                    // Passo 2: .min(1, 'Email é obrigatório')
+                    if (!email || email.length < 1) {
+                        log(`2️⃣ .min(1) - ❌ FALHOU: Email é obrigatório`, 'error');
+                        return { success: false, error: 'Email é obrigatório' };
+                    }
+                    log(`2️⃣ .min(1) - ✅ Passou (length: ${email.length})`);
+                    
+                    // Passo 3: .email('Formato de email inválido')
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(email)) {
+                        log(`3️⃣ .email() - ❌ FALHOU: Formato de email inválido`, 'error');
+                        return { success: false, error: 'Formato de email inválido' };
+                    }
+                    log(`3️⃣ .email() - ✅ Passou (regex match)`);
+                    
+                    // Passo 4: .max(254, 'Email demasiado longo')
+                    if (email.length > 254) {
+                        log(`4️⃣ .max(254) - ❌ FALHOU: Email demasiado longo`, 'error');
+                        return { success: false, error: 'Email demasiado longo' };
+                    }
+                    log(`4️⃣ .max(254) - ✅ Passou (length: ${email.length})`);
+                    
+                    // Passo 5: .refine() - sem espaços
+                    if (email.includes(' ')) {
+                        log(`5️⃣ .refine(espaços) - ❌ FALHOU: Email não pode conter espaços`, 'error');
+                        return { success: false, error: 'Email não pode conter espaços' };
+                    }
+                    log(`5️⃣ .refine(espaços) - ✅ Passou (sem espaços)`);
+                    
+                    // Passo 6: .refine() - domínio válido
+                    const domain = email.split('@')[1];
+                    if (!domain || !domain.includes('.')) {
+                        log(`6️⃣ .refine(domínio) - ❌ FALHOU: Domínio de email inválido`, 'error');
+                        log(`   Domínio extraído: "${domain}"`, 'warning');
+                        return { success: false, error: 'Domínio de email inválido' };
+                    }
+                    log(`6️⃣ .refine(domínio) - ✅ Passou (domínio: "${domain}")`);
+                    
+                    log(`🎉 TODAS AS VALIDAÇÕES PASSARAM!`, 'success');
+                    return { success: true };
+                }
+            };
+        }
+
+        function createExactPasswordValidation() {
+            return {
+                validate: (password) => {
+                    log(`🔐 VALIDANDO PASSWORD`);
+                    
+                    // Para login, só verifica se não está vazia
+                    if (!password || password.length < 1) {
+                        log(`❌ Password é obrigatória`, 'error');
+                        return { success: false, error: 'Password é obrigatória' };
+                    }
+                    log(`✅ Password não está vazia`);
+                    
+                    return { success: true };
+                }
+            };
+        }
+
+        function testExactZodSchema() {
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            const resultDiv = document.getElementById('validationResult');
+            
+            log('='.repeat(60));
+            log('🚀 TESTE DO SCHEMA ZOD EXATO');
+            log('='.repeat(60));
+            
+            const emailValidator = createExactEmailValidation();
+            const passwordValidator = createExactPasswordValidation();
+            
+            const emailResult = emailValidator.validate(email);
+            const passwordResult = passwordValidator.validate(password);
+            
+            let resultHTML = '';
+            
+            if (emailResult.success && passwordResult.success) {
+                resultHTML = `
+                <div class="success">
+                🎉 SUCESSO TOTAL!
+                
+                ✅ Email: "${email}" passou em todas as validações
+                ✅ Password: "${password}" passou na validação
+                
+                🤔 SE O FORMULÁRIO AINDA MOSTRA "required", o problema NÃO é o schema Zod!
+                
+                Possíveis causas:
+                1. React Hook Form não está a receber os valores
+                2. Problema com o register() do campo
+                3. Estado inicial do formulário
+                4. Problema com o modo 'onChange'
+                </div>`;
+                log('🎉 RESULTADO: SCHEMA ZOD ESTÁ CORRETO!', 'success');
+            } else {
+                const errors = [];
+                if (!emailResult.success) errors.push(`Email: ${emailResult.error}`);
+                if (!passwordResult.success) errors.push(`Password: ${passwordResult.error}`);
+                
+                resultHTML = `
+                <div class="error">
+                ❌ FALHOU NO SCHEMA ZOD
+                
+                ${errors.join('\n')}
+                
+                O problema está na validação do schema.
+                </div>`;
+                log('❌ RESULTADO: SCHEMA ZOD TEM PROBLEMAS!', 'error');
+            }
+            
+            resultDiv.innerHTML = resultHTML;
+        }
+
+        function testStepByStep() {
+            const email = document.getElementById('testEmail').value;
+            const resultDiv = document.getElementById('validationResult');
+            
+            log('='.repeat(60));
+            log('📋 TESTE PASSO A PASSO');
+            log('='.repeat(60));
+            
+            let steps = [];
+            
+            // Passo 1
+            steps.push({
+                step: '1. z.string()',
+                test: typeof email === 'string',
+                result: 'Sempre passa (input é string)'
+            });
+            
+            // Passo 2
+            const step2 = email && email.length >= 1;
+            steps.push({
+                step: '2. .min(1)',
+                test: step2,
+                result: step2 ? `✅ Passou (length: ${email.length})` : '❌ Falhou: Email é obrigatório'
+            });
+            
+            // Passo 3
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const step3 = emailRegex.test(email);
+            steps.push({
+                step: '3. .email()',
+                test: step3,
+                result: step3 ? '✅ Passou: Formato válido' : '❌ Falhou: Formato inválido'
+            });
+            
+            // Passo 4
+            const step4 = email.length <= 254;
+            steps.push({
+                step: '4. .max(254)',
+                test: step4,
+                result: step4 ? `✅ Passou (length: ${email.length})` : '❌ Falhou: Muito longo'
+            });
+            
+            // Passo 5
+            const step5 = !email.includes(' ');
+            steps.push({
+                step: '5. .refine(espaços)',
+                test: step5,
+                result: step5 ? '✅ Passou: Sem espaços' : '❌ Falhou: Contém espaços'
+            });
+            
+            // Passo 6
+            const domain = email.split('@')[1];
+            const step6 = domain && domain.includes('.');
+            steps.push({
+                step: '6. .refine(domínio)',
+                test: step6,
+                result: step6 ? `✅ Passou: Domínio "${domain}" válido` : `❌ Falhou: Domínio "${domain}" inválido`
+            });
+            
+            let resultHTML = `<div class="info">📋 Análise Passo a Passo do Email: "${email}"\n\n`;
+            
+            steps.forEach((step, index) => {
+                resultHTML += `${step.step}: ${step.result}\n`;
+                log(`${step.step}: ${step.result}`, step.test ? 'success' : 'error');
+            });
+            
+            const allPassed = steps.every(step => step.test);
+            resultHTML += `\n🎯 RESULTADO FINAL: ${allPassed ? '✅ TODAS PASSARAM' : '❌ ALGUMAS FALHARAM'}</div>`;
+            
+            resultDiv.innerHTML = resultHTML;
+        }
+
+        // Executar teste automático ao carregar
+        window.onload = function() {
+            log('🔄 Página carregada. Executando teste automático em 1 segundo...');
+            setTimeout(testExactZodSchema, 1000);
+        };
+    </script>
+</body>
+</html>

@@ -705,6 +705,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1140,7 +1141,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1333,6 +1333,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import React, { useState } from 'react';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
 <span class="cstat-no" title="statement not covered" >import { useFamily } from './FamilyContext';</span>
+<span class="cstat-no" title="statement not covered" >import { logger } from '@/shared/lib/logger';</span>
 <span class="cstat-no" title="statement not covered" >import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';</span>
 <span class="cstat-no" title="statement not covered" >import { Badge } from '../../components/ui/badge';</span>
 <span class="cstat-no" title="statement not covered" >import { Button } from '../../components/ui/button';</span>
@@ -1397,7 +1398,7 @@ type AuditEntry = { id: string; timestamp: string; operation: string; old_data?:
 <span class="cstat-no" title="statement not covered" >  };</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const handleEdit = (account: AccountWithBalances) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    console.log('[FamilyAccounts] handleEdit called with account:', account);</span>
+<span class="cstat-no" title="statement not covered" >    // Debug: handleEdit called</span>
     
 <span class="cstat-no" title="statement not covered" >    // Para cartões de crédito, usar o saldo da conta diretamente</span>
 <span class="cstat-no" title="statement not covered" >    // Para outras contas, usar o saldo calculado</span>
@@ -1417,16 +1418,16 @@ type AuditEntry = { id: string; timestamp: string; operation: string; old_data?:
 <span class="cstat-no" title="statement not covered" >      saldoAtual,</span>
 <span class="cstat-no" title="statement not covered" >    };</span>
     
-<span class="cstat-no" title="statement not covered" >    console.log('[FamilyAccounts] editData created:', editData);</span>
+<span class="cstat-no" title="statement not covered" >    // Debug: editData created</span>
 <span class="cstat-no" title="statement not covered" >    setEditingAccount(editData);</span>
 <span class="cstat-no" title="statement not covered" >    setShowCreateModal(true);</span>
 <span class="cstat-no" title="statement not covered" >  };</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const handleSuccess = () =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    console.log('[FamilyAccounts] handleSuccess called');</span>
+<span class="cstat-no" title="statement not covered" >    // Debug: handleSuccess called</span>
 <span class="cstat-no" title="statement not covered" >    setShowCreateModal(false);</span>
 <span class="cstat-no" title="statement not covered" >    setEditingAccount(null);</span>
-<span class="cstat-no" title="statement not covered" >    console.log('[FamilyAccounts] Forcing refetch...');</span>
+<span class="cstat-no" title="statement not covered" >    // Debug: Forcing refetch</span>
 <span class="cstat-no" title="statement not covered" >    refetchAll();</span>
 <span class="cstat-no" title="statement not covered" >  };</span>
 &nbsp;
@@ -1775,11 +1776,10 @@ type AuditEntry = { id: string; timestamp: string; operation: string; old_data?:
             &lt;/DialogDescription&gt;
           &lt;/DialogHeader&gt;
 <span class="cstat-no" title="statement not covered" >          {(() =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >            console.log('[FamilyAccounts] Modal rendering - editingAccount:', editingAccount);</span>
-<span class="cstat-no" title="statement not covered" >            console.log('[FamilyAccounts] editingAccount?.tipo:', editingAccount?.tipo);</span>
+<span class="cstat-no" title="statement not covered" >            // Debug: Modal rendering</span>
             
 <span class="cstat-no" title="statement not covered" >            if (editingAccount) {</span>
-<span class="cstat-no" title="statement not covered" >              console.log('[FamilyAccounts] Rendering RegularAccountForm');</span>
+<span class="cstat-no" title="statement not covered" >              // Debug: Rendering RegularAccountForm</span>
 <span class="cstat-no" title="statement not covered" >              return (</span>
 <span class="cstat-no" title="statement not covered" >                &lt;RegularAccountForm</span>
 <span class="cstat-no" title="statement not covered" >                  initialData={editingAccount}</span>
@@ -1788,7 +1788,7 @@ type AuditEntry = { id: string; timestamp: string; operation: string; old_data?:
                 /&gt;
               );
 <span class="cstat-no" title="statement not covered" >            } else {</span>
-<span class="cstat-no" title="statement not covered" >              console.log('[FamilyAccounts] Rendering AccountForm');</span>
+<span class="cstat-no" title="statement not covered" >              // Debug: Rendering AccountForm</span>
 <span class="cstat-no" title="statement not covered" >              return (</span>
 <span class="cstat-no" title="statement not covered" >                &lt;AccountForm</span>
 <span class="cstat-no" title="statement not covered" >                  initialData={editingAccount}</span>
@@ -1843,13 +1843,13 @@ type AuditEntry = { id: string; timestamp: string; operation: string; old_data?:
 <span class="cstat-no" title="statement not covered" >        const { data, error } = await getAuditLogsByRow('accounts', accountId, 20);</span>
 <span class="cstat-no" title="statement not covered" >        if (!active) return;</span>
 <span class="cstat-no" title="statement not covered" >        if (error) {</span>
-<span class="cstat-no" title="statement not covered" >          console.debug('[AccountAuditList] erro a obter logs:', error);</span>
+<span class="cstat-no" title="statement not covered" >          logger.debug('[AccountAuditList] erro a obter logs:', error);</span>
 <span class="cstat-no" title="statement not covered" >          setLogs([]);</span>
 <span class="cstat-no" title="statement not covered" >        } else {</span>
 <span class="cstat-no" title="statement not covered" >          setLogs(Array.isArray(data) ? (data as unknown as AuditEntry[]) : []);</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" >      } catch (e) {</span>
-<span class="cstat-no" title="statement not covered" >        console.debug('[AccountAuditList] exceção a obter logs:', e);</span>
+<span class="cstat-no" title="statement not covered" >        logger.debug('[AccountAuditList] exceção a obter logs:', e);</span>
 <span class="cstat-no" title="statement not covered" >        setLogs([]);</span>
 <span class="cstat-no" title="statement not covered" >      } finally {</span>
 <span class="cstat-no" title="statement not covered" >        if (active) {</span>
@@ -1972,7 +1972,7 @@ type AuditEntry = { id: string; timestamp: string; operation: string; old_data?:
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.132Z
+                at 2025-09-14T17:15:08.717Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

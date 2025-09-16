@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/351</span>
+                <span class='fraction'>0/352</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/351</span>
+                <span class='fraction'>0/352</span>
             </div>
         
             
@@ -539,7 +539,9 @@
 <a name='L474'></a><a href='#L474'>474</a>
 <a name='L475'></a><a href='#L475'>475</a>
 <a name='L476'></a><a href='#L476'>476</a>
-<a name='L477'></a><a href='#L477'>477</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L477'></a><a href='#L477'>477</a>
+<a name='L478'></a><a href='#L478'>478</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1017,6 +1019,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { useCallback, useRef, useEffect, useState, useMemo } from 'react';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
 <span class="cstat-no" title="statement not covered" >import { useQueryClient } from '@tanstack/react-query';</span>
+<span class="cstat-no" title="statement not covered" >import { logger } from '@/shared/lib/logger';</span>
 &nbsp;
 // Tipos para métricas de performance
 interface PerformanceMetrics {
@@ -1150,7 +1153,7 @@ interface MetricsConfig {
 <span class="cstat-no" title="statement not covered" >      try {</span>
 <span class="cstat-no" title="statement not covered" >        observer(metrics);</span>
 <span class="cstat-no" title="statement not covered" >      } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >        console.error('Error in metrics observer:', error);</span>
+<span class="cstat-no" title="statement not covered" >        logger.error('Error in metrics observer:', error);</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 <span class="cstat-no" title="statement not covered" >    });</span>
 &nbsp;
@@ -1159,7 +1162,7 @@ interface MetricsConfig {
 <span class="cstat-no" title="statement not covered" >      try {</span>
 <span class="cstat-no" title="statement not covered" >        localStorage.setItem(`family-metrics-${familyId}`, JSON.stringify(metrics));</span>
 <span class="cstat-no" title="statement not covered" >      } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >        console.error('Error persisting metrics:', error);</span>
+<span class="cstat-no" title="statement not covered" >        logger.error('Error persisting metrics:', error);</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 &nbsp;
@@ -1232,7 +1235,7 @@ interface MetricsConfig {
       
 <span class="cstat-no" title="statement not covered" >      // Log detalhado do erro se analytics estiver ativo</span>
 <span class="cstat-no" title="statement not covered" >      if (finalConfig.enableAnalytics &amp;&amp; error) {</span>
-<span class="cstat-no" title="statement not covered" >        console.error(`[FamilyMetrics] Error recorded:`, {</span>
+<span class="cstat-no" title="statement not covered" >        logger.error(`[FamilyMetrics] Error recorded:`, {</span>
 <span class="cstat-no" title="statement not covered" >          familyId,</span>
 <span class="cstat-no" title="statement not covered" >          errorType,</span>
 <span class="cstat-no" title="statement not covered" >          error: error.message,</span>
@@ -1316,7 +1319,7 @@ interface MetricsConfig {
 <span class="cstat-no" title="statement not covered" >      try {</span>
 <span class="cstat-no" title="statement not covered" >        localStorage.removeItem(`family-metrics-${familyId}`);</span>
 <span class="cstat-no" title="statement not covered" >      } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >        console.error('Error clearing persisted metrics:', error);</span>
+<span class="cstat-no" title="statement not covered" >        logger.error('Error clearing persisted metrics:', error);</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 &nbsp;
@@ -1369,7 +1372,7 @@ interface MetricsConfig {
 <span class="cstat-no" title="statement not covered" >        setCurrentMetrics(parsed);</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Error loading persisted metrics:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Error loading persisted metrics:', error);</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  }, [familyId, finalConfig.enablePersistent]);</span>
 &nbsp;
@@ -1491,14 +1494,14 @@ interface MetricsConfig {
 <span class="cstat-no" title="statement not covered" >    getPerformanceSummary,</span>
 <span class="cstat-no" title="statement not covered" >    getPerformanceAlerts,</span>
 <span class="cstat-no" title="statement not covered" >  };</span>
-<span class="cstat-no" title="statement not covered" >}; </span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >};</span></pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.525Z
+                at 2025-09-14T17:15:09.625Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

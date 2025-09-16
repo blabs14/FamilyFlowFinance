@@ -395,13 +395,13 @@ const ReportsPage = () => {
   }, []);
 
   const selectedCategoryName = useMemo(() => {
-    if (selectedCategory === 'all') return null;
-    return categories.find(c => c.id === selectedCategory)?.nome || null;
+    if (selectedCategory === 'all') return 'Todas';
+    return categories.find(c => c.id === selectedCategory)?.nome || 'Todas';
   }, [categories, selectedCategory]);
 
   const selectedAccountName = useMemo(() => {
-    if (selectedAccount === 'all') return null;
-    return accounts.find(a => a.id === selectedAccount)?.name || null;
+    if (selectedAccount === 'all') return 'Todas';
+    return accounts.find(a => a.id === selectedAccount)?.name || 'Todas';
   }, [accounts, selectedAccount]);
 
   // Helpers de drill-down

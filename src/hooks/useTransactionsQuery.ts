@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import * as transactionService from '../services/transactions';
 import type { TransactionUpdate } from '../integrations/supabase/types';
-import { logger } from '@/shared/lib/logger';
+import { logger } from '../shared/lib/logger';
 
 // Hook para buscar transações
 export const useTransactions = (filters?: { account_id?: string }) => {

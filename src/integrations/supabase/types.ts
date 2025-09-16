@@ -21,6 +21,10 @@ export type Category = Database['public']['Tables']['categories']['Row'];
 export type CategoryInsert = Database['public']['Tables']['categories']['Insert'];
 export type CategoryUpdate = Database['public']['Tables']['categories']['Update'];
 
+export type CategoryCustomization = Database['public']['Tables']['category_customizations']['Row'];
+export type CategoryCustomizationInsert = Database['public']['Tables']['category_customizations']['Insert'];
+export type CategoryCustomizationUpdate = Database['public']['Tables']['category_customizations']['Update'];
+
 export type Budget = Database['public']['Tables']['budgets']['Row'];
 export type BudgetInsert = Database['public']['Tables']['budgets']['Insert'];
 export type BudgetUpdate = Database['public']['Tables']['budgets']['Update'];

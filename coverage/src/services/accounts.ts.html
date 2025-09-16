@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">26% </span>
+                <span class="strong">26.11% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>110/423</span>
+                <span class='fraction'>111/425</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">44.73% </span>
+                <span class="strong">46.15% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>17/38</span>
+                <span class='fraction'>18/39</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">26% </span>
+                <span class="strong">26.11% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>110/423</span>
+                <span class='fraction'>111/425</span>
             </div>
         
             
@@ -560,7 +560,10 @@
 <a name='L495'></a><a href='#L495'>495</a>
 <a name='L496'></a><a href='#L496'>496</a>
 <a name='L497'></a><a href='#L497'>497</a>
-<a name='L498'></a><a href='#L498'>498</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L498'></a><a href='#L498'>498</a>
+<a name='L499'></a><a href='#L499'>499</a>
+<a name='L500'></a><a href='#L500'>500</a>
+<a name='L501'></a><a href='#L501'>501</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -570,6 +573,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -1053,6 +1057,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1068,6 +1074,7 @@ import {
   AccountReserved
 } from '../integrations/supabase/types';
 import { AccountDomain, AccountWithBalancesDomain, mapAccountRowToDomain, mapAccountWithBalancesToDomain } from '../shared/types/accounts';
+import { logger } from '../shared/lib/logger';
 &nbsp;
 export const getAccounts = async (userId?: string): Promise&lt;{ data: Account[] | null; error: unknown }&gt; =&gt; {
   try {
@@ -1100,7 +1107,7 @@ export const getAccount = async (id: string): Promise&lt;{ data: Account | null;
       .eq('id', id)
       .single();
 &nbsp;
-    return { data: data as Account | null, error };
+    return { data: data || null, error };
   } <span class="branch-0 cbranch-no" title="branch not covered" >catch (error) {</span>
 <span class="cstat-no" title="statement not covered" >    return { data: null, error };</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
@@ -1112,8 +1119,8 @@ export const createAccount = async (accountData: AccountInsert, userId?: string)
     if (!resolvedUserId) <span class="branch-0 cbranch-no" title="branch not covered" >{</span>
 <span class="cstat-no" title="statement not covered" >      try {</span>
 <span class="cstat-no" title="statement not covered" >        const { data: authData, error: authError } = await supabase.auth.getUser();</span>
-<span class="cstat-no" title="statement not covered" >        if (!authError) {</span>
-<span class="cstat-no" title="statement not covered" >          resolvedUserId = authData?.user?.id as string | undefined;</span>
+<span class="cstat-no" title="statement not covered" >        if (!authError &amp;&amp; authData?.user?.id) {</span>
+<span class="cstat-no" title="statement not covered" >          resolvedUserId = authData.user.id;</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" >      } catch {</span>
 <span class="cstat-no" title="statement not covered" >        // ignore</span>
@@ -1149,7 +1156,7 @@ export const createAccount = async (accountData: AccountInsert, userId?: string)
 <span class="cstat-no" title="statement not covered" >          p_operation: 'create'</span>
 <span class="cstat-no" title="statement not covered" >        });</span>
 <span class="cstat-no" title="statement not covered" >        if (creditCardError) {</span>
-<span class="cstat-no" title="statement not covered" >          console.warn('Aviso ao aplicar lógica de cartão de crédito:', creditCardError);</span>
+<span class="cstat-no" title="statement not covered" >          logger.warn('Aviso ao aplicar lógica de cartão de crédito:', creditCardError);</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
       } else {
         // Para contas normais: se foi fornecido saldo inicial &gt; 0, criar transação de ajuste até ao alvo
@@ -1161,7 +1168,7 @@ export const createAccount = async (accountData: AccountInsert, userId?: string)
 <span class="cstat-no" title="statement not covered" >            p_new_balance: initialBalance</span>
 <span class="cstat-no" title="statement not covered" >          });</span>
 <span class="cstat-no" title="statement not covered" >          if (setErr) {</span>
-<span class="cstat-no" title="statement not covered" >            console.warn('Aviso ao definir saldo inicial:', setErr);</span>
+<span class="cstat-no" title="statement not covered" >            logger.warn('Aviso ao definir saldo inicial:', setErr);</span>
 <span class="cstat-no" title="statement not covered" >          }</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
       }
@@ -1186,8 +1193,8 @@ export const updateAccount = async (id: string, updates: AccountUpdateExtended, 
     if (!resolvedUserId) <span class="branch-0 cbranch-no" title="branch not covered" >{</span>
 <span class="cstat-no" title="statement not covered" >      try {</span>
 <span class="cstat-no" title="statement not covered" >        const { data: authData, error: authError } = await supabase.auth.getUser();</span>
-<span class="cstat-no" title="statement not covered" >        if (!authError) {</span>
-<span class="cstat-no" title="statement not covered" >          resolvedUserId = authData?.user?.id as string | undefined;</span>
+<span class="cstat-no" title="statement not covered" >        if (!authError &amp;&amp; authData?.user?.id) {</span>
+<span class="cstat-no" title="statement not covered" >          resolvedUserId = authData.user.id;</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" >      } catch {</span>
 <span class="cstat-no" title="statement not covered" >        // ignore, ficará undefined se não obtivermos user</span>
@@ -1225,7 +1232,7 @@ export const updateAccount = async (id: string, updates: AccountUpdateExtended, 
 <span class="cstat-no" title="statement not covered" >        .single();</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      if ((accountData as { tipo?: string } | null)?.tipo === 'cartão de crédito') {</span>
-<span class="cstat-no" title="statement not covered" >        const target = (updates.saldoAtual || 0) + (Number((updates as any).ajusteSaldo) || 0);</span>
+<span class="cstat-no" title="statement not covered" >        const target = (updates.saldoAtual || 0) + (Number(updates.ajusteSaldo) || 0);</span>
 <span class="cstat-no" title="statement not covered" >        const { error: rpcError } = await supabase.rpc('manage_credit_card_balance', {</span>
 <span class="cstat-no" title="statement not covered" >          p_user_id: resolvedUserId,</span>
 <span class="cstat-no" title="statement not covered" >          p_account_id: id,</span>
@@ -1290,7 +1297,7 @@ export const updateAccount = async (id: string, updates: AccountUpdateExtended, 
 <span class="cstat-no" title="statement not covered" >        return { data: null, error: balanceError };</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      const currentBalance = (currentBalanceData as { saldo_atual?: number } | null)?.saldo_atual || 0;</span>
+<span class="cstat-no" title="statement not covered" >      const currentBalance = currentBalanceData?.saldo_atual || 0;</span>
 <span class="cstat-no" title="statement not covered" >      const newBalance = (updates as Partial&lt;AccountUpdate&gt;).saldo || 0;</span>
 <span class="cstat-no" title="statement not covered" >      const difference = newBalance - currentBalance;</span>
 &nbsp;
@@ -1402,7 +1409,7 @@ export const deleteAccount = async (id: string, userId?: string): Promise&lt;{ d
     if (!resolvedUserId) <span class="branch-0 cbranch-no" title="branch not covered" >{</span>
 <span class="cstat-no" title="statement not covered" >      const { data: userData, error: authError } = await supabase.auth.getUser();</span>
 <span class="cstat-no" title="statement not covered" >      if (authError) return { data: null, error: authError };</span>
-<span class="cstat-no" title="statement not covered" >      resolvedUserId = userData?.user?.id as string | undefined;</span>
+<span class="cstat-no" title="statement not covered" >      resolvedUserId = userData?.user?.id;</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
     if (!resolvedUserId) <span class="branch-0 cbranch-no" title="branch not covered" >{</span>
 <span class="cstat-no" title="statement not covered" >      return { data: null, error: { message: 'userId required' } };</span>
@@ -1443,7 +1450,7 @@ export const getAccountBalances = <span class="fstat-no" title="function not cov
 export const getAccountReserved = <span class="fstat-no" title="function not covered" >async (): Promise&lt;{ data: AccountReserved[] | null; error: unknown }&gt; =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
 <span class="cstat-no" title="statement not covered" >    const { data, error } = await supabase.rpc('get_user_account_reserved');</span>
-<span class="cstat-no" title="statement not covered" >    return { data: data as AccountReserved[] | null, error };</span>
+<span class="cstat-no" title="statement not covered" >    return { data: data || null, error };</span>
 <span class="cstat-no" title="statement not covered" >  } catch (error) {</span>
 <span class="cstat-no" title="statement not covered" >    return { data: null, error };</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
@@ -1463,7 +1470,7 @@ export const getFamilyAccountsWithBalances = <span class="fstat-no" title="funct
 <span class="cstat-no" title="statement not covered" >      return { data: null, error };</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    return { data: (data as AccountWithBalances[]) || [], error: null };</span>
+<span class="cstat-no" title="statement not covered" >    return { data: data || [], error: null };</span>
 <span class="cstat-no" title="statement not covered" >  } catch (error) {</span>
 <span class="cstat-no" title="statement not covered" >    return { data: null, error };</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
@@ -1483,7 +1490,7 @@ export const getAccountsWithBalances = <span class="fstat-no" title="function no
 <span class="cstat-no" title="statement not covered" >      return { data: null, error };</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    return { data: (data as AccountWithBalances[]) || [], error: null };</span>
+<span class="cstat-no" title="statement not covered" >    return { data: data || [], error: null };</span>
 <span class="cstat-no" title="statement not covered" >  } catch (error) {</span>
 <span class="cstat-no" title="statement not covered" >    return { data: null, error };</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
@@ -1535,23 +1542,25 @@ export const getPersonalKPIs = <span class="fstat-no" title="function not covere
 <span class="cstat-no" title="statement not covered" >  const { data, error } = await supabase.rpc('get_personal_kpis');</span>
   
 <span class="cstat-no" title="statement not covered" >  if (error) {</span>
-<span class="cstat-no" title="statement not covered" >    console.error('Error fetching personal KPIs:', error);</span>
+<span class="cstat-no" title="statement not covered" >    logger.error('Error fetching personal KPIs:', error);</span>
 <span class="cstat-no" title="statement not covered" >    throw error;</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
   
+<span class="cstat-no" title="statement not covered" >  const defaultKPIs = {</span>
+<span class="cstat-no" title="statement not covered" >    total_balance: 0,</span>
+<span class="cstat-no" title="statement not covered" >    credit_card_debt: 0,</span>
+<span class="cstat-no" title="statement not covered" >    top_goal_progress: 0,</span>
+<span class="cstat-no" title="statement not covered" >    monthly_savings: 0,</span>
+<span class="cstat-no" title="statement not covered" >    goals_account_balance: 0,</span>
+<span class="cstat-no" title="statement not covered" >    total_goals_value: 0,</span>
+<span class="cstat-no" title="statement not covered" >    goals_progress_percentage: 0,</span>
+<span class="cstat-no" title="statement not covered" >    total_budget_spent: 0,</span>
+<span class="cstat-no" title="statement not covered" >    total_budget_amount: 0,</span>
+<span class="cstat-no" title="statement not covered" >    budget_spent_percentage: 0</span>
+<span class="cstat-no" title="statement not covered" >  };</span>
+  
 <span class="cstat-no" title="statement not covered" >  return {</span>
-<span class="cstat-no" title="statement not covered" >    data: (Array.isArray(data) &amp;&amp; data.length &gt; 0 ? (data[0] as Record&lt;string, unknown&gt;) : {</span>
-<span class="cstat-no" title="statement not covered" >      total_balance: 0,</span>
-<span class="cstat-no" title="statement not covered" >      credit_card_debt: 0,</span>
-<span class="cstat-no" title="statement not covered" >      top_goal_progress: 0,</span>
-<span class="cstat-no" title="statement not covered" >      monthly_savings: 0,</span>
-<span class="cstat-no" title="statement not covered" >      goals_account_balance: 0,</span>
-<span class="cstat-no" title="statement not covered" >      total_goals_value: 0,</span>
-<span class="cstat-no" title="statement not covered" >      goals_progress_percentage: 0,</span>
-<span class="cstat-no" title="statement not covered" >      total_budget_spent: 0,</span>
-<span class="cstat-no" title="statement not covered" >      total_budget_amount: 0,</span>
-<span class="cstat-no" title="statement not covered" >      budget_spent_percentage: 0</span>
-<span class="cstat-no" title="statement not covered" >    }),</span>
+<span class="cstat-no" title="statement not covered" >    data: (Array.isArray(data) &amp;&amp; data.length &gt; 0 ? data[0] : defaultKPIs),</span>
 <span class="cstat-no" title="statement not covered" >    error: null</span>
 <span class="cstat-no" title="statement not covered" >  };</span>
 <span class="cstat-no" title="statement not covered" >};</span></pre></td></tr></table></pre>
@@ -1561,7 +1570,7 @@ export const getPersonalKPIs = <span class="fstat-no" title="function not covere
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.132Z
+                at 2025-09-14T17:15:08.717Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

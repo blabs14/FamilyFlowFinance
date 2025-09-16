@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/225</span>
+                <span class='fraction'>0/241</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/225</span>
+                <span class='fraction'>0/241</span>
             </div>
         
             
@@ -352,8 +352,43 @@
 <a name='L287'></a><a href='#L287'>287</a>
 <a name='L288'></a><a href='#L288'>288</a>
 <a name='L289'></a><a href='#L289'>289</a>
-<a name='L290'></a><a href='#L290'>290</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L290'></a><a href='#L290'>290</a>
+<a name='L291'></a><a href='#L291'>291</a>
+<a name='L292'></a><a href='#L292'>292</a>
+<a name='L293'></a><a href='#L293'>293</a>
+<a name='L294'></a><a href='#L294'>294</a>
+<a name='L295'></a><a href='#L295'>295</a>
+<a name='L296'></a><a href='#L296'>296</a>
+<a name='L297'></a><a href='#L297'>297</a>
+<a name='L298'></a><a href='#L298'>298</a>
+<a name='L299'></a><a href='#L299'>299</a>
+<a name='L300'></a><a href='#L300'>300</a>
+<a name='L301'></a><a href='#L301'>301</a>
+<a name='L302'></a><a href='#L302'>302</a>
+<a name='L303'></a><a href='#L303'>303</a>
+<a name='L304'></a><a href='#L304'>304</a>
+<a name='L305'></a><a href='#L305'>305</a>
+<a name='L306'></a><a href='#L306'>306</a>
+<a name='L307'></a><a href='#L307'>307</a>
+<a name='L308'></a><a href='#L308'>308</a>
+<a name='L309'></a><a href='#L309'>309</a>
+<a name='L310'></a><a href='#L310'>310</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -393,6 +428,11 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -641,7 +681,22 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
+<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { logger } from '@/shared/lib/logger';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >// Importação lazy para evitar problemas de build</span>
+<span class="cstat-no" title="statement not covered" >let webVitalsModule: any = null;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >const loadWebVitals = async () =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  if (!webVitalsModule) {</span>
+<span class="cstat-no" title="statement not covered" >    try {</span>
+<span class="cstat-no" title="statement not covered" >      webVitalsModule = await import('web-vitals');</span>
+<span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
+<span class="cstat-no" title="statement not covered" >      logger.warn('Web Vitals não disponível:', error);</span>
+<span class="cstat-no" title="statement not covered" >      return null;</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
+<span class="cstat-no" title="statement not covered" >  return webVitalsModule;</span>
+<span class="cstat-no" title="statement not covered" >};</span>
 &nbsp;
 // Tipos para métricas de performance
 export interface PerformanceMetric {
@@ -681,9 +736,14 @@ export interface PerformanceDashboard {
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  private initializeWebVitals() {</span>
+<span class="cstat-no" title="statement not covered" >  private async initializeWebVitals() {</span>
+<span class="cstat-no" title="statement not covered" >    const webVitals = await loadWebVitals();</span>
+<span class="cstat-no" title="statement not covered" >    if (!webVitals) return;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    const { getCLS, getFID, getFCP, getLCP, getTTFB } = webVitals;</span>
+&nbsp;
 <span class="cstat-no" title="statement not covered" >    // Cumulative Layout Shift</span>
-<span class="cstat-no" title="statement not covered" >    getCLS((metric) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    getCLS((metric: any) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      this.recordMetric({</span>
 <span class="cstat-no" title="statement not covered" >        name: 'CLS',</span>
 <span class="cstat-no" title="statement not covered" >        value: metric.value,</span>
@@ -695,7 +755,7 @@ export interface PerformanceDashboard {
 <span class="cstat-no" title="statement not covered" >    });</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    // First Input Delay</span>
-<span class="cstat-no" title="statement not covered" >    getFID((metric) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    getFID((metric: any) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      this.recordMetric({</span>
 <span class="cstat-no" title="statement not covered" >        name: 'FID',</span>
 <span class="cstat-no" title="statement not covered" >        value: metric.value,</span>
@@ -707,7 +767,7 @@ export interface PerformanceDashboard {
 <span class="cstat-no" title="statement not covered" >    });</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    // First Contentful Paint</span>
-<span class="cstat-no" title="statement not covered" >    getFCP((metric) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    getFCP((metric: any) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      this.recordMetric({</span>
 <span class="cstat-no" title="statement not covered" >        name: 'FCP',</span>
 <span class="cstat-no" title="statement not covered" >        value: metric.value,</span>
@@ -719,7 +779,7 @@ export interface PerformanceDashboard {
 <span class="cstat-no" title="statement not covered" >    });</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    // Largest Contentful Paint</span>
-<span class="cstat-no" title="statement not covered" >    getLCP((metric) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    getLCP((metric: any) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      this.recordMetric({</span>
 <span class="cstat-no" title="statement not covered" >        name: 'LCP',</span>
 <span class="cstat-no" title="statement not covered" >        value: metric.value,</span>
@@ -731,7 +791,7 @@ export interface PerformanceDashboard {
 <span class="cstat-no" title="statement not covered" >    });</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    // Time to First Byte</span>
-<span class="cstat-no" title="statement not covered" >    getTTFB((metric) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    getTTFB((metric: any) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      this.recordMetric({</span>
 <span class="cstat-no" title="statement not covered" >        name: 'TTFB',</span>
 <span class="cstat-no" title="statement not covered" >        value: metric.value,</span>
@@ -803,7 +863,7 @@ export interface PerformanceDashboard {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    // Log em desenvolvimento</span>
 <span class="cstat-no" title="statement not covered" >    if (!this.isProduction) {</span>
-<span class="cstat-no" title="statement not covered" >      console.log('Performance Metric:', metric);</span>
+<span class="cstat-no" title="statement not covered" >      logger.debug('Performance Metric:', metric);</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
@@ -817,7 +877,7 @@ export interface PerformanceDashboard {
 <span class="cstat-no" title="statement not covered" >        body: JSON.stringify(metric),</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Erro ao enviar métrica:', error);</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Erro ao enviar métrica:', error);</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
@@ -937,7 +997,7 @@ export interface PerformanceDashboard {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.132Z
+                at 2025-09-14T17:15:08.717Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

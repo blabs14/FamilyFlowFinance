@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Botão Click</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste de Clique do Botão</h1>
+        
+        <p>Este teste verifica se os eventos de clique estão a funcionar corretamente.</p>
+        
+        <button onclick="testClick1()">Teste 1: onclick inline</button>
+        <button id="btn2">Teste 2: addEventListener</button>
+        <button id="btn3">Teste 3: Simular formulário</button>
+        
+        <div id="log" class="log">
+            <strong>Log de eventos:</strong><br>
+        </div>
+    </div>
+
+    <script>
+        function addLog(message) {
+            const log = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            log.innerHTML += `[${timestamp}] ${message}<br>`;
+            console.log(message);
+        }
+
+        function testClick1() {
+            addLog('✅ Teste 1: onclick inline funcionou!');
+        }
+
+        document.getElementById('btn2').addEventListener('click', function() {
+            addLog('✅ Teste 2: addEventListener funcionou!');
+        });
+
+        document.getElementById('btn3').addEventListener('click', function(e) {
+            e.preventDefault();
+            addLog('✅ Teste 3: Evento de formulário funcionou!');
+            
+            // Simular o que acontece no LoginForm
+            addLog('🔄 Simulando processo de login...');
+            
+            setTimeout(() => {
+                addLog('✅ Simulação de login concluída!');
+            }, 1000);
+        });
+
+        // Verificar se há algum erro JavaScript
+        window.addEventListener('error', function(e) {
+            addLog(`❌ Erro JavaScript: ${e.message}`);
+        });
+
+        addLog('🚀 Página carregada, testes prontos!');
+    </script>
+</body>
+</html>

@@ -101,20 +101,6 @@
 <a name='L36'></a><a href='#L36'>36</a>
 <a name='L37'></a><a href='#L37'>37</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -122,8 +108,22 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -136,32 +136,32 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { createClient } from '@supabase/supabase-js';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
-import { Database } from '../integrations/supabase/database.types';
+import type { Database } from '../integrations/supabase/database.types';
+<span class="cstat-no" title="statement not covered" >import { logger } from '../shared/lib/logger';</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >// Em desenvolvimento, remover sessões antigas antes de inicializar o cliente</span>
-<span class="cstat-no" title="statement not covered" >try {</span>
-<span class="cstat-no" title="statement not covered" >  if (import.meta.env.DEV &amp;&amp; typeof window !== 'undefined') {</span>
-<span class="cstat-no" title="statement not covered" >    const toDelete: string[] = [];</span>
-<span class="cstat-no" title="statement not covered" >    for (let i = 0; i &lt; localStorage.length; i++) {</span>
-<span class="cstat-no" title="statement not covered" >      const k = localStorage.key(i) ?? '';</span>
-<span class="cstat-no" title="statement not covered" >      if (/^(sb-|supabase\.)/i.test(k)) toDelete.push(k);</span>
-<span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >    toDelete.forEach(k =&gt; localStorage.removeItem(k));</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >} catch {}</span>
+<span class="cstat-no" title="statement not covered" >// PROBLEMA IDENTIFICADO: Este código estava a remover tokens em desenvolvimento</span>
+<span class="cstat-no" title="statement not covered" >// Comentado para permitir persistência de sessão</span>
+<span class="cstat-no" title="statement not covered" >// try {</span>
+<span class="cstat-no" title="statement not covered" >//   if (import.meta.env.DEV &amp;&amp; typeof window !== 'undefined') {</span>
+<span class="cstat-no" title="statement not covered" >//     const toDelete: string[] = [];</span>
+<span class="cstat-no" title="statement not covered" >//     for (let i = 0; i &lt; localStorage.length; i++) {</span>
+<span class="cstat-no" title="statement not covered" >//       const k = localStorage.key(i) ?? '';</span>
+<span class="cstat-no" title="statement not covered" >//       if (/^(sb-|supabase\.)/i.test(k)) toDelete.push(k);</span>
+<span class="cstat-no" title="statement not covered" >//     }</span>
+<span class="cstat-no" title="statement not covered" >//     toDelete.forEach(k =&gt; localStorage.removeItem(k));</span>
+<span class="cstat-no" title="statement not covered" >//   }</span>
+<span class="cstat-no" title="statement not covered" >// } catch {}</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;</span>
-<span class="cstat-no" title="statement not covered" >const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;</span>
+<span class="cstat-no" title="statement not covered" >const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;</span>
+<span class="cstat-no" title="statement not covered" >const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >if (!supabaseUrl || !supabaseAnonKey) {</span>
-<span class="cstat-no" title="statement not covered" >  // Preferir erro claro no console sem expor segredos</span>
-<span class="cstat-no" title="statement not covered" >  // eslint-disable-next-line no-console</span>
-<span class="cstat-no" title="statement not covered" >  console.error('[Supabase] Variáveis de ambiente em falta. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');</span>
+<span class="cstat-no" title="statement not covered" >  logger.error('[Supabase] Variáveis de ambiente em falta. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');</span>
+<span class="cstat-no" title="statement not covered" >  throw new Error('Variáveis de ambiente do Supabase em falta');</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >if (import.meta.env.DEV) {</span>
-<span class="cstat-no" title="statement not covered" >  // eslint-disable-next-line no-console</span>
-<span class="cstat-no" title="statement not covered" >  console.info('🔧 Supabase inicializado (dev). URL presente:', !!supabaseUrl, 'AnonKey length:', supabaseAnonKey?.length);</span>
+<span class="cstat-no" title="statement not covered" >  logger.info('🔧 Supabase inicializado (dev). URL presente:', !!supabaseUrl, 'AnonKey length:', supabaseAnonKey?.length);</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const supabase = createClient&lt;Database&gt;(supabaseUrl, supabaseAnonKey, {</span>
@@ -178,7 +178,7 @@ import { Database } from '../integrations/supabase/database.types';
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-07T15:52:15.132Z
+                at 2025-09-14T17:15:08.717Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

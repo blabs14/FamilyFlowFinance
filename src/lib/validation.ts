@@ -23,9 +23,8 @@ export const accountValidationSchema = z.object({
 // Schema de validação para categorias
 export const categoryValidationSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório').max(100, 'Nome deve ter no máximo 100 caracteres'),
-  tipo: z.enum(['despesa', 'receita', 'poupança', 'investimento', 'outro'], {
-    errorMap: () => ({ message: 'Tipo deve ser "despesa", "receita", "poupança", "investimento" ou "outro"' })
-  }),
+  // Tipo agora é opcional - será determinado pela transação que usa a categoria
+  tipo: z.string().optional(),
   cor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Cor deve ser um código hexadecimal válido').optional(),
 });
 
@@ -165,7 +164,7 @@ export const validateAndSanitizeCategory = (data: CategoryInput) => {
     // Sanitizar inputs
     const sanitizedData = {
       nome: sanitizeString(data.nome),
-      tipo: data.tipo,
+      tipo: data.tipo || 'neutro', // Tipo neutro por padrão - será determinado pela transação
       cor: data.cor || '#3B82F6',
     };
 

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../types/database.types';
+import type { Database } from '../integrations/supabase/database.types';
 import { logger } from '../shared/lib/logger';
 
 // PROBLEMA IDENTIFICADO: Este código estava a remover tokens em desenvolvimento

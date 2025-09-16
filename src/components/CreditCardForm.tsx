@@ -45,15 +45,15 @@ const CreditCardForm = ({ initialData, onSuccess, onCancel }: CreditCardFormProp
     try {
       if (!initialData.id) return; // evitar uuid inválido
       const { data, error } = await supabase
-        .from('accounts')
-        .select('saldo')
-        .eq('id', initialData.id)
+        .from('account_balances')
+        .select('saldo_atual')
+        .eq('account_id', initialData.id)
         .single();
       if (error) {
         logger.error('[CreditCardForm] Error fetching account balance:', error);
         return;
       }
-      setForm(prev => ({ ...prev, saldoAtual: (data as any)?.saldo || 0 }));
+      setForm(prev => ({ ...prev, saldoAtual: data?.saldo_atual || 0 }));
     } catch (error) {
       logger.error('[CreditCardForm] Error fetching account balance:', error);
     }
@@ -62,12 +62,8 @@ const CreditCardForm = ({ initialData, onSuccess, onCancel }: CreditCardFormProp
   useEffect(() => {
     if (initialData) {
       setForm(initialData);
-      // Para cartões de crédito, buscar o saldo correto da conta
-      if (initialData.tipo === 'cartão de crédito' && isEditing && initialData.id) {
-        void fetchAccountBalance();
-      }
     }
-  }, [initialData, fetchAccountBalance]);
+  }, [initialData]);
 
   const toNegative = (n: number) => (n > 0 ? -n : n);
 
