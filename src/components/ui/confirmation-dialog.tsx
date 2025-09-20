@@ -53,12 +53,16 @@ export const ConfirmationDialog = ({
     onClose();
   };
 
+  const safeTitle = title?.trim() || 'Confirmar ação';
+  const safeMessage = message?.trim() || 'Tem a certeza que deseja continuar?';
+
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent role="dialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-desc">
+      {/* Fornecer sempre um nome acessível ao Content para evitar warnings transitórios */}
+      <AlertDialogContent aria-label={safeTitle}>
         <AlertDialogHeader>
-          <AlertDialogTitle id="confirm-title">{title}</AlertDialogTitle>
-          <AlertDialogDescription id="confirm-desc">{message}</AlertDialogDescription>
+          <AlertDialogTitle>{safeTitle}</AlertDialogTitle>
+          <AlertDialogDescription>{safeMessage}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={handleCancel} ref={cancelRef} aria-label={cancelText}>
@@ -75,4 +79,4 @@ export const ConfirmationDialog = ({
       </AlertDialogContent>
     </AlertDialog>
   );
-}; 
+};
