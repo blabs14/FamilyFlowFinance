@@ -49,14 +49,17 @@ const TransferModal = ({ isOpen, onClose }: TransferModalProps) => {
   const [description, setDescription] = useState('');
   const [validationError, setValidationError] = useState('');
 
-  // Filtrar contas com saldo disponível
-  const availableAccounts = accounts.filter(account => account.saldo_disponivel > 0);
+  // Usar todas as contas disponíveis (pessoais e familiares) para permitir transferências cross-scope
+  const allAvailableAccounts = accounts as any[];
+
+  // Filtrar contas com saldo disponível para origem
+  const availableFromAccounts = allAvailableAccounts.filter(account => account.saldo_disponivel > 0);
 
   // Usar as propriedades corretas das contas com saldos
-  const fromAccount = availableAccounts.find(acc => acc.account_id === fromAccountId);
-  const toAccount = accounts.find(acc => acc.account_id === toAccountId);
+  const fromAccount = allAvailableAccounts.find(acc => acc.account_id === fromAccountId);
+  const toAccount = allAvailableAccounts.find(acc => acc.account_id === toAccountId);
   
-  // Detectar transferência cross-scope
+  // Detectar transferência cross-scope para mostrar aviso informativo
   const isCrossScopeTransfer = fromAccount && toAccount && 
     (fromAccount as any).scope !== (toAccount as any).scope;
 
@@ -237,7 +240,7 @@ const TransferModal = ({ isOpen, onClose }: TransferModalProps) => {
                   <SelectValue placeholder="Selecionar conta de origem" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableAccounts.map(account => (
+                  {availableFromAccounts.map(account => (
                     <SelectItem key={account.account_id} value={account.account_id}>
                       <div className="flex items-center justify-between w-full">
                         <span>{account.nome}</span>
@@ -267,7 +270,7 @@ const TransferModal = ({ isOpen, onClose }: TransferModalProps) => {
                   <SelectValue placeholder="Selecionar conta de destino" />
                 </SelectTrigger>
                 <SelectContent>
-                  {accounts.map(account => (
+                  {allAvailableAccounts.map(account => (
                     <SelectItem key={account.account_id} value={account.account_id}>
                       <div className="flex items-center justify-between w-full">
                         <span>{account.nome}</span>
@@ -290,19 +293,14 @@ const TransferModal = ({ isOpen, onClose }: TransferModalProps) => {
 
             {/* Aviso para transferências cross-scope */}
             {isCrossScopeTransfer && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
                 <div className="flex items-start gap-2">
-                  <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-blue-600 text-xs font-bold">!</span>
-                  </div>
-                  <div className="text-sm">
-                    <p className="font-medium text-blue-800 mb-1">
-                      Transferência entre âmbitos diferentes
-                    </p>
-                    <p className="text-blue-700">
-                      Está a transferir entre uma conta {(fromAccount as any)?.scope === 'family' ? 'familiar' : 'pessoal'} 
-                      {' '}e uma conta {(toAccount as any)?.scope === 'family' ? 'familiar' : 'pessoal'}. 
-                      Esta operação será registada em ambos os âmbitos.
+                  <div className="w-4 h-4 text-blue-600 mt-0.5">⚠</div>
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium">Transferência entre âmbitos</p>
+                    <p>
+                      Esta transferência é entre uma conta {(fromAccount as any)?.scope === 'personal' ? 'pessoal' : 'familiar'} 
+                      {' '}e uma conta {(toAccount as any)?.scope === 'personal' ? 'pessoal' : 'familiar'}.
                     </p>
                   </div>
                 </div>

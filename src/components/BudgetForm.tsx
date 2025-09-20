@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FormSubmitButton } from '@/components/ui/form-submit-button';
+import { FormSubmitButton } from './ui/loading-button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { LoadingSpinner } from './ui/loading-states';
 import { logger } from '@/shared/lib/logger';
