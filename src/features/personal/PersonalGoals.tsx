@@ -89,6 +89,17 @@ const PersonalGoals: React.FC = () => {
   };
 
   const handleEditGoal = (goal: any) => {
+    console.log('handleEditGoal called with:', goal);
+    console.log('Goal structure:', {
+      id: goal.id,
+      nome: goal.nome,
+      valor_objetivo: goal.valor_objetivo,
+      valor_atual: goal.valor_atual,
+      prazo: goal.prazo,
+      account_id: goal.account_id,
+      family_id: goal.family_id,
+      status: goal.status
+    });
     // O objetivo já vem com todos os dados necessários
     setEditingGoal(goal);
     setShowEditModal(true);

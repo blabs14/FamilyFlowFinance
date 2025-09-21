@@ -47,7 +47,9 @@ const GoalForm = ({ initialData, onSuccess, onCancel, familyId }: GoalFormProps)
   const isSubmitting = createGoalMutation.isPending || updateGoalMutation.isPending;
 
   useEffect(() => {
+    console.log('GoalForm useEffect - initialData:', initialData);
     if (initialData) {
+      console.log('Setting form with initialData:', initialData);
       setForm(initialData);
     }
   }, [initialData]);
@@ -72,6 +74,10 @@ const GoalForm = ({ initialData, onSuccess, onCancel, familyId }: GoalFormProps)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('🔄 GoalForm handleSubmit - Dados do formulário:', form);
+    console.log('🔄 GoalForm handleSubmit - initialData:', initialData);
+    
     setValidationErrors({});
     
     // Validação manual simples
@@ -98,19 +104,26 @@ const GoalForm = ({ initialData, onSuccess, onCancel, familyId }: GoalFormProps)
         ...(familyId && { family_id: familyId })
       } as const;
       
+      console.log('🔄 GoalForm handleSubmit - Payload:', payload);
+      
       if (initialData && initialData.id) {
         const updatePayload = {
           nome: form.nome,
           valor_objetivo: form.valor_objetivo,
           prazo: form.prazo || null
         };
-        await updateGoalMutation.mutateAsync({ id: initialData.id, data: updatePayload });
+        console.log('🔄 GoalForm handleSubmit - Atualizando objetivo com ID:', initialData.id);
+        const result = await updateGoalMutation.mutateAsync({ id: initialData.id, data: updatePayload });
+        console.log('✅ GoalForm handleSubmit - Resultado da atualização:', result);
       } else {
-        await createGoalMutation.mutateAsync(payload);
+        console.log('🔄 GoalForm handleSubmit - Criando novo objetivo');
+        const result = await createGoalMutation.mutateAsync(payload);
+        console.log('✅ GoalForm handleSubmit - Resultado da criação:', result);
       }
       
       if (onSuccess) onSuccess();
     } catch (err: any) {
+      console.error('❌ Erro ao salvar objetivo:', err);
       // O erro já é tratado pelo hook useGoals
     }
   };
