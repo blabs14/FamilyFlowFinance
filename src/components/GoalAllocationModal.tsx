@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useGoalAllocations } from '../hooks/useGoalAllocations';
-import { useFamily } from '../features/family/FamilyContext';
 import { useAccountsWithBalances } from '../hooks/useAccountsQuery';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -28,6 +27,7 @@ interface GoalAllocationModalProps {
   goalName: string;
   currentProgress: number;
   targetAmount: number;
+  canEdit?: boolean;
 }
 
 const GoalAllocationModal = ({ 
@@ -36,12 +36,12 @@ const GoalAllocationModal = ({
   goalId, 
   goalName, 
   currentProgress, 
-  targetAmount 
+  targetAmount,
+  canEdit = true
 }: GoalAllocationModalProps) => {
   const { user } = useAuth();
   const { allocateToGoal, isAllocating } = useGoalAllocations();
   const { data: accounts = [] } = useAccountsWithBalances();
-  const { canEdit } = useFamily();
   
   // Debug: GoalAllocationModal props and accounts data
   
@@ -64,42 +64,57 @@ const GoalAllocationModal = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Debug: GoalAllocationModal handleSubmit called with form data
+    console.log('[DEBUG] GoalAllocationModal handleSubmit - Iniciado');
     setValidationError('');
     
-    if (!canEdit('goal')) {
+    if (!canEdit) {
+      console.log('[DEBUG] GoalAllocationModal - Sem permissões para editar');
       setValidationError('Não tem permissões para alocar fundos a objetivos');
       return;
     }
 
     if (!selectedAccountId) {
+      console.log('[DEBUG] GoalAllocationModal - Conta não selecionada');
       setValidationError('Selecione uma conta');
       return;
     }
 
     const numericAmount = parseFloat(amount.replace(',', '.'));
     if (!numericAmount || numericAmount <= 0) {
+      console.log('[DEBUG] GoalAllocationModal - Valor inválido:', numericAmount);
       setValidationError('Insira um valor válido');
       return;
     }
 
     if (selectedAccount && numericAmount > selectedAccount.saldo_disponivel) {
+      console.log('[DEBUG] GoalAllocationModal - Saldo insuficiente:', {
+        amount: numericAmount,
+        available: selectedAccount.saldo_disponivel
+      });
       setValidationError('Saldo insuficiente na conta selecionada');
       return;
     }
 
-    // Debug: Submitting allocation with data
+    console.log('[DEBUG] GoalAllocationModal - Dados para alocação:', {
+      goalId,
+      accountId: selectedAccountId,
+      amount: numericAmount,
+      description: description || "Alocacao para " + goalName
+    });
 
     try {
-      await allocateToGoal({
+      console.log('[DEBUG] GoalAllocationModal - Chamando allocateToGoal...');
+      const result = await allocateToGoal({
         goalId,
         accountId: selectedAccountId,
         amount: numericAmount,
         description: description || "Alocacao para " + goalName
       });
 
+      console.log('[DEBUG] GoalAllocationModal - Resultado da alocação:', result);
       onClose();
     } catch (error) {
+      console.error('[DEBUG] GoalAllocationModal - Erro capturado:', error);
       logger.error('[GoalAllocationModal] Error allocating to goal:', error);
       setValidationError('Erro ao processar alocacao');
     }

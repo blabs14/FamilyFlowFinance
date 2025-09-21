@@ -90,7 +90,7 @@ const PayrollMileagePage: React.FC = () => {
   // Calcular estatísticas do mês
    const monthlyStats = {
      totalTrips: filteredTrips.length,
-     totalKm: filteredTrips.reduce((sum, trip) => sum + trip.km, 0),
+     totalKm: filteredTrips.reduce((sum, trip) => sum + (typeof trip.km === 'number' ? trip.km : parseFloat(trip.km) || 0), 0),
     totalAmount: filteredTrips.reduce((sum, trip) => {
       const policy = policies.find(p => p.id === trip.policy_id);
       return sum + (policy ? trip.km * (policy.rate_cents_per_km / 100) : 0);

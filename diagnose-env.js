@@ -15,9 +15,10 @@ function diagnoseEnvironment() {
   // Tentar obter do import.meta.env (se disponível)
   let envUrl, envKey;
   try {
-    if (typeof import !== 'undefined' && import.meta && import.meta.env) {
-      envUrl = import.meta.env.VITE_SUPABASE_URL;
-      envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    // Note: import.meta is only available in ES modules, not in regular scripts
+    if (typeof window !== 'undefined' && window.import && window.import.meta && window.import.meta.env) {
+      envUrl = window.import.meta.env.VITE_SUPABASE_URL;
+      envKey = window.import.meta.env.VITE_SUPABASE_ANON_KEY;
       console.log('✅ [Env] import.meta.env disponível');
     }
   } catch (e) {

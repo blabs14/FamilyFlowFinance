@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '../contexts/AuthContext';
 import { useCreateCategory, useUpdateCategory } from '../hooks/useCategoriesQuery';
 import { useUpsertCategoryCustomization, useDeleteCategoryCustomization } from '../hooks/useCategoryCustomizationsQuery';
@@ -7,6 +9,7 @@ import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { FormSubmitButton } from './ui/loading-button';
 import { FormTransition } from './ui/transition-wrapper';
+
 import {
   Select,
   SelectTrigger,
@@ -15,8 +18,10 @@ import {
   SelectValue,
 } from './ui/select';
 import { logger } from '@/shared/lib/logger';
+import type { CategoryDomain } from '../shared/types/categories';
 
 interface CategoryFormData {
+  id?: string;
   nome: string;
   cor: string;
   icone?: string;
@@ -25,20 +30,25 @@ interface CategoryFormData {
 }
 
 interface CategoryFormProps {
-  initialData?: CategoryFormData;
+  initialData?: CategoryFormData | CategoryDomain;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
 const CategoryForm = ({ initialData, onSuccess, onCancel }: CategoryFormProps) => {
   const { user } = useAuth();
-  const [form, setForm] = useState<CategoryFormData>({
-    nome: '',
-    cor: '#3B82F6',
-    icone: '📊',
-    ...initialData
+  
+  const form = useForm<CategoryFormData>({
+    resolver: zodResolver(categorySchema),
+    defaultValues: {
+      nome: '',
+      cor: '#3B82F6',
+      icone: '📊',
+      ...initialData
+    }
   });
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  
+  const { register, handleSubmit, reset, watch, formState: { errors } } = form;
   
   const createCategoryMutation = useCreateCategory();
   const updateCategoryMutation = useUpdateCategory();
@@ -54,20 +64,23 @@ const CategoryForm = ({ initialData, onSuccess, onCancel }: CategoryFormProps) =
   const isDefaultCategory = initialData?.user_id === null;
   const isEditing = !!initialData?.id;
 
+  // Configurar valores padrão quando initialData muda
   useEffect(() => {
     if (initialData) {
-      setForm(initialData);
+      const values = {
+        nome: initialData.nome || '',
+        cor: initialData.cor || '#3B82F6',
+        icone: initialData.icone || 'circle'
+      };
+      reset(values);
+    } else {
+      reset({
+        nome: '',
+        cor: '#3B82F6',
+        icone: 'circle'
+      });
     }
-  }, [initialData]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSelectChange = (field: string, value: string) => {
-    setForm(prev => ({ ...prev, [field]: value }));
-  };
+  }, [initialData, reset]);
 
   const handleResetCustomization = async () => {
     if (!initialData?.id) return;
@@ -80,43 +93,29 @@ const CategoryForm = ({ initialData, onSuccess, onCancel }: CategoryFormProps) =
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setValidationErrors({});
-    
-    // Validação client-side com Zod
-    const result = categorySchema.safeParse(form);
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      result.error.errors.forEach(err => {
-        if (err.path[0]) fieldErrors[err.path[0]] = err.message;
-      });
-      setValidationErrors(fieldErrors);
-      return;
-    }
-    
+  const onSubmit = async (data: CategoryFormData) => {
     try {
       if (isEditing && isDefaultCategory) {
         // Para categorias padrão, criar/atualizar personalização
         await upsertCustomizationMutation.mutateAsync({
           category_id: initialData!.id!,
-          custom_color: form.cor,
-          custom_icon: form.icone
+          custom_color: data.cor,
+          custom_icon: data.icone
         });
       } else if (isEditing) {
         // Para categorias do utilizador, atualizar normalmente
         const payload = {
-          nome: form.nome,
-          cor: form.cor,
-          icone: form.icone,
+          nome: data.nome,
+          cor: data.cor,
+          icone: data.icone,
         };
         await updateCategoryMutation.mutateAsync({ id: initialData!.id!, data: payload });
       } else {
         // Criar nova categoria
         const payload = {
-          nome: form.nome,
-          cor: form.cor,
-          icone: form.icone,
+          nome: data.nome,
+          cor: data.cor,
+          icone: data.icone,
         };
         await createCategoryMutation.mutateAsync(payload);
       }
@@ -129,61 +128,47 @@ const CategoryForm = ({ initialData, onSuccess, onCancel }: CategoryFormProps) =
   };
 
   return (
-    <FormTransition isVisible={true}>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-2 sm:p-4" data-testid="category-form">
-        <div className="space-y-2">
-          <label htmlFor="nome">Nome</label>
-          <Input
+    <FormTransition>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div>
+          <label htmlFor="nome">
+            Nome da Categoria
+          </label>
+          <input
+            {...register('nome')}
             id="nome"
-            name="nome"
+            type="text"
+            className="w-full p-2 border rounded"
             placeholder="Nome da categoria"
-            value={form.nome}
-            onChange={handleChange}
-            required
-            autoFocus
-            className="w-full"
-            disabled={isEditing && isDefaultCategory} // Desabilitar nome para categorias default em edição
-            aria-invalid={!!validationErrors.nome}
-            aria-describedby={validationErrors.nome ? 'nome-error' : undefined}
           />
-          {validationErrors.nome && <div id="nome-error" className="text-red-600 text-sm">{validationErrors.nome}</div>}
-          {isEditing && isDefaultCategory && (
-            <div className="text-sm text-muted-foreground">
-              O nome das categorias padrão não pode ser alterado. Apenas a cor e ícone podem ser personalizados.
-            </div>
-          )}
+          {errors.nome && <p className="text-red-500 text-sm">{errors.nome.message}</p>}
         </div>
 
-
-
-        <div className="space-y-2">
-          <label htmlFor="cor">Cor</label>
-          <Input
+        <div>
+          <label htmlFor="cor">
+            Cor
+          </label>
+          <input
+            {...register('cor')}
             id="cor"
-            name="cor"
             type="color"
-            value={form.cor}
-            onChange={handleChange}
-            className="w-full h-12"
-            aria-invalid={!!validationErrors.cor}
-            aria-describedby={validationErrors.cor ? 'cor-error' : undefined}
+            className="w-full h-10 border rounded cursor-pointer"
           />
-          {validationErrors.cor && <div id="cor-error" className="text-red-600 text-sm">{validationErrors.cor}</div>}
+          {errors.cor && <p className="text-red-500 text-sm">{errors.cor.message}</p>}
         </div>
 
-        <div className="space-y-2">
-          <label htmlFor="icone">Ícone</label>
-          <Input
+        <div>
+          <label htmlFor="icone">
+            Ícone
+          </label>
+          <input
+            {...register('icone')}
             id="icone"
-            name="icone"
-            placeholder="Emoji ou ícone"
-            value={form.icone}
-            onChange={handleChange}
-            className="w-full"
-            aria-invalid={!!validationErrors.icone}
-            aria-describedby={validationErrors.icone ? 'icone-error' : undefined}
+            type="text"
+            className="w-full p-2 border rounded"
+            placeholder="Ícone da categoria"
           />
-          {validationErrors.icone && <div id="icone-error" className="text-red-600 text-sm">{validationErrors.icone}</div>}
+          {errors.icone && <p className="text-red-500 text-sm">{errors.icone.message}</p>}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2">

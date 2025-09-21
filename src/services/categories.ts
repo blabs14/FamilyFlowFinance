@@ -6,7 +6,7 @@ import { getUserCategoryCustomizations } from './categoryCustomizations';
 export const getCategories = async (userId?: string, tipo?: string): Promise<{ data: Category[] | null; error: unknown }> => {
   try {
     // Debug temporário
-    console.log('getCategories - userId:', userId, 'tipo:', tipo);
+    console.log('🔍 getCategories - INÍCIO - userId:', userId, 'tipo:', tipo);
     
     let query = supabase
       .from('categories')
@@ -14,33 +14,47 @@ export const getCategories = async (userId?: string, tipo?: string): Promise<{ d
 
     if (userId === undefined) {
       // Quando userId é undefined, queremos categorias padrão (user_id IS NULL)
-      console.log('getCategories - buscando categorias padrão (user_id IS NULL)');
+      console.log('🔍 getCategories - buscando categorias padrão (user_id IS NULL)');
       query = query.is('user_id', null);
     } else if (userId && userId.trim() !== '') {
       // Quando userId é fornecido e não é string vazia, filtramos por esse user_id específico
-      console.log('getCategories - buscando categorias do usuário:', userId);
+      console.log('🔍 getCategories - buscando categorias do usuário:', userId);
       query = query.eq('user_id', userId);
     } else {
       // Se userId for string vazia ou só espaços, retornamos array vazio
-      console.log('getCategories - userId vazio, retornando array vazio');
+      console.log('🔍 getCategories - userId vazio, retornando array vazio');
       return { data: [], error: null };
     }
 
     if (tipo) {
       // A coluna 'tipo' pode existir em esquemas anteriores; aplicamos cast controlado para manter compatibilidade
+      console.log('🔍 getCategories - filtrando por tipo:', tipo);
       query = query.eq('tipo', tipo);
     }
 
+    console.log('🔍 getCategories - executando query...');
     const { data, error } = await query.order('nome');
 
     // Debug temporário
-    console.log('getCategories - resultado:', { data: data?.length, error });
-    if (data) {
-      console.log('getCategories - primeiras 3 categorias:', data.slice(0, 3));
+    console.log('🔍 getCategories - RESULTADO:', { 
+      dataLength: data?.length, 
+      error: error?.message || error,
+      hasData: !!data 
+    });
+    
+    if (data && data.length > 0) {
+      console.log('🔍 getCategories - primeiras 3 categorias:', data.slice(0, 3).map(c => ({ id: c.id, nome: c.nome, user_id: c.user_id })));
+    } else {
+      console.log('🔍 getCategories - NENHUMA CATEGORIA ENCONTRADA!');
+    }
+
+    if (error) {
+      console.error('🔍 getCategories - ERRO:', error);
     }
 
     return { data: data || null, error };
   } catch (error) {
+    console.error('🔍 getCategories - EXCEÇÃO:', error);
     return { data: null, error };
   }
 };
@@ -66,6 +80,23 @@ export const getCategory = async (id: string): Promise<{ data: Category | null; 
 
 export const createCategory = async (categoryData: CategoryInsert): Promise<{ data: Category | null; error: unknown }> => {
   try {
+    // Validar se já existe uma categoria com o mesmo nome
+    const { data: nameExists, error: checkError } = await checkCategoryNameExists(
+      categoryData.nome, 
+      categoryData.user_id || undefined
+    );
+    
+    if (checkError) {
+      return { data: null, error: checkError };
+    }
+    
+    if (nameExists) {
+      return { 
+        data: null, 
+        error: new Error(`Já existe uma categoria com o nome "${categoryData.nome}". Por favor, escolha um nome diferente.`) 
+      };
+    }
+
     const { data, error } = await supabase
       .from('categories')
       .insert([categoryData])
@@ -80,6 +111,32 @@ export const createCategory = async (categoryData: CategoryInsert): Promise<{ da
 
 export const updateCategory = async (id: string, updates: CategoryUpdate): Promise<{ data: Category | null; error: unknown }> => {
   try {
+    // Se está a atualizar o nome, validar se já existe uma categoria com o mesmo nome
+    if (updates.nome) {
+      // Primeiro obter a categoria atual para saber o user_id
+      const { data: currentCategory, error: getCurrentError } = await getCategory(id);
+      if (getCurrentError) {
+        return { data: null, error: getCurrentError };
+      }
+      
+      const { data: nameExists, error: checkError } = await checkCategoryNameExists(
+        updates.nome, 
+        currentCategory?.user_id || undefined,
+        id // Excluir a própria categoria da verificação
+      );
+      
+      if (checkError) {
+        return { data: null, error: checkError };
+      }
+      
+      if (nameExists) {
+        return { 
+          data: null, 
+          error: new Error(`Já existe uma categoria com o nome "${updates.nome}". Por favor, escolha um nome diferente.`) 
+        };
+      }
+    }
+
     const { data, error } = await supabase
       .from('categories')
       .update(updates)
@@ -229,5 +286,63 @@ export const getCategoriesWithCustomizations = async (
     return { data: allCategories, error: null };
   } catch (error) {
     return { data: null, error };
+  }
+};
+
+/**
+ * Verifica se já existe uma categoria com o mesmo nome (considerando categorias padrão e do utilizador)
+ */
+export const checkCategoryNameExists = async (
+  name: string, 
+  userId?: string, 
+  excludeId?: string
+): Promise<{ data: boolean; error: unknown }> => {
+  try {
+    // 1. Verificar categorias padrão
+    const { data: defaultCategories, error: defaultError } = await supabase
+      .from('categories')
+      .select('id, nome')
+      .is('user_id', null)
+      .ilike('nome', name.trim());
+
+    if (defaultError) {
+      return { data: false, error: defaultError };
+    }
+
+    // 2. Se encontrou categoria padrão com o mesmo nome
+    const defaultMatch = defaultCategories?.find(cat => 
+      cat.nome.toLowerCase() === name.trim().toLowerCase() && 
+      cat.id !== excludeId
+    );
+    
+    if (defaultMatch) {
+      return { data: true, error: null };
+    }
+
+    // 3. Se há utilizador, verificar também as suas categorias personalizadas
+    if (userId) {
+      const { data: userCategories, error: userError } = await supabase
+        .from('categories')
+        .select('id, nome')
+        .eq('user_id', userId)
+        .ilike('nome', name.trim());
+
+      if (userError) {
+        return { data: false, error: userError };
+      }
+
+      const userMatch = userCategories?.find(cat => 
+        cat.nome.toLowerCase() === name.trim().toLowerCase() && 
+        cat.id !== excludeId
+      );
+      
+      if (userMatch) {
+        return { data: true, error: null };
+      }
+    }
+
+    return { data: false, error: null };
+  } catch (error) {
+    return { data: false, error };
   }
 };

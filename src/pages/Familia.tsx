@@ -9,6 +9,7 @@ import { FamilyMembersList } from '../components/family/FamilyMembersList';
 import { PendingInvitesList } from '../components/family/PendingInvitesList';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/use-toast';
+import { logger } from '../shared/lib/logger';
 import { 
   Users, 
   Mail, 
@@ -38,8 +39,22 @@ export default function Familia() {
   const userRole = familyData?.user_role;
   const familyId = family?.id;
 
+  // Debug logs para rastrear estado
+  console.log('🎯 [DEBUG] Familia component render:', {
+    isLoading,
+    error: error?.message,
+    familyData: familyData ? {
+      family: familyData.family?.nome,
+      userRole: familyData.user_role,
+      memberCount: familyData.member_count
+    } : null,
+    createFamilyPending: createFamilyMutation.isPending
+  });
+
   const handleCreateFamily = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('🎯 [DEBUG] handleCreateFamily iniciado');
     
     if (!familyName.trim()) {
       toast({
@@ -51,16 +66,31 @@ export default function Familia() {
     }
 
     try {
+      console.log('🎯 [DEBUG] Chamando mutateAsync...');
       await createFamilyMutation.mutateAsync({
         familyName: familyName.trim(),
         description: familyDescription.trim() || undefined
       });
       
+      console.log('🎯 [DEBUG] mutateAsync concluído, limpando estado...');
       setFamilyName('');
       setFamilyDescription('');
       setShowCreateFamilyModal(false);
       
+      console.log('🎯 [DEBUG] Estado limpo, aguardando rerender...');
+      
+      // Aguardar um pouco para garantir que as queries foram invalidadas
+      setTimeout(() => {
+        console.log('🎯 [DEBUG] Timeout concluído, estado atual:', {
+          isLoading,
+          isError,
+          family: family?.nome,
+          familyData: familyData?.family?.nome
+        });
+      }, 1000);
+      
     } catch (error) {
+        console.error('🎯 [DEBUG] Erro no handleCreateFamily:', error);
         logger.error('Erro ao criar família:', error);
       }
   };

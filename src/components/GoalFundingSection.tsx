@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useGoalFunding } from '../hooks/useGoalFunding';
 import { useCategoriesDomain } from '../hooks/useCategoriesQuery';
-import { useFamily } from '../features/family/FamilyContext';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -13,13 +12,13 @@ import { useToast } from '../hooks/use-toast';
 
 interface Props {
   goalId: string;
+  canEdit?: boolean;
 }
 
-export const GoalFundingSection = ({ goalId }: Props) => {
+export const GoalFundingSection = ({ goalId, canEdit = true }: Props) => {
   const { toast } = useToast();
   const { rules, contributions, createRule, updateRule, removeRule } = useGoalFunding(goalId);
   const { data: categories = [] } = useCategoriesDomain();
-  const { canEdit } = useFamily();
 
   const [type, setType] = useState<'income_percent'|'fixed_monthly'|'roundup_expense'>('income_percent');
   const [enabled, setEnabled] = useState(true);
@@ -68,7 +67,7 @@ export const GoalFundingSection = ({ goalId }: Props) => {
   }, [type]);
 
   const create = async () => {
-    if (!canEdit('goal')) {
+    if (!canEdit) {
       toast({
         title: 'Acesso negado',
         description: 'Não tem permissões para criar regras de financiamento.',
@@ -206,7 +205,7 @@ export const GoalFundingSection = ({ goalId }: Props) => {
         )}
 
         <div className="flex gap-2">
-          {canEdit('goal') && (
+          {canEdit && (
             <FormSubmitButton isSubmitting={isSubmitting} submitText="Criar regra" submittingText="A criar..." onClick={create} />
           )}
         </div>
@@ -221,7 +220,7 @@ export const GoalFundingSection = ({ goalId }: Props) => {
                   <div><b>Config:</b> {r.type==='income_percent' ? `${(r.percent_bp/100).toFixed(1)}%` : r.type==='fixed_monthly' ? `${(r.fixed_cents||0)/100}€ dia ${r.day_of_month}` : 'round-up'}</div>
                 </div>
                 <div className="flex gap-2">
-                  {canEdit('goal') && (
+                  {canEdit && (
                     <>
                       <Button size="sm" variant="outline" onClick={()=>updateRule.mutate({ id: r.id, updates: { enabled: !r.enabled }})}>{r.enabled ? 'Pausar' : 'Ativar'}</Button>
                       <Button size="sm" variant="destructive" onClick={()=>remove(r.id)}>Eliminar</Button>

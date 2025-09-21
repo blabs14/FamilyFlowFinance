@@ -172,7 +172,7 @@ export const createTestFile = (content: string, filename: string = 'test.csv', t
 };
 
 // Utility to mock API responses
-export const mockApiResponse = <T>(data: T, delay: number = 0) => {
+export const mockApiResponse = <T,>(data: T, delay: number = 0) => {
   return new Promise<T>((resolve) => {
     setTimeout(() => resolve(data), delay);
   });
@@ -190,7 +190,7 @@ export const simulateNetworkDelay = (ms: number = 1000) =>
   new Promise(resolve => setTimeout(resolve, ms));
 
 // Utility to create mock fetch responses
-export const createMockFetchResponse = <T>(data: T, status: number = 200, ok: boolean = true) => {
+export const createMockFetchResponse = <T,>(data: T, status: number = 200, ok: boolean = true) => {
   return Promise.resolve({
     ok,
     status,

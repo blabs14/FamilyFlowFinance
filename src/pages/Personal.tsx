@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { useMediaQuery } from '../hooks/use-mobile';
 import { useAuth } from '../contexts/AuthContext';
-import { FamilyProvider } from '../features/family/FamilyProvider';
+
 
 // Componentes lazy loading
 const PersonalDashboard = React.lazy(() => import('../features/personal/PersonalDashboard'));
@@ -404,11 +404,17 @@ const QuickKPIs: React.FC = () => {
     // Usar dados das transações obtidas acima
     const totalIncome = transactions
       .filter(t => t.tipo === 'receita')
-      .reduce((sum, t) => sum + t.valor, 0);
+      .reduce((sum, t) => {
+          const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+          return sum + valor;
+        }, 0);
 
     const totalExpenses = transactions
-      .filter(t => t.tipo === 'despesa')
-      .reduce((sum, t) => sum + t.valor, 0);
+        .filter(t => t.tipo === 'despesa')
+        .reduce((sum, t) => {
+          const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+          return sum + valor;
+        }, 0);
 
     const netBalance = totalIncome - totalExpenses;
     const transactionCount = transactions.length;
@@ -597,10 +603,10 @@ const PersonalArea: React.FC = () => {
             <Routes>
               <Route index element={<PersonalDashboard />} />
               <Route path="accounts/*" element={<PersonalAccounts />} />
-              <Route path="goals/*" element={<PersonalGoals />} />
+              <Route path="goals" element={<PersonalGoals />} />
               <Route path="budgets/*" element={<PersonalBudgets />} />
               <Route path="transactions/*" element={<PersonalTransactions />} />
-              <Route path="payroll/*" element={<FamilyProvider><PayrollModule /></FamilyProvider>} />
+              <Route path="payroll/*" element={<PayrollModule />} />
               <Route path="recorrentes" element={<RecurrentsPage />} />
               <Route path="importar" element={
                 <Suspense fallback={<PageLoading />}>

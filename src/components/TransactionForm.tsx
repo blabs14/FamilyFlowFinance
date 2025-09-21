@@ -73,6 +73,14 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
+  // 🔍 Debug temporário - TransactionForm
+  console.log('🔍 TransactionForm - Categories:', {
+    categories,
+    categoriesLength: categories?.length,
+    categoriesLoading,
+    user: user?.id
+  });
+  
   // Configuração do react-hook-form com zodResolver
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionFormSchema),

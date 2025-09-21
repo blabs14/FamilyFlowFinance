@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Login e Transações</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { margin: 5px 0; padding: 5px; border-radius: 3px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .warning { background: #fff3cd; color: #856404; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste Login e Transações</h1>
+    
+    <div>
+        <button onclick="testLogin()">1. Fazer Login</button>
+        <button onclick="testTransactions()">2. Testar Transações</button>
+        <button onclick="testCategories()">3. Testar Categorias</button>
+        <button onclick="runFullTest()">🚀 Teste Completo</button>
+    </div>
+    
+    <div id="logs"></div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2';
+        
+        const supabase = createClient(
+            'https://ixjqjqjqjqjqjqjqjqjq.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4anFqcWpxanFqcWpxanFqcWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY3NzI0MDAsImV4cCI6MjA0MjM0ODQwMH0.example'
+        );
+        
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const logDiv = document.createElement('div');
+            logDiv.className = `log ${type}`;
+            logDiv.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsDiv.appendChild(logDiv);
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        window.testLogin = async function() {
+            log('🔑 Iniciando teste de login...', 'info');
+            
+            try {
+                // Primeiro fazer logout para garantir estado limpo
+                await supabase.auth.signOut();
+                log('🚪 Logout realizado', 'info');
+                
+                // Tentar fazer login
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: 'teste@example.com',
+                    password: 'teste123'
+                });
+                
+                if (error) {
+                    log(`❌ Erro no login: ${error.message}`, 'error');
+                    return false;
+                }
+                
+                if (data.user && data.session) {
+                    log(`✅ Login bem-sucedido! Utilizador: ${data.user.email}`, 'success');
+                    log(`🔑 ID do utilizador: ${data.user.id}`, 'info');
+                    return true;
+                } else {
+                    log('❌ Login falhou - sem dados de utilizador', 'error');
+                    return false;
+                }
+                
+            } catch (err) {
+                log(`💥 Erro inesperado no login: ${err.message}`, 'error');
+                return false;
+            }
+        };
+        
+        window.testCategories = async function() {
+            log('📂 Testando categorias...', 'info');
+            
+            try {
+                // Verificar se o utilizador está logado
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    log('❌ Utilizador não está logado', 'error');
+                    return false;
+                }
+                
+                log(`👤 Utilizador logado: ${session.user.email}`, 'info');
+                
+                // Testar busca de categorias padrão
+                const { data: defaultCategories, error: defaultError } = await supabase
+                    .from('categories')
+                    .select('*')
+                    .is('user_id', null);
+                
+                if (defaultError) {
+                    log(`❌ Erro ao buscar categorias padrão: ${defaultError.message}`, 'error');
+                } else {
+                    log(`✅ Categorias padrão encontradas: ${defaultCategories.length}`, 'success');
+                    defaultCategories.forEach(cat => {
+                        log(`  📂 ${cat.name} (${cat.type})`, 'info');
+                    });
+                }
+                
+                // Testar busca de categorias do utilizador
+                const { data: userCategories, error: userError } = await supabase
+                    .from('categories')
+                    .select('*')
+                    .eq('user_id', session.user.id);
+                
+                if (userError) {
+                    log(`❌ Erro ao buscar categorias do utilizador: ${userError.message}`, 'error');
+                } else {
+                    log(`✅ Categorias do utilizador encontradas: ${userCategories.length}`, 'success');
+                    userCategories.forEach(cat => {
+                        log(`  📂 ${cat.name} (${cat.type})`, 'info');
+                    });
+                }
+                
+                return true;
+                
+            } catch (err) {
+                log(`💥 Erro inesperado ao testar categorias: ${err.message}`, 'error');
+                return false;
+            }
+        };
+        
+        window.testTransactions = async function() {
+            log('💰 Testando página de transações...', 'info');
+            
+            try {
+                // Abrir a página de transações numa nova janela
+                const transactionsWindow = window.open('http://localhost:8082/personal/transactions', '_blank');
+                
+                if (transactionsWindow) {
+                    log('✅ Página de transações aberta numa nova janela', 'success');
+                    log('👀 Verifique a nova janela e os logs do console', 'info');
+                } else {
+                    log('❌ Não foi possível abrir a página de transações', 'error');
+                }
+                
+                return true;
+                
+            } catch (err) {
+                log(`💥 Erro ao abrir página de transações: ${err.message}`, 'error');
+                return false;
+            }
+        };
+        
+        window.runFullTest = async function() {
+            log('🚀 Iniciando teste completo...', 'info');
+            
+            const loginSuccess = await testLogin();
+            if (!loginSuccess) {
+                log('❌ Teste interrompido - falha no login', 'error');
+                return;
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const categoriesSuccess = await testCategories();
+            if (!categoriesSuccess) {
+                log('⚠️ Problemas com categorias, mas continuando...', 'warning');
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testTransactions();
+            
+            log('🎉 Teste completo finalizado!', 'success');
+        };
+        
+        // Teste inicial
+        log('🧪 Sistema de teste carregado. Clique nos botões para testar.', 'info');
+    </script>
+</body>
+</html>

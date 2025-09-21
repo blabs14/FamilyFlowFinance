@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { usePersonal } from './PersonalProvider';
-import { useOptionalFamily } from '../family/FamilyContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Progress } from '../../components/ui/progress';
 import { Badge } from '../../components/ui/badge';
@@ -8,7 +7,7 @@ import { Button } from '../../components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Target, Plus, Edit, Trash2, Calendar, CheckCircle, Trophy } from 'lucide-react';
 import { LoadingSpinner } from '../../components/ui/loading-states';
-import { useGoals, useGoalProgress, useCreateGoal, useUpdateGoal, useDeleteGoal } from '../../hooks/useGoalsQuery';
+import { useCreateGoal, useUpdateGoal, useDeleteGoal } from '../../hooks/useGoalsQuery';
 import { useToast } from '../../hooks/use-toast';
 import { formatCurrency } from '../../lib/utils';
 import { GoalAllocationModal } from '../../components/GoalAllocationModal';
@@ -16,7 +15,7 @@ import { GoalDeallocationModal } from '../../components/GoalDeallocationModal';
 import GoalForm from '../../components/GoalForm';
 import { GoalProgress } from '../../integrations/supabase/types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
-import { useConfirmation } from '../../hooks/useConfirmation';
+import { useConfirmation } from '@/hooks/useConfirmation';
 import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../components/ui/accordion';
 import { getAuditLogsByRow } from '../../services/audit_logs';
@@ -28,6 +27,7 @@ import { LazyWrapper } from '../../components/ui/lazy-wrapper';
 type AuditEntry = { id: string; timestamp: string; operation: string; old_data?: any; new_data?: any; details?: any };
 
 const PersonalGoals: React.FC = () => {
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAllocationModal, setShowAllocationModal] = useState(false);
@@ -36,17 +36,33 @@ const PersonalGoals: React.FC = () => {
   const [editingGoal, setEditingGoal] = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'progress' | 'warn' | 'done'>('all');
   
-  // Usar os hooks robustos que já funcionam
-  const goalsQuery = useGoals();
-  const { data: goals = [], isLoading, error, refetch } = goalsQuery;
+  // Usar dados do PersonalProvider
+  const { myGoals: goalsRaw, isLoading: loadingState, refetchAll } = usePersonal();
+  const goals = Array.isArray(goalsRaw) ? goalsRaw : [];
+  // Carregamento da página depende apenas de goals
+  const isLoading = !!loadingState?.goals;
+  // Log de diagnóstico leve
+  if (process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line no-console
+    console.debug('[PersonalGoals] isLoading.goals=', loadingState?.goals, 'goals.length=', goals.length);
+  }
+
   const createGoalMutation = useCreateGoal();
   const updateGoalMutation = useUpdateGoal();
   const deleteGoalMutation = useDeleteGoal();
-  const { data: goalProgress = [] } = useGoalProgress();
+  
+  // Converter goals para goalProgress format se necessário
+  const goalProgress = goals.map(goal => ({
+    ...goal,
+    progress_percentage: goal.valor_atual && goal.valor_objetivo 
+      ? Math.min((goal.valor_atual / goal.valor_objetivo) * 100, 100) 
+      : 0
+  }));
+  
   const { toast } = useToast();
   const confirmation = useConfirmation();
-  const family = useOptionalFamily();
-  const canEditGoal = family?.canEdit?.('goal') ?? true;
+  // Objetivos pessoais são sempre editáveis pelo próprio utilizador
+  const canEditGoal = true;
 
   const handleCreateGoal = () => {
     setShowCreateModal(true);
@@ -55,6 +71,7 @@ const PersonalGoals: React.FC = () => {
   const handleAllocationSuccess = () => {
     setShowAllocationModal(false);
     setSelectedGoal(null);
+    refetchAll(); // Atualizar todos os dados
     toast({
       title: 'Alocação realizada',
       description: 'Valor alocado com sucesso ao objetivo!',
@@ -72,62 +89,41 @@ const PersonalGoals: React.FC = () => {
   };
 
   const handleEditGoal = (goal: any) => {
-    // Buscar os dados completos do objetivo
-    const fullGoal = goals.find(g => g.id === goal.goal_id);
-    if (fullGoal) {
-      setEditingGoal(fullGoal);
-      setShowEditModal(true);
-    } else {
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível carregar os dados do objetivo',
-        variant: 'destructive',
-      });
-    }
+    // O objetivo já vem com todos os dados necessários
+    setEditingGoal(goal);
+    setShowEditModal(true);
   };
 
   const handleDeleteGoal = async (goalId: string) => {
-    // Encontrar o objetivo para mostrar informações específicas
-    const goal = goalProgress.find(g => g.goal_id === goalId);
-    const isCompleted = goal?.progresso_percentual >= 100;
+
     
-    let message = 'Tem a certeza que deseja eliminar este objetivo? Esta ação não pode ser desfeita.';
-    
-    if (goal) {
-      if (isCompleted) {
-        message = `O objetivo "${goal.nome}" foi atingido a 100%. Ao eliminar, o valor alocado (${formatCurrency(goal.total_alocado)}) será mantido na conta objetivos e não será restituído à conta original.`;
-      } else {
-        message = `O objetivo "${goal.nome}" está a ${goal.progresso_percentual}%. Ao eliminar, o valor alocado (${formatCurrency(goal.total_alocado)}) será restituído ao saldo disponível da conta original.`;
-      }
+    const confirmed = await confirmation.confirm({
+      title: 'Eliminar Objetivo',
+      message: 'Tens a certeza que queres eliminar este objetivo? Esta ação não pode ser desfeita.',
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      variant: 'destructive'
+    });
+
+    if (!confirmed) {
+      return;
     }
     
-    confirmation.confirm(
-      {
-        title: 'Eliminar Objetivo',
-        message: message,
-        confirmText: 'Eliminar',
-        cancelText: 'Cancelar',
+    try {
+      const result = await deleteGoalMutation.mutateAsync(goalId);
+
+      toast({
+        title: 'Objetivo eliminado',
+        description: 'O objetivo foi eliminado com sucesso.',
+      });
+    } catch (error) {
+
+      toast({
+        title: 'Erro',
+        description: `Erro ao eliminar objetivo: ${error?.message || 'Erro desconhecido'}`,
         variant: 'destructive',
-      },
-      async () => {
-        try {
-          const result = await deleteGoalMutation.mutateAsync(goalId);
-          
-          if (result) {
-            toast({
-              title: 'Objetivo eliminado',
-              description: `O objetivo foi eliminado com sucesso.`,
-            });
-          }
-        } catch (error) {
-          toast({
-            title: 'Erro',
-            description: 'Erro ao eliminar objetivo',
-            variant: 'destructive',
-          });
-        }
-      }
-    );
+      });
+    }
   };
 
   const getProgressText = (progress: number) => {
@@ -147,16 +143,7 @@ const PersonalGoals: React.FC = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-red-600">Erro ao carregar objetivos: {error.message}</p>
-        <Button onClick={() => refetch()} className="mt-4" aria-label="Tentar carregar objetivos novamente">
-          Tentar novamente
-        </Button>
-      </div>
-    );
-  }
+  // Erro handling é feito pelo PersonalProvider
 
   return (
     <div className="space-y-6 p-6">
@@ -190,7 +177,7 @@ const PersonalGoals: React.FC = () => {
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="progress">Em progresso</SelectItem>
-              <SelectItem value="warn">{'>'} 80%</SelectItem>
+              <SelectItem value="warn">{'> '} 80%</SelectItem>
               <SelectItem value="done">Concluídos</SelectItem>
             </SelectContent>
           </Select>
@@ -204,23 +191,23 @@ const PersonalGoals: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {goalProgress
           .filter((g) => {
-            const pct = Number(g.progresso_percentual) || 0;
+            const pct = Number((g as any).progress_percentage ?? 0);
             if (filterStatus === 'progress') return pct < 80;
             if (filterStatus === 'warn') return pct >= 80 && pct < 100;
             if (filterStatus === 'done') return pct >= 100;
             return true;
           })
           .map((goal) => {
-          const isCompleted = goal.progresso_percentual >= 100;
-          const remaining = Math.max(goal.valor_objetivo - goal.total_alocado, 0);
+          const isCompleted = (goal as any).progress_percentage >= 100;
+          const remaining = Math.max((goal.valor_objetivo ?? 0) - (goal.total_alocado ?? 0), 0);
 
-          return (
-            <Card 
-              key={goal.goal_id} 
-              className={`hover:shadow-lg transition-shadow ${
-                isCompleted ? 'border-green-200 bg-green-50' : ''
-              }`}
-            >
+           return (
+             <Card 
+               key={goal.goal_id} 
+               className={`hover:shadow-lg transition-shadow ${
+                 isCompleted ? 'border-green-200 bg-green-50' : ''
+               }`}
+             >
               <CardHeader>
                 <div className="space-y-2">
                   <div className="flex justify-between items-start">
@@ -288,10 +275,10 @@ const PersonalGoals: React.FC = () => {
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteGoal(goal.goal_id)}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                         aria-label="Eliminar objetivo"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -325,7 +312,7 @@ const PersonalGoals: React.FC = () => {
                       {isCompleted ? 'Objetivo Atingido! 🎉' : getProgressText(goal.progresso_percentual)}
                     </span>
                     <span className="text-right">
-                      {formatCurrency(goal.total_alocado)} / {formatCurrency(goal.valor_objetivo)}
+                      {formatCurrency(goal.total_alocado ?? 0)} / {formatCurrency(goal.valor_objetivo ?? 0)}
                     </span>
                   </div>
                 </div>
@@ -334,12 +321,12 @@ const PersonalGoals: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Objetivo</span>
-                    <span className="font-medium">{formatCurrency(goal.valor_objetivo)}</span>
+                    <span className="font-medium">{formatCurrency(goal.valor_objetivo ?? 0)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Alocado</span>
                     <span className={`font-medium ${isCompleted ? 'text-green-600' : 'text-green-600'}`}>
-                      {formatCurrency(goal.total_alocado)}
+                      {formatCurrency(goal.total_alocado ?? 0)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -353,7 +340,7 @@ const PersonalGoals: React.FC = () => {
                 {/* Funding automático */}
                 <ErrorBoundary>
                   <LazyWrapper fallback={<div className="text-sm text-muted-foreground">A carregar funding…</div>}>
-                    <GoalFundingSection goalId={goal.goal_id} />
+                    <GoalFundingSection goalId={goal.goal_id} canEdit={canEditGoal} />
                   </LazyWrapper>
                 </ErrorBoundary>
 
@@ -413,7 +400,7 @@ const PersonalGoals: React.FC = () => {
           <GoalForm
             onSuccess={() => {
               setShowCreateModal(false);
-              refetch();
+              refetchAll();
             }}
             onCancel={() => setShowCreateModal(false)}
           />
@@ -434,7 +421,7 @@ const PersonalGoals: React.FC = () => {
             onSuccess={() => {
               setShowEditModal(false);
               setEditingGoal(null);
-              refetch();
+              refetchAll();
             }}
             onCancel={() => {
               setShowEditModal(false);
@@ -453,6 +440,7 @@ const PersonalGoals: React.FC = () => {
           goalName={selectedGoal.nome}
           currentProgress={selectedGoal.total_alocado}
           targetAmount={selectedGoal.valor_objetivo}
+          canEdit={canEditGoal}
         />
       )}
 
@@ -463,6 +451,7 @@ const PersonalGoals: React.FC = () => {
           onClose={() => { setShowDeallocationModal(false); setSelectedGoal(null); }}
           goalId={selectedGoal.goal_id}
           goalName={selectedGoal.nome}
+          canEdit={canEditGoal}
         />
       )}
 
@@ -478,6 +467,8 @@ const PersonalGoals: React.FC = () => {
         cancelText={confirmation.options.cancelText}
         variant={confirmation.options.variant}
       />
+      
+
     </div>
   );
 };

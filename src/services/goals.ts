@@ -129,6 +129,14 @@ export const allocateToGoal = async (
   description?: string
 ): Promise<{ data: unknown; error: unknown }> => {
   try {
+    console.log('[DEBUG] allocateToGoal - Parâmetros recebidos:', {
+      goalId,
+      accountId,
+      amount,
+      userId,
+      description
+    });
+
     const { data, error } = await supabase.rpc('allocate_to_goal_with_transaction', {
       goal_id_param: goalId,
       account_id_param: accountId,
@@ -137,9 +145,17 @@ export const allocateToGoal = async (
       description_param: description || 'Alocação para objetivo'
     });
 
-    if (error) return { data: null, error };
+    console.log('[DEBUG] allocateToGoal - Resposta do RPC:', { data, error });
+
+    if (error) {
+      console.error('[DEBUG] allocateToGoal - Erro do RPC:', error);
+      return { data: null, error };
+    }
+    
+    console.log('[DEBUG] allocateToGoal - Sucesso:', data);
     return { data, error: null };
   } catch (error) {
+    console.error('[DEBUG] allocateToGoal - Erro capturado:', error);
     return { data: null, error };
   }
 };
@@ -165,6 +181,20 @@ export const getGoalProgress = async (userId: string): Promise<{ data: GoalProgr
     return { data: null, error };
   }
 };
+
+export async function getUserGoalProgress() {
+  const userId = (await supabase.auth.getUser()).data.user?.id;
+  const { data, error } = await supabase.rpc('get_user_goal_progress', {
+    user_id: userId,
+  });
+
+  if (error) {
+    console.error('Error getting user goal progress:', error);
+    return [];
+  }
+
+  return data || [];
+}
 
 export const getPersonalGoals = async (userId: string): Promise<{ data: Goal[] | null; error: unknown }> => {
   try {

@@ -30,6 +30,7 @@ interface AccountFormProps {
   initialData?: AccountFormData;
   onSuccess?: () => void;
   onCancel?: () => void;
+  family_id?: string;
 }
 
 const tiposConta = [
@@ -39,7 +40,7 @@ const tiposConta = [
   { value: 'outro', label: 'Outro' },
 ];
 
-const AccountForm = ({ initialData, onSuccess, onCancel }: AccountFormProps) => {
+const AccountForm = ({ initialData, onSuccess, onCancel, family_id }: AccountFormProps) => {
   const { user } = useAuth();
   const [form, setForm] = useState<AccountFormData>(
     initialData || { nome: '', tipo: '', saldoAtual: 0, ajusteSaldo: 0 }
@@ -98,37 +99,74 @@ const AccountForm = ({ initialData, onSuccess, onCancel }: AccountFormProps) => 
   };
 
   const doCreate = async () => {
-    const createPayload = {
-      nome: form.nome.trim(),
-      tipo: form.tipo,
-      saldo: Number(form.saldoAtual) || 0,
-    } as const;
-    await createAccountMutation.mutateAsync(createPayload as any);
+    try {
+      console.log('🔍 doCreate - Iniciando criação de conta');
+      console.log('🔍 doCreate - Form:', form);
+      console.log('🔍 doCreate - family_id:', family_id);
+      
+      const createPayload = {
+        nome: form.nome.trim(),
+        tipo: form.tipo,
+        saldo: Number(form.saldoAtual) || 0,
+        ...(family_id && { family_id }),
+      } as const;
+      
+      console.log('🔍 doCreate - Payload:', createPayload);
+      await createAccountMutation.mutateAsync(createPayload as any);
+      console.log('✅ doCreate - Conta criada com sucesso');
+    } catch (error) {
+      console.error('❌ doCreate - Erro ao criar conta:', error);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔥🔥🔥 [AccountForm] handleSubmit INICIADO - formulário submetido');
+    console.log('🔥🔥🔥 [AccountForm] Estado atual - isSubmitting:', isSubmitting);
+    console.log('🔥🔥🔥 [AccountForm] Modo:', initialData?.id ? 'EDIÇÃO' : 'CRIAÇÃO');
+    console.log('🔥🔥🔥 [AccountForm] Form atual:', form);
     setValidationErrors({});
     
     // Validação manual para campos obrigatórios
     const errors: Record<string, string> = {};
     
     if (!form.nome.trim()) {
+      console.log('❌ handleSubmit - Nome vazio');
       errors.nome = 'Nome obrigatório';
     }
     
     if (!form.tipo) {
+      console.log('❌ handleSubmit - Tipo vazio');
       errors.tipo = 'Tipo obrigatório';
     }
     
     if (Object.keys(errors).length > 0) {
+      console.log('❌ handleSubmit - Erros de validação:', errors);
       setValidationErrors(errors);
       return;
     }
     
     // Validação client-side com Zod
-    const result = accountSchema.safeParse(form);
+    console.log('🔍 handleSubmit - Form antes da validação Zod:', form);
+    console.log('🔍 handleSubmit - Tipos:', {
+      nome: typeof form.nome,
+      tipo: typeof form.tipo,
+      saldoAtual: typeof form.saldoAtual,
+      ajusteSaldo: typeof form.ajusteSaldo
+    });
+    
+    // Converter saldoAtual para number se for string
+    const formForValidation = {
+      ...form,
+      saldoAtual: form.saldoAtual ? Number(form.saldoAtual) : undefined,
+      ajusteSaldo: form.ajusteSaldo ? Number(form.ajusteSaldo) : undefined,
+    };
+    
+    console.log('🔍 handleSubmit - Form após conversão:', formForValidation);
+    
+    const result = accountSchema.safeParse(formForValidation);
     if (!result.success) {
+      console.log('❌ handleSubmit - Erro de validação Zod:', result.error);
       const fieldErrors: Record<string, string> = {};
       result.error.errors.forEach(err => {
         if (err.path[0]) fieldErrors[err.path[0]] = err.message;
@@ -137,8 +175,11 @@ const AccountForm = ({ initialData, onSuccess, onCancel }: AccountFormProps) => 
       return;
     }
     
+    console.log('✅ handleSubmit - Validações passaram');
+    
     try {
       if (initialData && initialData.id) {
+        console.log('🔍 handleSubmit - Modo edição');
         // Para atualização, usar o formato esperado pelo hook
         const updatePayload = {
           nome: form.nome.trim(),
@@ -147,34 +188,47 @@ const AccountForm = ({ initialData, onSuccess, onCancel }: AccountFormProps) => 
           // Precedência: se definiu saldo alvo diferente do atual, ignorar ajuste manual para evitar duplicação
           ajusteSaldo: targetChanged ? 0 : (typeof form.ajusteSaldo === 'string' ? parseFloat(form.ajusteSaldo) || 0 : (Number(form.ajusteSaldo) || 0)),
         } as const;
+        console.log('🔍 handleSubmit - Update payload:', updatePayload);
         await updateAccountMutation.mutateAsync({ id: initialData.id, data: updatePayload } as any);
       } else {
+        console.log('🔍 handleSubmit - Modo criação');
         // Confirmação: criar transação de ajuste se saldo inicial != 0 e não for cartão de crédito
         const requiresConfirm = (Number(form.saldoAtual) || 0) !== 0 && form.tipo !== 'cartão de crédito';
+        console.log('🔍 handleSubmit - Requer confirmação:', requiresConfirm);
         if (requiresConfirm && process.env.NODE_ENV !== 'test') {
-          confirmation.confirm(
-            {
-              title: 'Criar conta com saldo inicial',
-              message: 'Será criada uma transação de ajuste pela diferença até atingir o saldo inicial definido. Deseja continuar?',
-              confirmText: 'Continuar',
-              cancelText: 'Cancelar',
-            },
-            () => { void doCreate().then(() => onSuccess?.()); }
-          );
-          return;
+          console.log('🔍 handleSubmit - Pedindo confirmação');
+          const confirmed = await confirmation.confirm({
+            title: 'Criar conta com saldo inicial',
+            message: 'Será criada uma transação de ajuste pela diferença até atingir o saldo inicial definido. Deseja continuar?',
+            confirmText: 'Continuar',
+            cancelText: 'Cancelar',
+          });
+          
+          if (!confirmed) {
+            console.log('🔍 handleSubmit - Confirmação cancelada');
+            return;
+          }
+          
+          console.log('🔍 handleSubmit - Confirmação aceite, criando conta');
         }
+        console.log('🔍 handleSubmit - Chamando doCreate diretamente');
         await doCreate();
       }
       
+      console.log('✅ handleSubmit - Sucesso, chamando onSuccess');
       onSuccess?.();
     } catch (err: any) {
+      console.error('❌ handleSubmit - Erro:', err);
       logger.error('Erro ao guardar conta:', err);
       // O erro já é tratado pelo hook useCrudMutation
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-2 sm:p-4">
+    <form onSubmit={(e) => {
+      console.log('🚀🚀🚀 [AccountForm] FORM onSubmit disparado!', e);
+      handleSubmit(e);
+    }} className="flex flex-col gap-4 p-2 sm:p-4">
       <Input
         name="nome"
         placeholder="Nome da Conta"
@@ -259,11 +313,12 @@ const AccountForm = ({ initialData, onSuccess, onCancel }: AccountFormProps) => 
       )}
       
       <div className="flex flex-col sm:flex-row gap-2">
-        <FormSubmitButton 
+        <FormSubmitButton
           isSubmitting={isSubmitting}
           submitText={initialData?.id ? 'Atualizar' : 'Criar'}
           submittingText={initialData?.id ? 'A atualizar...' : 'A criar...'}
           className="w-full"
+          onClick={() => console.log('🔘 FormSubmitButton clicado! isSubmitting:', isSubmitting)}
         />
         <Button type="button" variant="outline" onClick={onCancel} className="w-full">Cancelar</Button>
       </div>

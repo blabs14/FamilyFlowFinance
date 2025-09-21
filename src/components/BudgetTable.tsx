@@ -18,7 +18,7 @@ const getSumBy = (budgets: Budget[], key: keyof Budget) => {
   const map = new Map<string, number>();
   budgets.forEach((b) => {
     const k = b[key] as string;
-    map.set(k, (map.get(k) || 0) + b.valor);
+    map.set(k, (map.get(k) || 0) + (typeof b.valor === 'number' ? b.valor : parseFloat(b.valor) || 0));
   });
   return Array.from(map.entries());
 };

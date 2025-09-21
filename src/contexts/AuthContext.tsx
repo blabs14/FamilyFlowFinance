@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let initializationComplete = false;
     
     console.log('[Auth] 🚀 FIXED: AuthProvider mounting...');
+    console.log('[Auth] 🔍 DEBUG: Initial state:', { user: !!user, session: !!session, loading });
     
     // Função para garantir que loading seja sempre false após inicialização
     const ensureLoadingFalse = () => {
@@ -243,11 +244,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  return (
-    <AuthContext.Provider value={{ user, session, loading, login, register, resetPassword, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = {
+    user,
+    session,
+    loading,
+    login,
+    register,
+    resetPassword,
+    logout,
+  };
+
+  console.log('[Auth] 🔍 DEBUG: Provider value:', { 
+    hasUser: !!user, 
+    userId: user?.id, 
+    userEmail: user?.email,
+    hasSession: !!session, 
+    loading 
+  });
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 // Hook separado para resolver problemas de Fast Refresh

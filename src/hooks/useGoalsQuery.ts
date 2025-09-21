@@ -11,17 +11,24 @@ export const useGoals = () => {
   return useQuery({
     queryKey: ['goals', user?.id],
     queryFn: async () => {
+      console.log('🎯 useGoals: Starting query for user:', user?.id);
       // Garantir que temos um userId válido antes de fazer a query
       if (!user?.id) {
+        console.warn('⚠️ useGoals: No valid userId');
         logger.warn('[useGoals] Tentativa de query sem userId válido');
         return [];
       }
       
+      console.log('📡 useGoals: Calling getGoals...');
       const { data, error } = await getGoals(user.id);
+      console.log('📊 useGoals: Result data:', data);
+      console.log('❌ useGoals: Result error:', error);
       if (error) {
+        console.error('💥 useGoals: Error fetching goals:', error);
         logger.error('[useGoals] Erro ao buscar objetivos:', error);
         throw error;
       }
+      console.log('✅ useGoals: Returning data:', data || []);
       return data || [];
     },
     enabled: !!user?.id,
@@ -146,18 +153,25 @@ export const useGoalProgress = () => {
   return useQuery({
     queryKey: ['goalProgress', user?.id],
     queryFn: async () => {
+      console.log('🎯 useGoalProgress: Starting query for user:', user?.id);
       if (!user?.id) {
+        console.warn('⚠️ useGoalProgress: No valid userId');
         logger.warn('[useGoalProgress] Tentativa de query sem userId válido');
         return { data: null, error: 'User ID não disponível' };
       }
       try {
+        console.log('📡 useGoalProgress: Calling getGoalProgress...');
         const { data, error } = await getGoalProgress(user.id);
+        console.log('📊 useGoalProgress: Result data:', data);
+        console.log('❌ useGoalProgress: Result error:', error);
         if (error) {
           logger.error('[useGoalProgress] Erro ao buscar progresso dos objetivos:', error);
           throw error;
         }
+        console.log('✅ useGoalProgress: Returning data:', data);
         return data;
       } catch (error) {
+        console.error('💥 useGoalProgress: Unexpected error:', error);
         logger.error('[useGoalProgress] Erro inesperado:', error);
         throw error;
       }

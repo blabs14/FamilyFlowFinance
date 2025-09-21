@@ -60,17 +60,23 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
   const familyQuery = useQuery({
     queryKey: ['family', 'current', user?.id],
     queryFn: async () => {
+      console.log('[FamilyProvider] familyQuery - userId:', user?.id);
+      
       if (!user?.id) {
+        console.log('[FamilyProvider] familyQuery - No user ID, returning null');
         return null;
       }
 
       try {
         // Tentar primeiro a função RPC
+        console.log('[FamilyProvider] familyQuery - Trying getFamilyData()');
         const data = await getFamilyData();
+        console.log('[FamilyProvider] familyQuery - getFamilyData result:', data);
         if (data) {
           return data;
         }
       } catch (error: unknown) {
+        console.log('[FamilyProvider] familyQuery - getFamilyData error:', error);
       }
 
       // Fallback: buscar diretamente da tabela family_members
@@ -165,9 +171,21 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
   const accountsQuery = useQuery({
     queryKey: ['family', 'accounts', user?.id, family?.id],
     queryFn: async () => {
-      if (!user?.id) return [] as FamilyAccount[];
+      console.log('FamilyProvider - Accounts Query Debug:', {
+        userId: user?.id,
+        familyId: family?.id,
+        nodeEnv: process.env.NODE_ENV
+      });
+      
+      if (!user?.id) {
+        console.log('FamilyProvider - No user ID, returning empty array');
+        return [] as FamilyAccount[];
+      }
       // Em testes, não bloquear pela ausência de family.id para permitir mocks
-      if (process.env.NODE_ENV !== 'test' && !family?.id) return [] as FamilyAccount[];
+      if (process.env.NODE_ENV !== 'test' && !family?.id) {
+        console.log('FamilyProvider - No family ID (not in test), returning empty array');
+        return [] as FamilyAccount[];
+      }
       // Preferir serviço (mockado nos testes)
       // Em testes, confiar apenas nos serviços mockáveis para respeitar os cenários previstos
       if (process.env.NODE_ENV === 'test') {

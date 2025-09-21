@@ -143,8 +143,8 @@ export function CashflowList({
     });
   };
 
-  const totalIncome = filteredSummaries.reduce((sum, day) => sum + day.total_income_cents, 0);
-  const totalExpense = filteredSummaries.reduce((sum, day) => sum + day.total_expense_cents, 0);
+  const totalIncome = filteredSummaries.reduce((sum, day) => sum + (typeof day.total_income_cents === 'number' ? day.total_income_cents : parseFloat(day.total_income_cents) || 0), 0);
+  const totalExpense = filteredSummaries.reduce((sum, day) => sum + (typeof day.total_expense_cents === 'number' ? day.total_expense_cents : parseFloat(day.total_expense_cents) || 0), 0);
   const netFlow = totalIncome - totalExpense;
 
   return (

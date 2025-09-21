@@ -284,11 +284,17 @@ const QuickKPIs: React.FC = () => {
     // Removido hook condicional; usamos 'transactions' já obtidas acima
     const totalIncome = transactions
       .filter(t => t.tipo === 'receita')
-      .reduce((sum, t) => sum + t.valor, 0);
+      .reduce((sum, t) => {
+        const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+        return sum + valor;
+      }, 0);
 
     const totalExpenses = transactions
       .filter(t => t.tipo === 'despesa')
-      .reduce((sum, t) => sum + t.valor, 0);
+      .reduce((sum, t) => {
+        const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+        return sum + valor;
+      }, 0);
 
     const netBalance = totalIncome - totalExpenses;
     const transactionCount = transactions.length;

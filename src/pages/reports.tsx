@@ -212,7 +212,7 @@ const ReportsPage = () => {
   const { totalIncome, totalExpenses, netBalance, transactionCount } = useMemo(() => {
     const income = filteredTransactions
       .filter(t => t.tipo === 'receita')
-      .reduce((sum, t) => sum + t.valor, 0);
+      .reduce((sum, t) => sum + (typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0), 0);
     const expenses = filteredTransactions
       .filter(t => t.tipo === 'despesa')
       .reduce((sum, t) => sum + t.valor, 0);
@@ -226,8 +226,8 @@ const ReportsPage = () => {
 
   // Métricas do período anterior e deltas
   const { prevIncome, prevExpenses, prevNet, incomeDelta, expensesDelta, netDelta } = useMemo(() => {
-    const income = prevFilteredTransactions.filter(t => t.tipo === 'receita').reduce((s, t) => s + t.valor, 0);
-    const expenses = prevFilteredTransactions.filter(t => t.tipo === 'despesa').reduce((s, t) => s + t.valor, 0);
+    const income = prevFilteredTransactions.filter(t => t.tipo === 'receita').reduce((s, t) => s + (typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0), 0);
+    const expenses = prevFilteredTransactions.filter(t => t.tipo === 'despesa').reduce((s, t) => s + (typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0), 0);
     const net = income - expenses;
     return {
       prevIncome: income,
@@ -250,7 +250,7 @@ const ReportsPage = () => {
     return categories.map(category => {
       const categoryExpenses = filteredTransactions
         .filter(t => t.tipo === 'despesa' && t.categoria_id === category.id)
-        .reduce((sum, t) => sum + t.valor, 0);
+        .reduce((sum, t) => sum + (typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0), 0);
       return {
         id: category.id,
         categoria: category.nome,
@@ -271,7 +271,7 @@ const ReportsPage = () => {
     return categories.map(category => {
       const categoryIncome = filteredTransactions
         .filter(t => t.tipo === 'receita' && t.categoria_id === category.id)
-        .reduce((sum, t) => sum + t.valor, 0);
+        .reduce((sum, t) => sum + (typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0), 0);
       return {
         id: category.id,
         categoria: category.nome,
@@ -291,10 +291,10 @@ const ReportsPage = () => {
       const monthTransactions = transactions.filter(t => t.data.startsWith(monthStr) && (!excludeTransfers || t.tipo !== 'transferencia'));
       const monthIncome = monthTransactions
         .filter(t => t.tipo === 'receita')
-        .reduce((sum, t) => sum + t.valor, 0);
-      const monthExpenses = monthTransactions
+        .reduce((sum, t) => sum + (typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0), 0);
+      const expenses = monthlyTransactions
         .filter(t => t.tipo === 'despesa')
-        .reduce((sum, t) => sum + t.valor, 0);
+        .reduce((sum, t) => sum + (typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0), 0);
       
       return {
         key: monthStr,

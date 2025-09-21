@@ -180,11 +180,16 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({ classNam
                             Editar os detalhes da categoria "{category.nome}".
                           </DialogDescription>
                         </DialogHeader>
-                        <CategoryForm
-                          initialData={category}
-                          onSuccess={handleEditSuccess}
-                          onCancel={() => setEditingCategory(null)}
-                        />
+                        {(() => {
+                          console.log('CategoryManagement - Passando dados para CategoryForm:', category);
+                          return (
+                            <CategoryForm
+                              initialData={category}
+                              onSuccess={handleEditSuccess}
+                              onCancel={() => setEditingCategory(null)}
+                            />
+                          );
+                        })()}
                       </DialogContent>
                     </Dialog>
 

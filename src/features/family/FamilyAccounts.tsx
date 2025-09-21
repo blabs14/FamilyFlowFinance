@@ -25,6 +25,7 @@ type AuditEntry = { id: string; timestamp: string; operation: string; old_data?:
 
 const FamilyAccounts: React.FC = () => {
     const {
+    family,
     familyAccounts,
     familyCards,
     isLoading,
@@ -461,6 +462,7 @@ const FamilyAccounts: React.FC = () => {
                   initialData={editingAccount}
                   onSuccess={handleSuccess}
                   onCancel={() => setShowCreateModal(false)}
+                  family_id={family?.id}
                 />
               );
             }

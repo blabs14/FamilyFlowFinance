@@ -216,11 +216,17 @@ const FamilyTransactions: React.FC = () => {
   // Calcular métricas totais (sem filtros)
   const totalIncome = (familyTransactions as TransactionItem[])
     ?.filter(t => t.tipo === 'receita')
-    .reduce((sum, t) => sum + t.valor, 0) || 0;
+    .reduce((sum, t) => {
+      const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+      return sum + valor;
+    }, 0) || 0;
 
   const totalExpenses = (familyTransactions as TransactionItem[])
-    ?.filter(t => t.tipo === 'despesa')
-    .reduce((sum, t) => sum + t.valor, 0) || 0;
+      ?.filter(t => t.tipo === 'despesa')
+      .reduce((sum, t) => {
+        const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+        return sum + valor;
+      }, 0) || 0;
 
   const netBalance = totalIncome - totalExpenses;
   const transactionCount = (familyTransactions as TransactionItem[])?.length || 0;

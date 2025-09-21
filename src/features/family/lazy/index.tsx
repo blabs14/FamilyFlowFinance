@@ -23,93 +23,102 @@ const ComponentFallback: React.FC<{ message: string }> = ({ message }) => (
 
 // Função utilitária para criar lazy components com tratamento de erros robusto
 const createSafeLazyComponent = (
-  importPath: string,
+  importFn: () => Promise<{ default: React.ComponentType<any> }>,
   fallbackMessage: string
 ): React.LazyExoticComponent<React.ComponentType<Record<string, unknown>>> => {
   return lazy(() =>
-    import(/* @vite-ignore */ importPath).catch(() => ({
-      default: () => <ComponentFallback message={fallbackMessage} />
-    }))
+    importFn()
+      .then((mod) => {
+        const Comp = (mod as any)?.default;
+        if (!Comp) {
+          logger.warn('Lazy module missing default export, using fallback:', fallbackMessage);
+          return { default: () => <ComponentFallback message={fallbackMessage} /> };
+        }
+        return { default: Comp };
+      })
+      .catch(() => ({
+        default: () => <ComponentFallback message={fallbackMessage} />
+      }))
   );
 };
 
 // Componentes de Formulários Pesados - com tratamento de erros robusto
 export const LazyTransactionForm = createSafeLazyComponent(
-  '../../../components/TransactionForm',
+  () => import('../../../components/TransactionForm'),
   'Formulário de Transação'
 );
 
 export const LazyGoalAllocationModal = createSafeLazyComponent(
-  '../../../components/GoalAllocationModal',
+  () => import('../../../components/GoalAllocationModal'),
   'Modal de Alocação'
 );
 
 export const LazyGoalForm = createSafeLazyComponent(
-  '../../../components/GoalForm',
+  () => import('../../../components/GoalForm'),
   'Formulário de Objetivo'
 );
 
 export const LazyAccountForm = createSafeLazyComponent(
-  '../../../components/AccountForm',
+  () => import('../../../components/AccountForm'),
   'Formulário de Conta'
 );
 
 export const LazyRegularAccountForm = createSafeLazyComponent(
-  '../../../components/RegularAccountForm',
+  () => import('../../../components/RegularAccountForm'),
   'Formulário de Conta Regular'
 );
 
 export const LazyBudgetForm = createSafeLazyComponent(
-  '../../../components/BudgetForm',
+  () => import('../../../components/BudgetForm'),
   'Formulário de Orçamento'
 );
 
 // Componentes de Diálogos e Modais - com tratamento de erros robusto
 export const LazyConfirmationDialog = createSafeLazyComponent(
-  '../../../components/ui/confirmation-dialog',
+  () => import('../../../components/ui/confirmation-dialog'),
   'Diálogo de Confirmação'
 );
 
 export const LazyTransferModal = createSafeLazyComponent(
-  '../../../components/TransferModal',
+  () => import('../../../components/TransferModal'),
   'Modal de Transferência'
 );
 
 // Componentes de UI Pesados - com tratamento de erros robusto
 export const LazyTooltip = createSafeLazyComponent(
-  '../../../components/ui/tooltip',
+  () => import('../../../components/ui/tooltip'),
   'Tooltip'
 );
 
 export const LazySelect = createSafeLazyComponent(
-  '../../../components/ui/select',
+  () => import('../../../components/ui/select'),
   'Select'
 );
 
 export const LazyDialog = createSafeLazyComponent(
-  '../../../components/ui/dialog',
+  () => import('../../../components/ui/dialog'),
   'Dialog'
 );
 
 export const LazySheet = createSafeLazyComponent(
-  '../../../components/ui/sheet',
+  () => import('../../../components/ui/sheet'),
   'Sheet'
 );
 
 // Componentes de Gráficos e Visualizações - com tratamento de erros robusto
 export const LazyReportChart = createSafeLazyComponent(
-  '../../../components/ReportChart',
+  () => import('../../../components/ReportChart'),
   'Gráfico de Relatório'
 );
 
 export const LazyChart = createSafeLazyComponent(
-  '../../../components/ui/chart',
+  () => import('../../../components/ui/chart'),
   'Chart'
 );
 
 // Componentes de Notificações - com tratamento de erros robusto
 export const LazyRealTimeNotifications = createSafeLazyComponent(
-  '../../../components/RealTimeNotifications',
+  () => import('../../../components/RealTimeNotifications'),
   'Notificações em Tempo Real'
 );
 

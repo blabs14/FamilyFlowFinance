@@ -9,17 +9,6 @@ const RequireAuth = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const [hasRedirected, setHasRedirected] = useState(false);
 
-  // Debug: verificar estado da autenticação
-  console.log('🔐 RequireAuth - Estado da autenticação:', {
-    userId: user?.id,
-    userEmail: user?.email,
-    loading,
-    hasUser: !!user,
-    currentPath: location.pathname,
-    hasRedirected,
-    timestamp: new Date().toISOString()
-  });
-
   useEffect(() => {
     // Only redirect if not loading, no user, and haven't redirected yet
     if (!loading && user === null && !hasRedirected) {

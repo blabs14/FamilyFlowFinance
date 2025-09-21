@@ -152,9 +152,9 @@ export function CashflowView({
 
 
 
-  const totalEvents = dailySummaries.reduce((sum, day) => sum + day.events.length, 0);
-  const totalIncome = dailySummaries.reduce((sum, day) => sum + day.total_income_cents, 0);
-  const totalExpense = dailySummaries.reduce((sum, day) => sum + day.total_expense_cents, 0);
+  const totalEvents = dailySummaries.reduce((sum, day) => sum + (day.events ? day.events.length : 0), 0);
+  const totalIncome = dailySummaries.reduce((sum, day) => sum + (typeof day.total_income_cents === 'number' ? day.total_income_cents : parseFloat(day.total_income_cents) || 0), 0);
+  const totalExpense = dailySummaries.reduce((sum, day) => sum + (typeof day.total_expense_cents === 'number' ? day.total_expense_cents : parseFloat(day.total_expense_cents) || 0), 0);
   const netFlow = totalIncome - totalExpense;
 
   if (!user) {

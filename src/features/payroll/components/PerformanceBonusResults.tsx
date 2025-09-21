@@ -139,8 +139,8 @@ export const PerformanceBonusResults: React.FC<PerformanceBonusResultsProps> = (
     return true;
   });
 
-  const totalBonusCalculated = filteredResults.reduce((sum, result) => sum + result.calculated_bonus_amount, 0);
-  const totalBonusApplied = filteredResults.filter(r => r.status === 'applied').reduce((sum, result) => sum + result.applied_bonus_amount, 0);
+  const totalBonusCalculated = filteredResults.reduce((sum, result) => sum + (typeof result.calculated_bonus_amount === 'number' ? result.calculated_bonus_amount : parseFloat(result.calculated_bonus_amount) || 0), 0);
+  const totalBonusApplied = filteredResults.filter(r => r.status === 'applied').reduce((sum, result) => sum + (typeof result.applied_bonus_amount === 'number' ? result.applied_bonus_amount : parseFloat(result.applied_bonus_amount) || 0), 0);
 
   return (
     <div className="space-y-6">

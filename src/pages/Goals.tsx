@@ -285,7 +285,7 @@ export default function Goals() {
                       {isCompleted ? 'Objetivo Atingido! 🎉' : getProgressText(goal.progresso_percentual)}
                     </span>
                     <span className="text-right">
-                      {formatCurrency(goal.total_alocado)} / {formatCurrency(goal.valor_objetivo)}
+                      {formatCurrency(goal.total_alocado ?? 0)} / {formatCurrency(goal.valor_objetivo ?? 0)}
                     </span>
                   </div>
                 </div>
@@ -294,7 +294,7 @@ export default function Goals() {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Objetivo</span>
-                    <span className="font-medium">{formatCurrency(goal.valor_objetivo)}</span>
+                    <span className="font-medium">{formatCurrency(goal.valor_objetivo ?? 0)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Alocado</span>

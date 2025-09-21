@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error Tracker - Family Finance</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        .error-log { 
+            background: #fff5f5; 
+            border: 1px solid #fed7d7; 
+            border-radius: 4px; 
+            padding: 15px; 
+            margin: 10px 0; 
+            font-family: monospace; 
+            white-space: pre-wrap; 
+            max-height: 300px; 
+            overflow-y: auto; 
+        }
+        .success { 
+            background: #f0fff4; 
+            border: 1px solid #9ae6b4; 
+            color: #22543d; 
+        }
+        .warning { 
+            background: #fffbeb; 
+            border: 1px solid #f6e05e; 
+            color: #744210; 
+        }
+        .error { 
+            background: #fff5f5; 
+            border: 1px solid #fed7d7; 
+            color: #742a2a; 
+        }
+        .controls { 
+            margin: 20px 0; 
+            display: flex; 
+            gap: 10px; 
+            flex-wrap: wrap; 
+        }
+        button { 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-weight: bold; 
+        }
+        .btn-primary { 
+            background: #3182ce; 
+            color: white; 
+        }
+        .btn-secondary { 
+            background: #718096; 
+            color: white; 
+        }
+        .btn-danger { 
+            background: #e53e3e; 
+            color: white; 
+        }
+        .iframe-container { 
+            border: 2px solid #e2e8f0; 
+            border-radius: 8px; 
+            margin: 20px 0; 
+            height: 600px; 
+            overflow: hidden; 
+        }
+        iframe { 
+            width: 100%; 
+            height: 100%; 
+            border: none; 
+        }
+        .status { 
+            padding: 10px; 
+            border-radius: 4px; 
+            margin: 10px 0; 
+            font-weight: bold; 
+        }
+        .error-details {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .stack-trace {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Error Tracker - Family Finance</h1>
+        <p>Captura específica do erro: <strong>TypeError: Cannot convert object to primitive value</strong></p>
+        
+        <div class="controls">
+            <button class="btn-primary" onclick="loadApp()">🚀 Carregar App</button>
+            <button class="btn-secondary" onclick="clearLogs()">🧹 Limpar Logs</button>
+            <button class="btn-danger" onclick="triggerError()">⚠️ Testar Erro</button>
+            <button class="btn-secondary" onclick="checkConsole()">📋 Verificar Console</button>
+        </div>
+
+        <div id="status" class="status success">✅ Tracker iniciado - aguardando erros...</div>
+        
+        <div class="error-details">
+            <h3>📊 Estatísticas de Erros</h3>
+            <div id="errorStats">
+                <p>Total de erros capturados: <span id="errorCount">0</span></p>
+                <p>Último erro: <span id="lastError">Nenhum</span></p>
+                <p>Timestamp: <span id="lastErrorTime">-</span></p>
+            </div>
+        </div>
+
+        <div class="iframe-container">
+            <iframe id="appFrame" src="about:blank"></iframe>
+        </div>
+
+        <h3>📝 Log de Erros</h3>
+        <div id="errorLog" class="error-log">Aguardando erros...</div>
+
+        <h3>🔍 Stack Trace do Último Erro</h3>
+        <div id="stackTrace" class="stack-trace">Nenhum stack trace disponível</div>
+    </div>
+
+    <script>
+        let errorCount = 0;
+        let lastErrorDetails = null;
+
+        // Capturar erros globais
+        window.addEventListener('error', function(event) {
+            logError('Global Error', {
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                error: event.error,
+                stack: event.error ? event.error.stack : 'No stack available'
+            });
+        });
+
+        // Capturar promessas rejeitadas
+        window.addEventListener('unhandledrejection', function(event) {
+            logError('Unhandled Promise Rejection', {
+                reason: event.reason,
+                promise: event.promise,
+                stack: event.reason && event.reason.stack ? event.reason.stack : 'No stack available'
+            });
+        });
+
+        // Interceptar console.error
+        const originalConsoleError = console.error;
+        console.error = function(...args) {
+            logError('Console Error', {
+                arguments: args,
+                stack: new Error().stack
+            });
+            originalConsoleError.apply(console, args);
+        };
+
+        function logError(type, details) {
+            errorCount++;
+            lastErrorDetails = { type, details, timestamp: new Date().toISOString() };
+            
+            const errorLog = document.getElementById('errorLog');
+            const status = document.getElementById('status');
+            const stackTrace = document.getElementById('stackTrace');
+            
+            // Verificar se é o erro específico que procuramos
+            const isTargetError = (
+                details.message && details.message.includes('Cannot convert object to primitive value') ||
+                details.reason && details.reason.toString().includes('Cannot convert object to primitive value') ||
+                (details.arguments && details.arguments.some(arg => 
+                    arg && arg.toString && arg.toString().includes('Cannot convert object to primitive value')
+                ))
+            );
+
+            const errorClass = isTargetError ? 'error' : 'warning';
+            const errorPrefix = isTargetError ? '🎯 TARGET ERROR FOUND' : '⚠️ Other Error';
+            
+            const logEntry = `
+[${new Date().toLocaleTimeString()}] ${errorPrefix}: ${type}
+${JSON.stringify(details, null, 2)}
+${'='.repeat(80)}
+`;
+            
+            errorLog.textContent = logEntry + errorLog.textContent;
+            
+            if (isTargetError) {
+                status.className = 'status error';
+                status.textContent = `🎯 TARGET ERROR CAPTURADO! Tipo: ${type}`;
+                
+                // Mostrar stack trace detalhado
+                stackTrace.textContent = details.stack || 'No stack trace available';
+                
+                // Destacar no log
+                errorLog.style.background = '#fed7d7';
+                errorLog.style.border = '2px solid #e53e3e';
+            } else {
+                status.className = 'status warning';
+                status.textContent = `⚠️ Erro capturado (não é o target): ${type}`;
+            }
+            
+            updateStats();
+        }
+
+        function updateStats() {
+            document.getElementById('errorCount').textContent = errorCount;
+            if (lastErrorDetails) {
+                document.getElementById('lastError').textContent = lastErrorDetails.type;
+                document.getElementById('lastErrorTime').textContent = lastErrorDetails.timestamp;
+            }
+        }
+
+        function loadApp() {
+            const iframe = document.getElementById('appFrame');
+            const status = document.getElementById('status');
+            
+            status.className = 'status warning';
+            status.textContent = '🔄 Carregando aplicação...';
+            
+            iframe.src = 'http://localhost:8082/family';
+            
+            iframe.onload = function() {
+                status.className = 'status success';
+                status.textContent = '✅ Aplicação carregada - monitorando erros...';
+                
+                // Tentar capturar erros do iframe
+                try {
+                    iframe.contentWindow.addEventListener('error', function(event) {
+                        logError('Iframe Error', {
+                            message: event.message,
+                            filename: event.filename,
+                            lineno: event.lineno,
+                            colno: event.colno,
+                            error: event.error,
+                            stack: event.error ? event.error.stack : 'No stack available'
+                        });
+                    });
+                } catch (e) {
+                    console.log('Cannot access iframe content due to CORS policy');
+                }
+            };
+            
+            iframe.onerror = function() {
+                status.className = 'status error';
+                status.textContent = '❌ Erro ao carregar aplicação';
+            };
+        }
+
+        function clearLogs() {
+            document.getElementById('errorLog').textContent = 'Logs limpos...';
+            document.getElementById('stackTrace').textContent = 'Nenhum stack trace disponível';
+            errorCount = 0;
+            lastErrorDetails = null;
+            updateStats();
+            
+            const status = document.getElementById('status');
+            status.className = 'status success';
+            status.textContent = '✅ Logs limpos - aguardando novos erros...';
+        }
+
+        function triggerError() {
+            // Simular o erro específico
+            try {
+                const obj = { toString: null, valueOf: null };
+                const result = obj + ""; // Isso deve gerar "Cannot convert object to primitive value"
+            } catch (e) {
+                logError('Triggered Test Error', {
+                    message: e.message,
+                    stack: e.stack
+                });
+            }
+        }
+
+        function checkConsole() {
+            const iframe = document.getElementById('appFrame');
+            if (iframe.src.includes('localhost')) {
+                alert('Verifique o console do navegador (F12) para mais detalhes dos erros da aplicação.');
+            } else {
+                alert('Carregue a aplicação primeiro clicando em "Carregar App".');
+            }
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 Error Tracker iniciado');
+            console.log('Procurando por: TypeError: Cannot convert object to primitive value');
+        });
+    </script>
+</body>
+</html>

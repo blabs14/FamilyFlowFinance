@@ -41,8 +41,10 @@ const PersonalAccounts: React.FC = () => {
 
 
   const handleNew = () => {
+    console.log('🎯 handleNew chamado - abrindo modal de criar conta');
     setEditingAccount(null);
     setShowCreateModal(true);
+    console.log('🎯 handleNew - showCreateModal definido como true');
   };
 
   const handleNewCreditCard = () => {
@@ -174,7 +176,10 @@ const PersonalAccounts: React.FC = () => {
                 <ArrowRightLeft className="h-4 w-4 mr-2" />
                 Transferir
               </Button>
-              <Button onClick={handleNew} aria-label="Nova conta">
+              <Button onClick={() => {
+                console.log('🎯 Botão Nova Conta clicado!');
+                handleNew();
+              }} aria-label="Nova conta">
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Conta
               </Button>

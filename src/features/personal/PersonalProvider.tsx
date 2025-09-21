@@ -27,7 +27,6 @@ import {
   updateTransaction, 
   deleteTransaction 
 } from '../../services/transactions';
-import { useGoals } from '../../hooks/useGoalsQuery';
 import { useBudgets } from '../../hooks/useBudgetsQuery';
 import { useTransactions } from '../../hooks/useTransactionsQuery';
 import { useCrudMutation } from '../../hooks/useMutationWithFeedback';
@@ -101,13 +100,23 @@ interface PersonalProviderProps {
 type NumericLike = number | string | null | undefined;
 const toNumber = (v: unknown): number => {
   if (typeof v === 'number') return v;
-  if (typeof v === 'string') {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : 0;
-  }
+  if (typeof v === 'string') return parseFloat(v) || 0;
   return 0;
 };
 
+// Helper para evitar pendências infinitas em chamadas RPC
+const withTimeout = async <T,>(promise: Promise<T>, ms: number, label = 'timeout'): Promise<T> => {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(label)), ms);
+  });
+  try {
+    const result = (await Promise.race([promise, timeoutPromise])) as T;
+    return result;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+};
 export const PersonalProvider: React.FC<PersonalProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -134,14 +143,62 @@ export const PersonalProvider: React.FC<PersonalProviderProps> = ({ children }) 
   const myCards = myAccounts.filter(account => account.tipo === 'cartão de crédito');
   const regularAccounts = myAccounts.filter(account => account.tipo !== 'cartão de crédito');
 
-  // Query para objetivos pessoais - otimizada para performance
-  const { data: myGoals = [], isLoading: goalsLoading } = useQuery({
+  // Query para objetivos pessoais - otimizada para performance com fallback
+  const { data: myGoals = [], isLoading: goalsLoading, error: goalsError } = useQuery({
     queryKey: ['personal', 'goals', user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
-      const { data, error } = await getPersonalGoals(user.id);
-      if (error) throw error;
-      return data || [];
+      if (!user?.id) {
+        return [];
+      }
+      
+      try {
+        const rpcPromise = getPersonalGoals(user.id).then(({ data, error }) => {
+          if (error) {
+            throw error;
+          }
+          return data || [];
+        });
+        // Timeout defensivo: se o RPC demorar mais de 3s, usa fallback
+        const data = await withTimeout(rpcPromise as Promise<any[]>, 3000, 'getPersonalGoals: timeout');
+        // Normalização defensiva para evitar NaN no UI
+        const normalized = (data || []).map((g: any) => {
+          const valor_objetivo = toNumber(g?.valor_objetivo);
+          const valor_atual = toNumber(g?.valor_atual);
+          const total_alocado = toNumber(g?.total_alocado ?? valor_atual);
+          const progresso_percentual = Math.min(
+            valor_objetivo > 0 ? (valor_atual / valor_objetivo) * 100 : 0,
+            100
+          );
+          return { ...g, valor_objetivo, valor_atual, total_alocado, progresso_percentual };
+        });
+        return normalized;
+      } catch (rpcError) {
+        if (process.env.NODE_ENV !== 'production') {
+          // eslint-disable-next-line no-console
+          console.warn('[PersonalProvider] RPC getPersonalGoals falhou/expirou, a usar fallback getGoals:', rpcError);
+        }
+        // Fallback: usar getGoals e filtrar objetivos pessoais
+        const { getGoals } = await import('../../services/goals');
+        const { data: allGoals, error: fallbackError } = await getGoals(user.id);
+        
+        if (fallbackError) {
+          throw fallbackError;
+        }
+        
+        // Filtrar apenas objetivos pessoais (sem family_id) e normalizar
+        const personalGoals = allGoals?.filter(goal => !goal.family_id) || [];
+        const normalized = personalGoals.map((g: any) => {
+          const valor_objetivo = toNumber(g?.valor_objetivo);
+          const valor_atual = toNumber(g?.valor_atual);
+          const total_alocado = toNumber((g as any)?.total_alocado ?? valor_atual);
+          const progresso_percentual = Math.min(
+            valor_objetivo > 0 ? (valor_atual / valor_objetivo) * 100 : 0,
+            100
+          );
+          return { ...g, valor_objetivo, valor_atual, total_alocado, progresso_percentual };
+        });
+        return normalized;
+      }
     },
     enabled: !!user?.id,
     refetchOnWindowFocus: false,
@@ -149,6 +206,9 @@ export const PersonalProvider: React.FC<PersonalProviderProps> = ({ children }) 
     refetchOnReconnect: false,
     staleTime: 30 * 1000, // 30 segundos
     gcTime: 5 * 60 * 1000,
+    retry: (failureCount, error) => {
+      return failureCount < 1; // Apenas 1 tentativa para evitar loops
+    },
   });
 
   // Query para orçamentos pessoais - otimizada para performance

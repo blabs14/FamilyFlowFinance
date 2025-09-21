@@ -32,10 +32,10 @@ export function mapAccountWithBalancesToDomain(row: AccountWithBalances): Accoun
     accountId: row.account_id,
     name: row.nome,
     type: row.tipo ?? null,
-    familyId: null, // RPC não devolve family_id
+    familyId: (row as any).family_id ?? null,
     currentBalance: row.saldo_atual,
     availableBalance: row.saldo_disponivel ?? null,
     reservedTotal: row.total_reservado ?? null,
     isInDebt: null,
   };
-} 
+}

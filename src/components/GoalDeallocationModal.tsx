@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useGoalAllocations } from '../hooks/useGoalAllocations';
-import { useFamily } from '../features/family/FamilyContext';
 import { useAccountsWithBalances } from '../hooks/useAccountsQuery';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -14,13 +13,13 @@ interface GoalDeallocationModalProps {
   onClose: () => void;
   goalId: string;
   goalName: string;
+  canEdit?: boolean;
 }
 
-const GoalDeallocationModal = ({ isOpen, onClose, goalId, goalName }: GoalDeallocationModalProps) => {
+const GoalDeallocationModal = ({ isOpen, onClose, goalId, goalName, canEdit = true }: GoalDeallocationModalProps) => {
   const { user } = useAuth();
   const { allocations, deallocate, isDeleting, isAllocating } = useGoalAllocations(goalId);
   const { data: accounts = [] } = useAccountsWithBalances();
-  const { canEdit } = useFamily();
 
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [amount, setAmount] = useState('');
@@ -61,7 +60,7 @@ const GoalDeallocationModal = ({ isOpen, onClose, goalId, goalName }: GoalDeallo
     e.preventDefault();
     setValidationError('');
     
-    if (!canEdit('goal')) {
+    if (!canEdit) {
       setValidationError('Não tem permissões para desalocar fundos de objetivos');
       return;
     }

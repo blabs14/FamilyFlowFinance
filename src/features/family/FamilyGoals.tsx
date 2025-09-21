@@ -17,10 +17,12 @@ import { formatCurrency } from '../../lib/utils';
 import GoalForm from '../../components/GoalForm';
 import { GoalFundingSection } from '../../components/GoalFundingSection';
 import { GoalDeallocationModal } from '../../components/GoalDeallocationModal';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
+import { LazyWrapper } from '../../components/ui/lazy-wrapper';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
 import { useConfirmation } from '../../hooks/useConfirmation';
 import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
-import { useAccountsWithBalances } from '../../hooks/useAccountsQuery';
+import { useFamilyAccountsWithBalances } from '../../hooks/useAccountsQuery';
 import { FormSubmitButton } from '../../components/ui/loading-button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../components/ui/accordion';
 import { getAuditLogsByRow } from '../../services/audit_logs';
@@ -53,10 +55,11 @@ const FamilyGoals: React.FC = () => {
     updateFamilyGoal, 
     deleteFamilyGoal, 
     allocateToGoal,
-    refetchAll 
+    refetchAll,
+    family
   } = useFamily();
   
-  const { data: accounts = [] } = useAccountsWithBalances();
+  const { data: accounts = [] } = useFamilyAccountsWithBalances();
   const { toast } = useToast();
   const confirmation = useConfirmation();
 
@@ -434,6 +437,13 @@ const FamilyGoals: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Funding automático */}
+                <ErrorBoundary>
+                  <LazyWrapper fallback={<div className="text-sm text-muted-foreground">A carregar funding…</div>}>
+                    <GoalFundingSection goalId={goal.id} canEdit={canEdit('goal')} />
+                  </LazyWrapper>
+                </ErrorBoundary>
+
                 {isCompleted && (
                   <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-center gap-2 text-green-800">
@@ -489,6 +499,7 @@ const FamilyGoals: React.FC = () => {
           <GoalForm
             onSuccess={() => handleCreateSuccess()}
             onCancel={() => setShowCreateModal(false)}
+            familyId={family?.id}
           />
         </DialogContent>
       </Dialog>
@@ -509,6 +520,7 @@ const FamilyGoals: React.FC = () => {
               setShowEditModal(false);
               setEditingGoal(null);
             }}
+            familyId={family?.id}
           />
         </DialogContent>
       </Dialog>
@@ -608,8 +620,7 @@ const FamilyGoals: React.FC = () => {
   );
 };
 
-export default FamilyGoals;
-
+// Componente auxiliar para mostrar o histórico de alterações
 const GoalAuditList: React.FC<{ goalId: string }> = ({ goalId }) => {
   const [logs, setLogs] = React.useState<AuditEntry[]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
@@ -676,3 +687,5 @@ const GoalAuditList: React.FC<{ goalId: string }> = ({ goalId }) => {
     </div>
   );
 };
+
+export default FamilyGoals;

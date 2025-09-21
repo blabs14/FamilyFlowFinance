@@ -19,7 +19,7 @@ import {
 import { Badge } from '../../components/ui/badge';
 import { Progress } from '../../components/ui/progress';
 import { Suspense, useMemo } from 'react';
-import { LazyReportChart, LazyChart, LazyFallback } from './lazy';
+import { LazyReportChart, LazyFallback, LazyErrorBoundary } from './lazy/index';
 import { Button } from '../../components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
@@ -42,8 +42,13 @@ const FamilyDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   // Construir séries reais a partir das transações (exclui transferências)
-  const { expensesData, categoryData } = useMemo(() => {
-    const txs = (familyTransactions as Array<Record<string, unknown>> | undefined) || [];
+  const { expensesChartData, categoryChartData } = useMemo(() => {
+     // Verificação de segurança para evitar erros quando os dados ainda não estão carregados
+    if (!familyTransactions || !Array.isArray(familyTransactions)) {
+      return { expensesChartData: [], categoryChartData: [] };
+    }
+    
+    const txs = familyTransactions as Array<Record<string, unknown>>;
     const filtered = txs.filter((t) => (t?.['tipo'] as string) !== 'transferencia');
 
     // Últimos 6 meses incluindo o atual
@@ -91,7 +96,17 @@ const FamilyDashboard: React.FC = () => {
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
 
-    return { expensesData: expenses, categoryData: categories };
+    // Mapear para o formato esperado pelo ReportChart
+    const expensesChartData = expenses.map((e) => ({ categoria: e.month, total: e.value }));
+    const categoryChartData = categories.map((c) => ({ categoria: c.category, total: c.value }));
+
+    // Logs defensivos
+    try {
+      console.debug('[charts] expensesChartData sample:', expensesChartData.slice(0, 3));
+      console.debug('[charts] categoryChartData sample:', categoryChartData.slice(0, 3));
+    } catch {}
+
+    return { expensesChartData, categoryChartData };
   }, [familyTransactions]);
 
   if (isLoading.family || isLoading.kpis) {
@@ -495,14 +510,16 @@ const FamilyDashboard: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Suspense fallback={<LazyFallback message="A carregar gráfico..." />}>
-              <LazyChart
-                data={expensesData}
-                type="line"
-                height={300}
-              />
-            </Suspense>
-            {expensesData.every((e) => e.value === 0) && (
+            <LazyErrorBoundary>
+              <Suspense fallback={<LazyFallback message="A carregar gráfico..." />}>
+                <LazyReportChart
+                  data={expensesChartData}
+                  type="line"
+                  height={300}
+                />
+              </Suspense>
+            </LazyErrorBoundary>
+            {expensesChartData.every((e) => e.total === 0) && (
               <p className="text-xs text-muted-foreground mt-2">Sem despesas registadas neste período.</p>
             )}
           </CardContent>
@@ -516,14 +533,16 @@ const FamilyDashboard: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Suspense fallback={<LazyFallback message="A carregar gráfico..." />}>
-              <LazyReportChart
-                data={categoryData}
-                type="pie"
-                height={300}
-              />
-            </Suspense>
-            {categoryData.length === 0 && (
+            <LazyErrorBoundary>
+              <Suspense fallback={<LazyFallback message="A carregar gráfico..." />}>
+                <LazyReportChart
+                  data={categoryChartData}
+                  type="pie"
+                  height={300}
+                />
+              </Suspense>
+            </LazyErrorBoundary>
+            {categoryChartData.length === 0 && (
               <p className="text-xs text-muted-foreground mt-2">Sem despesas por categoria nos últimos 90 dias.</p>
             )}
           </CardContent>

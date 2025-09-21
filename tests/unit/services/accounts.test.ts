@@ -333,3 +333,44 @@ describe('Accounts Service', () => {
     });
   });
 });
+
+// Novos testes de regressão: separação Personal vs Family + mapeamento familyId
+describe('Accounts Service - Family vs Personal (Regressão)', () => {
+  it('getAccountsWithBalances deve excluir contas com family_id (área pessoal)', async () => {
+    const personal = {
+      account_id: 'a1', user_id: 'u1', family_id: null,
+      nome: 'Conta Pessoal', tipo: 'conta', saldo_atual: 100, total_reservado: 0, saldo_disponivel: 100,
+    };
+    const family = {
+      account_id: 'a2', user_id: 'u1', family_id: 'fam-1',
+      nome: 'Conta Família', tipo: 'conta', saldo_atual: 50, total_reservado: 0, saldo_disponivel: 50,
+    };
+
+    (supabase.rpc as any).mockResolvedValueOnce({ data: [personal, family], error: null });
+
+    const { getAccountsWithBalances } = await import('@/services/accounts');
+    const result = await getAccountsWithBalances('u1');
+
+    expect(supabase.rpc).toHaveBeenCalledWith('get_user_accounts_with_balances', { p_user_id: 'u1' });
+    expect(result.error).toBeNull();
+    expect(result.data).toHaveLength(1);
+    expect(result.data?.[0]).toMatchObject({ account_id: 'a1', family_id: null });
+  });
+
+  it('getFamilyAccountsWithBalances deve devolver apenas contas com family_id', async () => {
+    const family = {
+      account_id: 'a2', user_id: 'u1', family_id: 'fam-1',
+      nome: 'Conta Família', tipo: 'conta', saldo_atual: 50, total_reservado: 0, saldo_disponivel: 50,
+    };
+
+    (supabase.rpc as any).mockResolvedValueOnce({ data: [family], error: null });
+
+    const { getFamilyAccountsWithBalances } = await import('@/services/accounts');
+    const result = await getFamilyAccountsWithBalances('u1');
+
+    expect(supabase.rpc).toHaveBeenCalledWith('get_family_accounts_with_balances', { p_user_id: 'u1' });
+    expect(result.error).toBeNull();
+    expect(result.data).toHaveLength(1);
+    expect(result.data?.[0]).toMatchObject({ account_id: 'a2', family_id: 'fam-1' });
+  });
+});

@@ -146,11 +146,17 @@ const PersonalTransactions: React.FC = () => {
   // Calcular métricas totais (sem filtros)
   const totalIncome = transactions
     .filter(t => t.tipo === 'receita')
-    .reduce((sum, t) => sum + t.valor, 0);
+    .reduce((sum, t) => {
+      const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+      return sum + valor;
+    }, 0);
 
   const totalExpenses = transactions
     .filter(t => t.tipo === 'despesa')
-    .reduce((sum, t) => sum + t.valor, 0);
+    .reduce((sum, t) => {
+      const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+      return sum + valor;
+    }, 0);
 
   const netBalance = totalIncome - totalExpenses;
   const transactionCount = transactions.length;
@@ -243,11 +249,17 @@ const PersonalTransactions: React.FC = () => {
   const filteredMetrics = React.useMemo(() => {
     const filteredIncome = filteredTransactions
       .filter(t => t.tipo === 'receita')
-      .reduce((sum, t) => sum + t.valor, 0);
+      .reduce((sum, t) => {
+        const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+        return sum + valor;
+      }, 0);
 
     const filteredExpenses = filteredTransactions
       .filter(t => t.tipo === 'despesa')
-      .reduce((sum, t) => sum + t.valor, 0);
+      .reduce((sum, t) => {
+        const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+        return sum + valor;
+      }, 0);
 
     const filteredNetBalance = filteredIncome - filteredExpenses;
     const filteredCount = filteredTransactions.length;

@@ -13,8 +13,17 @@ export const useFamilyData = () => {
   
   return useQuery({
     queryKey: ['family', 'current', user?.id],
-    queryFn: familyService.getFamilyData,
+    queryFn: () => {
+      console.log('🔍 [DEBUG] Carregando dados da família...');
+      return familyService.getFamilyData();
+    },
     enabled: !!user,
+    onSuccess: (data) => {
+      console.log('✅ [DEBUG] Dados da família carregados:', data);
+    },
+    onError: (error) => {
+      console.error('❌ [DEBUG] Erro ao carregar dados da família:', error);
+    },
   });
 };
 
@@ -47,17 +56,39 @@ export const useCreateFamily = () => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: ({ familyName, description }: { familyName: string; description?: string }) =>
-      familyService.createFamily(familyName, description),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['family'] });
-      queryClient.invalidateQueries({ queryKey: ['user-families'] });
-      toast({
-        title: "Família criada com sucesso!",
-        description: "A sua nova família foi criada e você foi adicionado como administrador.",
-      });
+    mutationFn: ({ familyName, description }: { familyName: string; description?: string }) => {
+      console.log('🚀 [DEBUG] Iniciando criação de família:', { familyName, description });
+      return familyService.createFamily(familyName, description);
+    },
+    onSuccess: async (data) => {
+      console.log('✅ [DEBUG] Família criada com sucesso:', data);
+      console.log('🔄 [DEBUG] Invalidando queries...');
+      
+      try {
+        // Invalidar todas as queries relacionadas com família
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['family'] }),
+          queryClient.invalidateQueries({ queryKey: ['user-families'] }),
+          queryClient.invalidateQueries({ queryKey: ['family-data'] }),
+          queryClient.invalidateQueries({ queryKey: ['family-members'] }),
+        ]);
+        
+        console.log('✅ [DEBUG] Queries invalidadas com sucesso');
+        
+        // Forçar refetch da query principal
+        await queryClient.refetchQueries({ queryKey: ['family', 'current'] });
+        console.log('✅ [DEBUG] Refetch da query principal concluído');
+        
+        toast({
+          title: "Família criada com sucesso!",
+          description: "A sua nova família foi criada e você foi adicionado como administrador.",
+        });
+      } catch (error) {
+        console.error('❌ [DEBUG] Erro ao invalidar queries:', error);
+      }
     },
     onError: (error: unknown) => {
+      console.error('❌ [DEBUG] Erro ao criar família:', error);
       const message = error instanceof Error ? error.message : 'Erro ao criar família';
       toast({
         title: 'Erro',

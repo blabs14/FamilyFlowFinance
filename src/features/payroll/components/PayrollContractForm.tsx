@@ -16,7 +16,7 @@ import { contractSyncService } from '../services/contractSyncService';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocale } from '@/contexts/LocaleProvider';
-import { useFamily } from '@/features/family/FamilyContext';
+
 import { getCurrencies } from '@/services/currencies';
 import { logger } from '@/shared/lib/logger';
 import { useContractConfig, useConfigurationStatus } from '../hooks/usePayrollConfig';
@@ -36,7 +36,6 @@ interface PayrollContractFormProps {
 export function PayrollContractForm({ contract, onSave, onCancel }: PayrollContractFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { family } = useFamily();
   const { currency: defaultCurrency } = useLocale();
   
   // Usar o novo contexto de configuração

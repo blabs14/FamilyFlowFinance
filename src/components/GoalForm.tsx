@@ -29,9 +29,10 @@ interface GoalFormProps {
   initialData?: GoalFormData;
   onSuccess?: () => void;
   onCancel?: () => void;
+  familyId?: string; // Para objetivos familiares
 }
 
-const GoalForm = ({ initialData, onSuccess, onCancel }: GoalFormProps) => {
+const GoalForm = ({ initialData, onSuccess, onCancel, familyId }: GoalFormProps) => {
   const { user } = useAuth();
   const createGoalMutation = useCreateGoal();
   const updateGoalMutation = useUpdateGoal();
@@ -93,7 +94,8 @@ const GoalForm = ({ initialData, onSuccess, onCancel }: GoalFormProps) => {
         valor_objetivo: form.valor_objetivo,
         prazo: form.prazo || null, // Opcional
         valor_atual: 0, // Inicializar com 0
-        user_id: user?.id || ''
+        user_id: user?.id || '',
+        ...(familyId && { family_id: familyId })
       } as const;
       
       if (initialData && initialData.id) {
@@ -181,4 +183,4 @@ const GoalForm = ({ initialData, onSuccess, onCancel }: GoalFormProps) => {
   );
 };
 
-export default GoalForm; 
+export default GoalForm;

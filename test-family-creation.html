@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Criação de Família</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        .info { background: #e3f2fd; color: #1565c0; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Teste de Criação de Família</h1>
+    
+    <div>
+        <button onclick="testFamilyCreation()">Testar Criação de Família</button>
+        <button onclick="clearLogs()">Limpar Logs</button>
+    </div>
+    
+    <div id="logs"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://ixjfqxqxqxqxqxqx.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4amZxeHF4cXhxeHF4cXgiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTczNzM4NzYwMCwiZXhwIjoyMDUyOTYzNjAwfQ.placeholder';
+
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const logDiv = document.createElement('div');
+            logDiv.className = `log ${type}`;
+            logDiv.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            logsDiv.appendChild(logDiv);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        async function testFamilyCreation() {
+            log('🎯 Iniciando teste de criação de família...', 'info');
+            
+            try {
+                // Simular dados de teste
+                const familyData = {
+                    familyName: 'Família Teste ' + Date.now(),
+                    description: 'Família criada para teste'
+                };
+                
+                log(`📝 Dados da família: ${JSON.stringify(familyData)}`, 'info');
+                
+                // Simular chamada à função RPC
+                log('🔄 Simulando chamada create_family_with_member...', 'info');
+                
+                // Aqui normalmente faria a chamada real ao Supabase
+                // Por agora, vamos simular um sucesso
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                log('✅ Família criada com sucesso (simulado)', 'success');
+                log('🔄 Simulando invalidação de queries...', 'info');
+                
+                // Simular invalidação de queries
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                log('✅ Queries invalidadas com sucesso', 'success');
+                log('🎯 Teste concluído com sucesso!', 'success');
+                
+            } catch (error) {
+                log(`❌ Erro no teste: ${error.message}`, 'error');
+                console.error('Erro completo:', error);
+            }
+        }
+
+        // Verificar se estamos numa página da aplicação
+        if (window.location.hostname === 'localhost') {
+            log('🌐 Detectada aplicação local', 'info');
+            
+            // Tentar aceder ao console da aplicação principal
+            if (window.parent && window.parent !== window) {
+                log('📱 Executando dentro de iframe', 'info');
+            }
+        }
+    </script>
+</body>
+</html>

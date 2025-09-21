@@ -52,10 +52,10 @@ export class CashflowService {
       start_date: startDate.toISOString().split('T')[0],
       end_date: endDate.toISOString().split('T')[0],
       daily_summaries: dailySummaries,
-      total_income_cents: dailySummaries.reduce((sum, day) => sum + day.total_income_cents, 0),
-      total_expense_cents: dailySummaries.reduce((sum, day) => sum + day.total_expense_cents, 0),
-      net_flow_cents: dailySummaries.reduce((sum, day) => sum + day.net_flow_cents, 0),
-      starting_balance_cents: currentBalances.reduce((sum, acc) => sum + acc.current_balance_cents, 0),
+      total_income_cents: dailySummaries.reduce((sum, day) => sum + (typeof day.total_income_cents === 'number' ? day.total_income_cents : parseFloat(day.total_income_cents) || 0), 0),
+    total_expense_cents: dailySummaries.reduce((sum, day) => sum + (typeof day.total_expense_cents === 'number' ? day.total_expense_cents : parseFloat(day.total_expense_cents) || 0), 0),
+    net_flow_cents: dailySummaries.reduce((sum, day) => sum + (typeof day.net_flow_cents === 'number' ? day.net_flow_cents : parseFloat(day.net_flow_cents) || 0), 0),
+    starting_balance_cents: currentBalances.reduce((sum, acc) => sum + (typeof acc.current_balance_cents === 'number' ? acc.current_balance_cents : parseFloat(acc.current_balance_cents) || 0), 0),
       ending_balance_cents: dailySummaries[dailySummaries.length - 1]?.running_balance_cents || 0,
       currency: 'EUR' // Assumindo EUR como padrão
     };
@@ -331,7 +331,7 @@ export class CashflowService {
     endDate: Date
   ): DailyCashflowSummary[] {
     const summaries: DailyCashflowSummary[] = [];
-    const startingBalance = currentBalances.reduce((sum, acc) => sum + acc.current_balance_cents, 0);
+    const startingBalance = currentBalances.reduce((sum, acc) => sum + (typeof acc.current_balance_cents === 'number' ? acc.current_balance_cents : parseFloat(acc.current_balance_cents) || 0), 0);
     let runningBalance = startingBalance;
 
     // Agrupar eventos por data
@@ -352,11 +352,11 @@ export class CashflowService {
       
       const totalIncome = dayEvents
         .filter(e => e.is_income)
-        .reduce((sum, e) => sum + e.amount_cents, 0);
+        .reduce((sum, e) => sum + (typeof e.amount_cents === 'number' ? e.amount_cents : parseFloat(e.amount_cents) || 0), 0);
       
       const totalExpense = dayEvents
         .filter(e => !e.is_income)
-        .reduce((sum, e) => sum + e.amount_cents, 0);
+        .reduce((sum, e) => sum + (typeof e.amount_cents === 'number' ? e.amount_cents : parseFloat(e.amount_cents) || 0), 0);
       
       const netFlow = totalIncome - totalExpense;
       runningBalance += netFlow;

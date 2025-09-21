@@ -87,7 +87,9 @@ export const useCreateAccount = () => {
 
   return useCrudMutation(
     async (data: AccountInsert) => {
+      console.log('🔍 useCreateAccount - Dados recebidos:', data);
       const payload: AccountInsert = { ...data, user_id: data.user_id ?? (user?.id || '') } as AccountInsert;
+      console.log('🔍 useCreateAccount - Payload final:', payload);
       const { data: created, error } = await createAccount(payload);
       if (error) throw error;
       return created;
@@ -96,6 +98,7 @@ export const useCreateAccount = () => {
       operation: 'create',
       entityName: 'Conta',
       onSuccess: () => {
+        console.log('✅ useCreateAccount - Sucesso na criação');
         queryClient.invalidateQueries({ queryKey: ['accounts'] });
         queryClient.invalidateQueries({ queryKey: ['accounts-domain'] });
         queryClient.invalidateQueries({ queryKey: ['accountsWithBalances', user?.id] });
@@ -159,6 +162,31 @@ export const useDeleteAccount = () => {
       }
     }
   );
+};
+
+export const useFamilyAccountsWithBalances = () => {
+  const { user } = useAuth();
+  
+  return useQuery<AccountWithBalances[] | []>({
+    queryKey: ['familyAccountsWithBalances', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      const { data, error } = await getFamilyAccountsWithBalances(user.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      return data || [];
+    },
+    enabled: !!user?.id,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
+  });
 };
 
 export const useAllAccountsWithBalances = () => {

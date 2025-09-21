@@ -36,56 +36,52 @@ export const useCategories = (tipo?: string) => {
 
 export const useCategoriesDomain = (tipo?: string) => {
   const { user } = useAuth();
-  
-  // Buscar categorias padrão (user_id IS NULL)
-  const defaultCategoriesQuery = useQuery({
-    queryKey: ['categories', 'default', tipo],
+
+  const defaultCategoriesQuery = useQuery<CategoryDomain[]>({
+    queryKey: ['categories-domain', 'default', tipo],
     queryFn: async () => {
-      const result = await getCategoriesDomain(undefined, tipo);
-      if (result.error) {
-        throw result.error;
+      try {
+        const { data, error } = await getCategoriesDomain(undefined, tipo);
+        if (error) {
+          logger.error('Failed to fetch default categories', error);
+          throw error;
+        }
+        return data || [];
+      } catch (err) {
+        throw err;
       }
-      return result.data;
     },
-    staleTime: 0, // Forçar atualização imediata
-    refetchOnMount: true,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
-  // Buscar categorias do usuário (se estiver logado)
-  const userCategoriesQuery = useQuery({
-    queryKey: ['categories', 'user', user?.id, tipo],
+  const userCategoriesQuery = useQuery<CategoryDomain[]>({
+    queryKey: ['categories-domain', user?.id, tipo],
     queryFn: async () => {
-      const result = await getCategoriesDomain(user?.id, tipo);
-      if (result.error) {
-        throw result.error;
+      if (!user?.id) {
+        return [];
       }
-      return result.data;
+      try {
+        const { data, error } = await getCategoriesDomain(user.id, tipo);
+        if (error) {
+          logger.error('Failed to fetch user categories', error);
+          throw error;
+        }
+        return data || [];
+      } catch (err) {
+        throw err;
+      }
     },
     enabled: !!user?.id,
-    staleTime: 0, // Forçar atualização imediata
-    refetchOnMount: true,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
-  // Combinar as categorias usando useMemo
   const combinedCategories = useMemo(() => {
-    const defaultData = defaultCategoriesQuery.data || [];
-    const userData = userCategoriesQuery.data || [];
-
-    // Debug temporário
-    console.log('useCategoriesDomain - defaultData:', defaultData);
-    console.log('useCategoriesDomain - userData:', userData);
-    console.log('useCategoriesDomain - user:', user);
-
-    // Criar um Set com os nomes das categorias do usuário para deduplicação
-    const userCategoryNames = new Set(userData.map(cat => cat.nome));
-
-    // Filtrar categorias padrão que não existem nas categorias do usuário
-    const filteredDefaultCategories = defaultData.filter(cat => !userCategoryNames.has(cat.nome));
-
-    // Combinar: categorias do usuário primeiro, depois categorias padrão filtradas
-    const combined = [...userData, ...filteredDefaultCategories];
-
-    return combined;
+    const defaultCategories = defaultCategoriesQuery.data || [];
+    const userCategories = userCategoriesQuery.data || [];
+    
+    return [...defaultCategories, ...userCategories];
   }, [defaultCategoriesQuery.data, userCategoriesQuery.data, user?.id]);
 
   return {

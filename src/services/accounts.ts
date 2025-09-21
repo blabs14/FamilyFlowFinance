@@ -50,7 +50,9 @@ export const getAccount = async (id: string): Promise<{ data: Account | null; er
 
 export const createAccount = async (accountData: AccountInsert, userId?: string): Promise<{ data: Account | null; error: unknown }> => {
   try {
+    console.log('🔍 createAccount - Dados recebidos:', accountData);
     let resolvedUserId: string | undefined = (userId && userId.trim() !== '') ? userId : (accountData.user_id as string | undefined);
+    console.log('🔍 createAccount - User ID:', resolvedUserId);
     if (!resolvedUserId) {
       try {
         const { data: authData, error: authError } = await supabase.auth.getUser();
@@ -70,9 +72,19 @@ export const createAccount = async (accountData: AccountInsert, userId?: string)
       adjustedData = { ...adjustedData, saldo: 0 };
     }
 
+    // Garantir que o family_id é propagado quando fornecido
+    const rawFamilyId = (adjustedData as { family_id?: string | null }).family_id;
+    const hasFamilyId = typeof rawFamilyId === 'string' && rawFamilyId.trim() !== '';
+    const insertPayload: AccountInsert = {
+      ...adjustedData,
+      user_id: resolvedUserId,
+      ...(hasFamilyId ? { family_id: rawFamilyId as string } : {}),
+    } as AccountInsert;
+    console.log('🔍 createAccount - Payload a inserir:', insertPayload);
+
     const { data, error } = await supabase
       .from('accounts')
-      .insert([{ ...adjustedData, user_id: resolvedUserId }])
+      .insert([insertPayload])
       .select()
       .single();
 
@@ -428,7 +440,14 @@ export const getFamilyAccountsWithBalances = async (userId?: string): Promise<{ 
       return { data: null, error };
     }
 
-    return { data: data || [], error: null };
+    // Filtrar a conta "Objetivos" das contas disponíveis para alocação
+    const filteredData = (data || []).filter(account => {
+      const accountName = account.nome?.toLowerCase() || '';
+      const accountType = account.tipo?.toLowerCase() || '';
+      return !accountName.includes('objetivo') && !accountType.includes('objetivo');
+    });
+
+    return { data: filteredData, error: null };
   } catch (error) {
     return { data: null, error };
   }
@@ -448,7 +467,11 @@ export const getAccountsWithBalances = async (userId?: string): Promise<{ data: 
       return { data: null, error };
     }
 
-    return { data: data || [], error: null };
+    // Hotfix defensivo: garantir que a área pessoal apenas apresenta contas pessoais (sem family_id)
+    const safeData = (data || []) as AccountWithBalances[];
+    const filtered = safeData.filter((a) => a.family_id == null);
+
+    return { data: filtered, error: null };
   } catch (error) {
     return { data: null, error };
   }
