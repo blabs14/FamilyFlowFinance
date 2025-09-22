@@ -5,13 +5,45 @@ import {
   GoalAllocationUpdate 
 } from '../integrations/supabase/types';
 
-export const getGoalAllocations = async (goalId: string): Promise<{ data: GoalAllocation[] | null; error: unknown }> => {
+export const getGoalAllocations = async (goalId: string, userId: string): Promise<{ data: GoalAllocation[] | null; error: unknown }> => {
   try {
-    const { data, error } = await supabase
+    // Primeiro, verificar se o objetivo é familiar
+    const { data: goalData, error: goalError } = await supabase
+      .from('goals')
+      .select('family_id')
+      .eq('id', goalId)
+      .single();
+
+    if (goalError) {
+      return { data: null, error: goalError };
+    }
+
+    let query = supabase
       .from('goal_allocations')
       .select('*')
-      .eq('goal_id', goalId)
-      .order('data_alocacao', { ascending: false });
+      .eq('goal_id', goalId);
+
+    // Se o objetivo é familiar (family_id não é null), buscar alocações de todos os membros da família
+    if (goalData.family_id) {
+      // Para objetivos familiares, buscar alocações de qualquer membro da família
+      // Usar uma subquery para obter os user_ids dos membros da família
+      const { data: familyMembers, error: membersError } = await supabase
+        .from('family_members')
+        .select('user_id')
+        .eq('family_id', goalData.family_id);
+
+      if (membersError) {
+        return { data: null, error: membersError };
+      }
+
+      const memberUserIds = familyMembers.map(member => member.user_id);
+      query = query.in('user_id', memberUserIds);
+    } else {
+      // Para objetivos pessoais, filtrar apenas pelo user_id
+      query = query.eq('user_id', userId);
+    }
+
+    const { data, error } = await query.order('data_alocacao', { ascending: false });
 
     return { data: data || null, error };
   } catch (error) {
@@ -78,11 +110,42 @@ export const deleteGoalAllocation = async (id: string, userId: string): Promise<
 
 export const getGoalAllocationsTotal = async (goalId: string, userId: string): Promise<{ data: number | null; error: unknown }> => {
   try {
-    const { data, error } = await supabase
+    // Primeiro, verificar se o objetivo é familiar
+    const { data: goalData, error: goalError } = await supabase
+      .from('goals')
+      .select('family_id')
+      .eq('id', goalId)
+      .single();
+
+    if (goalError) {
+      return { data: null, error: goalError };
+    }
+
+    let query = supabase
       .from('goal_allocations')
       .select('valor')
-      .eq('goal_id', goalId)
-      .eq('user_id', userId);
+      .eq('goal_id', goalId);
+
+    // Se o objetivo é familiar (family_id não é null), buscar alocações de todos os membros da família
+    if (goalData.family_id) {
+      // Para objetivos familiares, buscar alocações de qualquer membro da família
+      const { data: familyMembers, error: membersError } = await supabase
+        .from('family_members')
+        .select('user_id')
+        .eq('family_id', goalData.family_id);
+
+      if (membersError) {
+        return { data: null, error: membersError };
+      }
+
+      const memberUserIds = familyMembers.map(member => member.user_id);
+      query = query.in('user_id', memberUserIds);
+    } else {
+      // Para objetivos pessoais, filtrar apenas pelo user_id
+      query = query.eq('user_id', userId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       return { data: null, error };

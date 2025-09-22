@@ -10,7 +10,7 @@ import {
   getPersonalKPIs
 } from '../../services/accounts';
 import { 
-  getGoalProgress,
+  getPersonalGoals,
   createGoal, 
   updateGoal, 
   deleteGoal 
@@ -145,7 +145,7 @@ export const PersonalProvider: React.FC<PersonalProviderProps> = ({ children }) 
   const myCards = myAccounts.filter(account => account.tipo === 'cartão de crédito');
   const regularAccounts = myAccounts.filter(account => account.tipo !== 'cartão de crédito');
 
-  // Query para objetivos pessoais - otimizada para performance com fallback
+  // Query para objetivos pessoais - otimizada para performance
   const { data: myGoals = [], isLoading: goalsLoading, error: goalsError } = useQuery({
     queryKey: ['personal', 'goals', user?.id],
     queryFn: async () => {
@@ -153,55 +153,25 @@ export const PersonalProvider: React.FC<PersonalProviderProps> = ({ children }) 
         return [];
       }
       
-      try {
-        const rpcPromise = getGoalProgress(user.id).then(({ data, error }) => {
-          if (error) {
-            throw error;
-          }
-          return data || [];
-        });
-        // Timeout defensivo: se o RPC demorar mais de 3s, usa fallback
-        const data = await withTimeout(rpcPromise as Promise<GoalProgressRPC[]>, 3000, 'getGoalProgress: timeout');
-        // Normalização defensiva para evitar NaN no UI
-        const normalized = (data || []).map((g: GoalProgressRPC) => {
-          const valor_objetivo = toNumber(g?.valor_objetivo);
-          const total_alocado = toNumber(g?.total_alocado);
-          const progresso_percentual = toNumber(g?.progresso_percentual);
-          return { 
-            ...g, 
-            valor_objetivo, 
-            total_alocado, 
-            progresso_percentual: Math.min(progresso_percentual || 0, 100)
-          };
-        });
-        return normalized;
-      } catch (rpcError) {
-        if (process.env.NODE_ENV !== 'production') {
-          // eslint-disable-next-line no-console
-          console.warn('[PersonalProvider] RPC getGoalProgress falhou/expirou, a usar fallback getGoals:', rpcError);
-        }
-        // Fallback: usar getGoals e filtrar objetivos pessoais
-        const { getGoals } = await import('../../services/goals');
-        const { data: allGoals, error: fallbackError } = await getGoals(user.id);
-        
-        if (fallbackError) {
-          throw fallbackError;
-        }
-        
-        // Filtrar apenas objetivos pessoais (sem family_id) e normalizar
-        const personalGoals = allGoals?.filter(goal => !goal.family_id) || [];
-        const normalized = personalGoals.map((g: any) => {
-          const valor_objetivo = toNumber(g?.valor_objetivo);
-          const valor_atual = toNumber(g?.valor_atual);
-          const total_alocado = toNumber((g as any)?.total_alocado ?? valor_atual);
-          const progresso_percentual = Math.min(
-            valor_objetivo > 0 ? (valor_atual / valor_objetivo) * 100 : 0,
-            100
-          );
-          return { ...g, valor_objetivo, valor_atual, total_alocado, progresso_percentual };
-        });
-        return normalized;
-      }
+      // Usar a função específica para objetivos pessoais
+       const { data, error } = await getPersonalGoals(user.id);
+       
+       if (error) {
+         throw error;
+       }
+      
+      // Normalização defensiva para evitar NaN no UI
+      const normalized = (data || []).map((g: any) => {
+        const valor_objetivo = toNumber(g?.valor_objetivo);
+        const valor_atual = toNumber(g?.valor_atual);
+        const total_alocado = toNumber(g?.total_alocado ?? valor_atual);
+        const progresso_percentual = Math.min(
+          valor_objetivo > 0 ? (valor_atual / valor_objetivo) * 100 : 0,
+          100
+        );
+        return { ...g, valor_objetivo, valor_atual, total_alocado, progresso_percentual };
+      });
+      return normalized;
     },
     enabled: !!user?.id,
     refetchOnWindowFocus: false,
