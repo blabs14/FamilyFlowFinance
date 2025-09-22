@@ -15,6 +15,15 @@ import { useAuth } from '../contexts/AuthContext';
 export const useGoalAllocations = (goalId?: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  
+  console.log('🔍 [DEBUG] useGoalAllocations - Hook chamado:', {
+    goalId,
+    userId: user?.id,
+    userIdType: typeof user?.id,
+    userIdIsNull: user?.id === null,
+    userIdIsUndefined: user?.id === undefined,
+    userObject: user
+  });
 
   const {
     data: allocationsData,
@@ -60,12 +69,29 @@ export const useGoalAllocations = (goalId?: string) => {
   });
 
   const allocateToGoalMutation = useMutation({
-    mutationFn: ({ goalId, accountId, amount, description }: {
+    mutationFn: async ({ goalId, accountId, amount, description }: {
       goalId: string;
       accountId: string;
       amount: number;
       description?: string;
-    }) => allocateToGoal(goalId, accountId, amount, user?.id || '', description),
+    }) => {
+      // Validações para evitar UUID inválidos e erros silenciosos
+      if (!user?.id) {
+        throw new Error('Utilizador não autenticado. Inicie sessão para alocar fundos.');
+      }
+      
+      // Verificar tanto null como undefined para goalId e accountId
+      if (!goalId || goalId === null || !accountId || accountId === null) {
+        throw new Error('Dados inválidos para alocação: goalId e accountId são obrigatórios.');
+      }
+
+      const result = await allocateToGoal(goalId, accountId, amount, user.id, description);
+      if ((result as any)?.error) {
+        // Converter padrão de retorno { data, error } em exceção para o React Query tratar corretamente
+        throw (result as any).error;
+      }
+      return (result as any)?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goalAllocations'] });
       queryClient.invalidateQueries({ queryKey: ['goals'] });
@@ -77,6 +103,9 @@ export const useGoalAllocations = (goalId?: string) => {
         queryClient.invalidateQueries({ queryKey: ['accountsWithBalances', user.id] });
         queryClient.invalidateQueries({ queryKey: ['accountsWithBalances-domain', user.id] });
       }
+    },
+    onError: (error) => {
+      console.error('[useGoalAllocations] Erro na alocação:', error);
     }
   });
 
@@ -153,6 +182,7 @@ export const useGoalAllocations = (goalId?: string) => {
     isCreating: createAllocationMutation.isPending,
     isAllocating: allocateToGoalMutation.isPending,
     isUpdating: updateAllocationMutation.isPending,
-    isDeleting: deleteAllocationMutation.isPending
+    isDeleting: deleteAllocationMutation.isPending,
+    isSuccess: allocateToGoalMutation.isSuccess
   };
 };

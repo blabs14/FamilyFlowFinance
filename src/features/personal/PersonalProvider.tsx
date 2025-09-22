@@ -10,7 +10,7 @@ import {
   getPersonalKPIs
 } from '../../services/accounts';
 import { 
-  getPersonalGoals, 
+  getGoalProgress,
   createGoal, 
   updateGoal, 
   deleteGoal 
@@ -31,13 +31,15 @@ import { useBudgets } from '../../hooks/useBudgetsQuery';
 import { useTransactions } from '../../hooks/useTransactionsQuery';
 import { useCrudMutation } from '../../hooks/useMutationWithFeedback';
 import { supabase } from '../../lib/supabaseClient';
+import { allocateToGoal as allocateToGoalService } from '../../services/goals';
+import { GoalProgressRPC } from '../../integrations/supabase/types';
 
 // Tipos para o contexto
 interface PersonalContextType {
   // Dados pessoais (family_id IS NULL)
   myAccounts: any[];
   myCards: any[];
-  myGoals: any[];
+  myGoals: GoalProgressRPC[];
   myBudgets: any[];
   myTransactions: any[];
   
@@ -152,30 +154,31 @@ export const PersonalProvider: React.FC<PersonalProviderProps> = ({ children }) 
       }
       
       try {
-        const rpcPromise = getPersonalGoals(user.id).then(({ data, error }) => {
+        const rpcPromise = getGoalProgress(user.id).then(({ data, error }) => {
           if (error) {
             throw error;
           }
           return data || [];
         });
         // Timeout defensivo: se o RPC demorar mais de 3s, usa fallback
-        const data = await withTimeout(rpcPromise as Promise<any[]>, 3000, 'getPersonalGoals: timeout');
+        const data = await withTimeout(rpcPromise as Promise<GoalProgressRPC[]>, 3000, 'getGoalProgress: timeout');
         // Normalização defensiva para evitar NaN no UI
-        const normalized = (data || []).map((g: any) => {
+        const normalized = (data || []).map((g: GoalProgressRPC) => {
           const valor_objetivo = toNumber(g?.valor_objetivo);
-          const valor_atual = toNumber(g?.valor_atual);
-          const total_alocado = toNumber(g?.total_alocado ?? valor_atual);
-          const progresso_percentual = Math.min(
-            valor_objetivo > 0 ? (valor_atual / valor_objetivo) * 100 : 0,
-            100
-          );
-          return { ...g, valor_objetivo, valor_atual, total_alocado, progresso_percentual };
+          const total_alocado = toNumber(g?.total_alocado);
+          const progresso_percentual = toNumber(g?.progresso_percentual);
+          return { 
+            ...g, 
+            valor_objetivo, 
+            total_alocado, 
+            progresso_percentual: Math.min(progresso_percentual || 0, 100)
+          };
         });
         return normalized;
       } catch (rpcError) {
         if (process.env.NODE_ENV !== 'production') {
           // eslint-disable-next-line no-console
-          console.warn('[PersonalProvider] RPC getPersonalGoals falhou/expirou, a usar fallback getGoals:', rpcError);
+          console.warn('[PersonalProvider] RPC getGoalProgress falhou/expirou, a usar fallback getGoals:', rpcError);
         }
         // Fallback: usar getGoals e filtrar objetivos pessoais
         const { getGoals } = await import('../../services/goals');
@@ -461,17 +464,18 @@ export const PersonalProvider: React.FC<PersonalProviderProps> = ({ children }) 
     }
   };
 
-  const allocateToGoal = async (goalId: string, amount: number, accountId: string) => {
+  const allocateToGoal = async (goalId: string, amount: number, accountId: string, description?: string) => {
     try {
-      // Usar a função RPC existente para alocar a objetivo
-      const { error } = await supabase.rpc('allocate_to_goal_with_transaction', {
-        goal_id_param: goalId,
-        account_id_param: accountId,
-        amount_param: amount,
-        user_id_param: user?.id || ''
-      });
+      // Centralizar via serviço para manter consistência de parâmetros e logs
+      const result = await allocateToGoalService(
+        goalId,
+        accountId,
+        amount,
+        user?.id || '',
+        description
+      );
 
-      if (error) throw error;
+      if ((result as any)?.error) throw (result as any).error;
 
       // Invalidar queries relacionadas
       queryClient.invalidateQueries({ queryKey: ['personal', 'goals', user?.id] });

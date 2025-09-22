@@ -23,6 +23,7 @@ import { logger } from '@/shared/lib/logger';
 interface GoalAllocationModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   goalId: string;
   goalName: string;
   currentProgress: number;
@@ -33,6 +34,7 @@ interface GoalAllocationModalProps {
 const GoalAllocationModal = ({ 
   isOpen, 
   onClose, 
+  onSuccess,
   goalId, 
   goalName, 
   currentProgress, 
@@ -40,7 +42,7 @@ const GoalAllocationModal = ({
   canEdit = true
 }: GoalAllocationModalProps) => {
   const { user } = useAuth();
-  const { allocateToGoal, isAllocating } = useGoalAllocations();
+  const { allocateToGoal, isAllocating, isSuccess } = useGoalAllocations();
   const { data: accounts = [] } = useAccountsWithBalances();
   
   // Debug: GoalAllocationModal props and accounts data
@@ -53,19 +55,57 @@ const GoalAllocationModal = ({
   const selectedAccount = accounts.find(acc => acc.account_id === selectedAccountId);
   const remainingAmount = targetAmount - currentProgress;
 
+  // Formata erros provenientes do Supabase/servidor para uma mensagem amigável
+  const formatAllocationError = (err: any): string => {
+    if (!err) return 'Erro ao processar alocação. Tente novamente.';
+    const code = err?.code || err?.status || err?.name;
+    const msg = err?.message || err?.error?.message || 'Erro ao processar alocação.';
+    const details = err?.details || err?.error_description || err?.hint;
+    let finalMsg = msg;
+    if (code) finalMsg += ` (código: ${code})`;
+    if (details) finalMsg += ` — ${details}`;
+    return finalMsg;
+  };
+
   useEffect(() => {
     if (isOpen) {
+      console.log('🔍 [DEBUG] GoalAllocationModal - Modal aberto com props:', {
+        goalId,
+        goalIdType: typeof goalId,
+        goalIdIsNull: goalId === null,
+        goalIdIsUndefined: goalId === undefined,
+        goalName,
+        currentProgress,
+        targetAmount,
+        canEdit
+      });
       setSelectedAccountId('');
       setAmount('');
       setDescription('');
       setValidationError('');
     }
-  }, [isOpen]);
+  }, [isOpen, goalId, goalName, currentProgress, targetAmount, canEdit]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('[DEBUG] GoalAllocationModal handleSubmit - Iniciado');
+    
+    console.log('🔍 [DEBUG] GoalAllocationModal - handleSubmit chamado:', {
+      goalId,
+      selectedAccountId,
+      amount,
+      description,
+      canEdit,
+      user: user?.id
+    });
+    
     setValidationError('');
+    
+    // Validar goalId
+    if (!goalId) {
+      console.error('[DEBUG] GoalAllocationModal - goalId é null ou undefined');
+      setValidationError('Erro: ID do objetivo não encontrado');
+      return;
+    }
     
     if (!canEdit) {
       console.log('[DEBUG] GoalAllocationModal - Sem permissões para editar');
@@ -97,26 +137,31 @@ const GoalAllocationModal = ({
 
     console.log('[DEBUG] GoalAllocationModal - Dados para alocação:', {
       goalId,
+      goalIdType: typeof goalId,
+      goalIdLength: goalId?.length,
       accountId: selectedAccountId,
+      accountIdType: typeof selectedAccountId,
+      accountIdLength: selectedAccountId?.length,
       amount: numericAmount,
+      amountType: typeof numericAmount,
       description: description || "Alocacao para " + goalName
     });
 
+    console.log('[DEBUG] GoalAllocationModal - Chamando allocateToGoal...');
     try {
-      console.log('[DEBUG] GoalAllocationModal - Chamando allocateToGoal...');
-      const result = await allocateToGoal({
+      await allocateToGoal({
         goalId,
         accountId: selectedAccountId,
         amount: numericAmount,
         description: description || "Alocacao para " + goalName
       });
-
-      console.log('[DEBUG] GoalAllocationModal - Resultado da alocação:', result);
+      console.log('[DEBUG] GoalAllocationModal - Alocação bem-sucedida');
       onClose();
+      onSuccess?.();
     } catch (error) {
-      console.error('[DEBUG] GoalAllocationModal - Erro capturado:', error);
+      console.error('[DEBUG] GoalAllocationModal - Erro na alocação:', error);
       logger.error('[GoalAllocationModal] Error allocating to goal:', error);
-      setValidationError('Erro ao processar alocacao');
+      setValidationError(formatAllocationError(error));
     }
   };
 
@@ -139,7 +184,15 @@ const GoalAllocationModal = ({
               <label htmlFor="account" className="text-sm font-medium">
                 Conta de Origem
               </label>
-              <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+              <Select value={selectedAccountId} onValueChange={(value) => {
+                console.log('🔍 [DEBUG] GoalAllocationModal - Conta selecionada:', {
+                  selectedAccountId: value,
+                  accountIdType: typeof value,
+                  accountIdIsNull: value === null,
+                  accountIdIsUndefined: value === undefined
+                });
+                setSelectedAccountId(value);
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar conta" />
                 </SelectTrigger>

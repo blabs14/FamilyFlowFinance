@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug React Supabase</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .logs { background: #f8f9fa; padding: 15px; border-radius: 4px; margin-top: 20px; white-space: pre-wrap; font-family: monospace; max-height: 400px; overflow-y: auto; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug React Supabase Login</h1>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" value="testetotal@exemplo.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" value="teste14" required>
+            </div>
+            
+            <button type="submit">🔐 Testar Login</button>
+            <button type="button" onclick="clearLogs()">🧹 Limpar Logs</button>
+        </form>
+        
+        <div id="logs" class="logs"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2';
+        
+        // Usar exatamente as mesmas configurações da aplicação React
+        const supabaseUrl = 'https://ebitcwrrcumsvqjgrapw.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViaXRjd3JyY3Vtc3ZxamdyYXB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3NjcyMTYsImV4cCI6MjA2ODM0MzIxNn0.hLlTeSD2VzVCjvUSXLYQypXNYqthDx0q1N86aOftfEY';
+        
+        const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+            auth: {
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true,
+                flowType: 'pkce',
+            },
+        });
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toISOString();
+            const logElement = document.getElementById('logs');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            logElement.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        window.clearLogs = function() {
+            document.getElementById('logs').innerHTML = '';
+        }
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            log('==================== INÍCIO DO LOGIN ====================');
+            log(`Email: ${email}`);
+            log(`Password: ${password}`);
+            log(`Password length: ${password.length}`);
+            log(`Email type: ${typeof email}`);
+            log(`Password type: ${typeof password}`);
+            
+            try {
+                log('Chamando supabase.auth.signInWithPassword...');
+                
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                log(`Resultado completo:`, 'info');
+                log(`- Data: ${JSON.stringify(data, null, 2)}`);
+                log(`- Error: ${JSON.stringify(error, null, 2)}`);
+                
+                if (error) {
+                    log(`❌ ERRO: ${error.message}`, 'error');
+                    log(`Tipo do erro: ${typeof error}`, 'error');
+                    log(`Código do erro: ${error.status || 'N/A'}`, 'error');
+                } else {
+                    log(`✅ SUCESSO!`, 'success');
+                    log(`User ID: ${data.user?.id}`, 'success');
+                    log(`Email: ${data.user?.email}`, 'success');
+                    log(`Session: ${!!data.session}`, 'success');
+                }
+                
+            } catch (err) {
+                log(`💥 EXCEÇÃO: ${err.message}`, 'error');
+                log(`Stack: ${err.stack}`, 'error');
+            }
+            
+            log('==================== FIM DO LOGIN ====================');
+        });
+        
+        // Log inicial
+        log('🚀 Debug script carregado');
+        log(`Supabase URL: ${supabaseUrl}`);
+        log(`Anon Key length: ${supabaseAnonKey.length}`);
+    </script>
+</body>
+</html>

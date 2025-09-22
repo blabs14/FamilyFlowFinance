@@ -78,7 +78,28 @@ const PersonalGoals: React.FC = () => {
     });
   };
 
+  const handleAllocationClose = () => {
+    setShowAllocationModal(false);
+    setSelectedGoal(null);
+  };
+
   const handleAllocateToGoal = (goal: GoalProgress) => {
+    console.log('[DEBUG] PersonalGoals - handleAllocateToGoal chamado com:', {
+      goal,
+      goalId: goal.goal_id,
+      goalIdType: typeof goal.goal_id,
+      goalIdIsNull: goal.goal_id === null,
+      goalIdIsUndefined: goal.goal_id === undefined,
+      goalStructure: Object.keys(goal)
+    });
+    
+    // Validar se goal_id existe
+    if (!goal.goal_id) {
+      console.error('[DEBUG] PersonalGoals - goal_id é null ou undefined:', goal);
+      alert('Erro: ID do objetivo não encontrado. Tente recarregar a página.');
+      return;
+    }
+    
     setSelectedGoal(goal);
     setShowAllocationModal(true);
   };
@@ -446,7 +467,8 @@ const PersonalGoals: React.FC = () => {
       {selectedGoal && (
         <GoalAllocationModal
           isOpen={showAllocationModal}
-          onClose={handleAllocationSuccess}
+          onClose={handleAllocationClose}
+          onSuccess={handleAllocationSuccess}
           goalId={selectedGoal.goal_id}
           goalName={selectedGoal.nome}
           currentProgress={selectedGoal.total_alocado}

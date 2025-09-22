@@ -108,7 +108,7 @@ export const deleteGoal = async (id: string, userId?: string): Promise<{ data: {
     if (error) return { data: null, error };
 
     if (data && typeof data === 'object') {
-      const obj = data;
+      const obj = data as Record<string, unknown>;
       if ('success' in obj) {
         return { data: { success: Boolean(obj.success), message: typeof obj.message === 'string' ? obj.message : undefined }, error: null };
       }
@@ -122,41 +122,75 @@ export const deleteGoal = async (id: string, userId?: string): Promise<{ data: {
 };
 
 export const allocateToGoal = async (
-  goalId: string, 
-  accountId: string, 
-  amount: number, 
-  userId: string, 
+  goalId: string,
+  accountId: string,
+  amount: number,
+  userId: string,
   description?: string
-): Promise<{ data: unknown; error: unknown }> => {
+) => {
+  const startedAt = Date.now();
+  
+  console.log('🔍 [DEBUG] allocateToGoal - Função chamada com parâmetros:', {
+    goalId,
+    goalIdType: typeof goalId,
+    goalIdIsNull: goalId === null,
+    goalIdIsUndefined: goalId === undefined,
+    accountId,
+    accountIdType: typeof accountId,
+    accountIdIsNull: accountId === null,
+    accountIdIsUndefined: accountId === undefined,
+    amount,
+    amountType: typeof amount,
+    userId,
+    userIdType: typeof userId,
+    userIdIsNull: userId === null,
+    userIdIsUndefined: userId === undefined,
+    description
+  });
+  
+  // Normalização defensiva
+  const payload = {
+    goal_id_param: goalId,
+    account_id_param: accountId,
+    amount_param: typeof amount === 'string' ? parseFloat(amount) : amount,
+    user_id_param: userId,
+    description_param: description ?? 'Alocação para objetivo',
+  };
+
+  // Validações leves (não bloqueiam, apenas alertam)
+  if (!payload.goal_id_param || !payload.account_id_param) {
+    console.warn('[goals.allocateToGoal] goalId/accountId ausente(s)', { goalId, accountId });
+  }
+  if (!payload.user_id_param) {
+    console.warn('[goals.allocateToGoal] userId ausente');
+  }
+  if (!Number.isFinite(payload.amount_param as number) || (payload.amount_param as number) <= 0) {
+    console.warn('[goals.allocateToGoal] amount inválido', { amount });
+  }
+
+  console.debug('[goals.allocateToGoal] RPC request allocate_to_goal_with_transaction - params:', payload);
+
   try {
-    console.log('[DEBUG] allocateToGoal - Parâmetros recebidos:', {
-      goalId,
-      accountId,
-      amount,
-      userId,
-      description
-    });
-
-    const { data, error } = await supabase.rpc('allocate_to_goal_with_transaction', {
-      goal_id_param: goalId,
-      account_id_param: accountId,
-      amount_param: amount,
-      user_id_param: userId,
-      description_param: description || 'Alocação para objetivo'
-    });
-
-    console.log('[DEBUG] allocateToGoal - Resposta do RPC:', { data, error });
+    const { data, error } = await supabase.rpc('allocate_to_goal_with_transaction', payload);
+    const durationMs = Date.now() - startedAt;
 
     if (error) {
-      console.error('[DEBUG] allocateToGoal - Erro do RPC:', error);
+      const enriched = {
+        code: (error as any)?.code,
+        message: (error as any)?.message,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+      };
+      console.error('[goals.allocateToGoal] RPC error', { ...enriched, durationMs });
       return { data: null, error };
     }
-    
-    console.log('[DEBUG] allocateToGoal - Sucesso:', data);
+
+    console.debug('[goals.allocateToGoal] RPC success', { data, durationMs });
     return { data, error: null };
-  } catch (error) {
-    console.error('[DEBUG] allocateToGoal - Erro capturado:', error);
-    return { data: null, error };
+  } catch (err) {
+    const durationMs = Date.now() - startedAt;
+    console.error('[goals.allocateToGoal] exception calling RPC', { err, durationMs });
+    return { data: null, error: err };
   }
 };
 
