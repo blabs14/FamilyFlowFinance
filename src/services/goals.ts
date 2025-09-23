@@ -6,6 +6,7 @@ import {
   GoalProgressRPC
 } from '../integrations/supabase/types';
 import { GoalDomain, mapGoalRowToDomain } from '../shared/types/goals';
+import { retryWithBackoff, withTimeout } from '../config/rpcConfig';
 
 export const getGoals = async (userId: string): Promise<{ data: Goal[] | null; error: unknown }> => {
   try {
@@ -125,72 +126,93 @@ export const allocateToGoal = async (
   goalId: string,
   accountId: string,
   amount: number,
-  userId: string,
-  description?: string
-) => {
-  const startedAt = Date.now();
-  
-  console.log('🔍 [DEBUG] allocateToGoal - Função chamada com parâmetros:', {
-    goalId,
-    goalIdType: typeof goalId,
-    goalIdIsNull: goalId === null,
-    goalIdIsUndefined: goalId === undefined,
-    accountId,
-    accountIdType: typeof accountId,
-    accountIdIsNull: accountId === null,
-    accountIdIsUndefined: accountId === undefined,
-    amount,
-    amountType: typeof amount,
-    userId,
-    userIdType: typeof userId,
-    userIdIsNull: userId === null,
-    userIdIsUndefined: userId === undefined,
-    description
-  });
-  
-  // Normalização defensiva
-  const payload = {
-    goal_id_param: goalId,
-    account_id_param: accountId,
-    amount_param: typeof amount === 'string' ? parseFloat(amount) : amount,
-    user_id_param: userId,
-    description_param: description ?? 'Alocação para objetivo',
-  };
-
-  // Validações leves (não bloqueiam, apenas alertam)
-  if (!payload.goal_id_param || !payload.account_id_param) {
-    console.warn('[goals.allocateToGoal] goalId/accountId ausente(s)', { goalId, accountId });
-  }
-  if (!payload.user_id_param) {
-    console.warn('[goals.allocateToGoal] userId ausente');
-  }
-  if (!Number.isFinite(payload.amount_param as number) || (payload.amount_param as number) <= 0) {
-    console.warn('[goals.allocateToGoal] amount inválido', { amount });
-  }
-
-  console.debug('[goals.allocateToGoal] RPC request allocate_to_goal_with_transaction - params:', payload);
-
+  userId: string
+): Promise<number> => {
   try {
-    const { data, error } = await supabase.rpc('allocate_to_goal_with_transaction', payload);
-    const durationMs = Date.now() - startedAt;
-
-    if (error) {
-      const enriched = {
-        code: (error as any)?.code,
-        message: (error as any)?.message,
-        details: (error as any)?.details,
-        hint: (error as any)?.hint,
-      };
-      console.error('[goals.allocateToGoal] RPC error', { ...enriched, durationMs });
-      return { data: null, error };
+    // Validar parâmetros antes da chamada
+    if (!goalId || !accountId || !userId) {
+      throw new Error('Parâmetros obrigatórios em falta');
     }
 
-    console.debug('[goals.allocateToGoal] RPC success', { data, durationMs });
-    return { data, error: null };
-  } catch (err) {
-    const durationMs = Date.now() - startedAt;
-    console.error('[goals.allocateToGoal] exception calling RPC', { err, durationMs });
-    return { data: null, error: err };
+    if (amount <= 0) {
+      throw new Error('Montante deve ser positivo');
+    }
+
+    // Normalização defensiva para garantir que os parâmetros estão corretos
+    const payload = {
+      goal_id_param: goalId,
+      account_id_param: accountId,
+      amount_param: typeof amount === 'string' ? parseFloat(amount) : amount,
+      user_id_param: userId
+    };
+
+    console.debug('[goals.allocateToGoal] RPC request allocate_to_goal_with_transaction - params:', payload);
+
+    // Implementar retry logic com timeout configurável
+    const result = await retryWithBackoff(async () => {
+      const rpcCall = supabase.rpc('allocate_to_goal_with_transaction', payload);
+      const { data, error } = await withTimeout(rpcCall);
+
+      if (error) {
+        const enriched = {
+          code: (error as any)?.code,
+          message: (error as any)?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+        };
+        console.error('[goals.allocateToGoal] RPC error', enriched);
+        
+        // Criar erro mais específico baseado no tipo
+        if (error.message?.includes('Failed to fetch') || error.message?.includes('ERR_ABORTED')) {
+          throw new Error(`Erro de conectividade: ${error.message}. Verifique a sua ligação à internet.`);
+        }
+        
+        throw new Error(`Erro RPC: ${error.message} (${error.code})`);
+      }
+
+      return data;
+    });
+
+    // RPC executado com sucesso
+    
+    // A função RPC retorna um objeto JSON com amount_allocated
+    const data = result as { amount_allocated: number } | null;
+    if (!data || typeof data !== 'object') {
+      console.warn('[goals.allocateToGoal] Resultado inesperado:', result);
+      return 0;
+    }
+    
+    console.log('✅ [allocateToGoal] Alocação bem-sucedida:', data);
+    return data.amount_allocated || 0;
+  } catch (error) {
+    // Melhorar mensagens de erro para o utilizador
+    let userFriendlyMessage = 'Erro desconhecido na alocação';
+    
+    if (error instanceof Error) {
+      if (error.message.includes('Failed to fetch') || error.message.includes('ERR_ABORTED')) {
+        userFriendlyMessage = 'Problema de conectividade. Verifique a sua ligação à internet e tente novamente.';
+      } else if (error.message.includes('Timeout após')) {
+        userFriendlyMessage = 'A operação demorou muito tempo. Verifique a sua ligação à internet e tente novamente.';
+      } else if (error.message.includes('Parâmetros obrigatórios')) {
+        userFriendlyMessage = 'Dados inválidos para alocação. Tente recarregar a página.';
+      } else if (error.message.includes('Montante deve ser positivo')) {
+        userFriendlyMessage = 'O montante a alocar deve ser positivo.';
+      } else {
+        userFriendlyMessage = error.message;
+      }
+    }
+    
+    console.error('❌ [DEBUG] allocateToGoal - Erro geral:', {
+      error,
+      errorMessage: error instanceof Error ? error.message : 'Erro desconhecido',
+      errorStack: error instanceof Error ? error.stack : undefined,
+      userFriendlyMessage
+    });
+    
+    // Lançar erro com mensagem amigável para o utilizador
+    const enhancedError = new Error(userFriendlyMessage);
+    (enhancedError as any).originalError = error;
+    throw enhancedError;
   }
 };
 

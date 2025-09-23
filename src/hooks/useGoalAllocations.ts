@@ -71,12 +71,43 @@ export const useGoalAllocations = (goalId?: string) => {
     }
   });
 
+  // Função auxiliar para extrair mensagem de erro amigável
+  const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error) {
+      // Se já é uma mensagem amigável (do nosso retry logic), usar diretamente
+      if (error.message.includes('Problema de conectividade') || 
+          error.message.includes('Dados inválidos') ||
+          error.message.includes('deve ser positivo') ||
+          error.message.includes('Utilizador não autenticado')) {
+        return error.message;
+      }
+      
+      // Tratar outros tipos de erro
+      if (error.message.includes('Failed to fetch') || error.message.includes('ERR_ABORTED')) {
+        return 'Problema de conectividade. Verifique a sua ligação à internet e tente novamente.';
+      }
+      
+      if (error.message.includes('Parâmetros obrigatórios') || error.message.includes('Parâmetros inválidos')) {
+        return 'Dados inválidos. Tente recarregar a página.';
+      }
+      
+      return error.message;
+    }
+    
+    return 'Erro desconhecido. Tente novamente.';
+  };
+
   const allocateToGoalMutation = useMutation({
-    mutationFn: async ({ goalId, accountId, amount, description }: {
-      goalId: string;
-      accountId: string;
-      amount: number;
-      description?: string;
+    mutationFn: async ({ 
+      goalId, 
+      accountId, 
+      amount, 
+      description 
+    }: { 
+      goalId: string; 
+      accountId: string; 
+      amount: number; 
+      description?: string; 
     }) => {
       // Validações para evitar UUID inválidos e erros silenciosos
       if (!user?.id) {
@@ -108,7 +139,14 @@ export const useGoalAllocations = (goalId?: string) => {
       }
     },
     onError: (error) => {
-      console.error('[useGoalAllocations] Erro na alocação:', error);
+      const userMessage = getErrorMessage(error);
+      console.error('[useGoalAllocations] Erro na alocação:', {
+        originalError: error,
+        userMessage
+      });
+      
+      // Aqui pode adicionar uma notificação toast se tiver um sistema de notificações
+      // toast.error(userMessage);
     }
   });
 
@@ -151,12 +189,12 @@ export const useGoalAllocations = (goalId?: string) => {
         throw new Error('Parâmetros inválidos para desalocação');
       }
 
-      const result = await deallocateFromGoal({
+      const result = await deallocateFromGoal(
         goalId,
         accountId,
         amount,
-        userId: user.id
-      });
+        user.id
+      );
       
       return result;
     },
@@ -173,9 +211,18 @@ export const useGoalAllocations = (goalId?: string) => {
       queryClient.invalidateQueries({
         queryKey: ['accounts-with-balances']
       });
+      
+      console.log('✅ [deallocateMutation] Desalocação bem-sucedida:', data);
     },
     onError: (error) => {
-      console.error('❌ [DEBUG] deallocateMutation - Erro na desalocação:', error);
+      const userMessage = getErrorMessage(error);
+      console.error('❌ [deallocateMutation] Erro na desalocação:', {
+        originalError: error,
+        userMessage
+      });
+      
+      // Aqui pode adicionar uma notificação toast se tiver um sistema de notificações
+      // toast.error(userMessage);
     }
   });
 

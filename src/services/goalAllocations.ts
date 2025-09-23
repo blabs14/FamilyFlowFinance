@@ -4,6 +4,7 @@ import {
   GoalAllocationInsert, 
   GoalAllocationUpdate 
 } from '../integrations/supabase/types';
+import { retryWithBackoff, withTimeout } from '../config/rpcConfig';
 
 export const getGoalAllocations = async (goalId: string, userId: string): Promise<{ data: GoalAllocation[] | null; error: unknown }> => {
   try {
@@ -186,12 +187,6 @@ export const deallocateFromGoal = async (
   userId: string
 ): Promise<number> => {
   try {
-    // Preparar payload para a função RPC
-
-    if (authError || !authData.user) {
-      throw new Error('Utilizador não autenticado');
-    }
-
     // Validar parâmetros antes da chamada
     if (!goalId || !accountId || !userId) {
       throw new Error('Parâmetros obrigatórios em falta');
@@ -211,34 +206,70 @@ export const deallocateFromGoal = async (
 
     console.debug('[goalAllocations.deallocateFromGoal] RPC request deallocate_from_goal_with_transaction - params:', payload);
 
-    const { data, error } = await supabase.rpc('deallocate_from_goal_with_transaction', payload);
+    // Implementar retry logic com timeout configurável
+    const result = await retryWithBackoff(async () => {
+      const rpcCall = supabase.rpc('deallocate_from_goal_with_transaction', payload);
+      const { data, error } = await withTimeout(rpcCall);
 
-    if (error) {
-      const enriched = {
-        code: (error as any)?.code,
-        message: (error as any)?.message,
-        details: (error as any)?.details,
-        hint: (error as any)?.hint,
-      };
-      console.error('[goalAllocations.deallocateFromGoal] RPC error', enriched);
-      throw new Error(`Erro RPC: ${error.message} (${error.code})`);
-    }
+      if (error) {
+        const enriched = {
+          code: (error as any)?.code,
+          message: (error as any)?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+        };
+        console.error('[goalAllocations.deallocateFromGoal] RPC error', enriched);
+        
+        // Criar erro mais específico baseado no tipo
+        if (error.message?.includes('Failed to fetch') || error.message?.includes('ERR_ABORTED')) {
+          throw new Error(`Erro de conectividade: ${error.message}. Verifique a sua ligação à internet.`);
+        }
+        
+        throw new Error(`Erro RPC: ${error.message} (${error.code})`);
+      }
+
+      return data;
+    });
 
     // RPC executado com sucesso
     
     // A função RPC retorna um objeto JSON com amount_released
-    const result = data as { amount_released: number } | null;
-    if (!result || typeof result !== 'object') {
-      console.warn('[goalAllocations.deallocateFromGoal] Resultado inesperado:', data);
+    const data = result as { amount_released: number } | null;
+    if (!data || typeof data !== 'object') {
+      console.warn('[goalAllocations.deallocateFromGoal] Resultado inesperado:', result);
       return 0;
     }
-    return result.amount_released || 0;
+    
+    console.log('✅ [deallocateFromGoal] Desalocação bem-sucedida:', data);
+    return data.amount_released || 0;
   } catch (error) {
+    // Melhorar mensagens de erro para o utilizador
+    let userFriendlyMessage = 'Erro desconhecido na desalocação';
+    
+    if (error instanceof Error) {
+      if (error.message.includes('Failed to fetch') || error.message.includes('ERR_ABORTED')) {
+        userFriendlyMessage = 'Problema de conectividade. Verifique a sua ligação à internet e tente novamente.';
+      } else if (error.message.includes('Timeout após')) {
+        userFriendlyMessage = 'A operação demorou muito tempo. Verifique a sua ligação à internet e tente novamente.';
+      } else if (error.message.includes('Parâmetros obrigatórios')) {
+        userFriendlyMessage = 'Dados inválidos para desalocação. Tente recarregar a página.';
+      } else if (error.message.includes('Montante deve ser positivo')) {
+        userFriendlyMessage = 'O montante a desalocar deve ser positivo.';
+      } else {
+        userFriendlyMessage = error.message;
+      }
+    }
+    
     console.error('❌ [DEBUG] deallocateFromGoal - Erro geral:', {
       error,
       errorMessage: error instanceof Error ? error.message : 'Erro desconhecido',
-      errorStack: error instanceof Error ? error.stack : undefined
+      errorStack: error instanceof Error ? error.stack : undefined,
+      userFriendlyMessage
     });
-    throw error;
+    
+    // Lançar erro com mensagem amigável para o utilizador
+    const enhancedError = new Error(userFriendlyMessage);
+    (enhancedError as any).originalError = error;
+    throw enhancedError;
   }
 };
