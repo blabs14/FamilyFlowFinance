@@ -49,7 +49,18 @@ export const useAccountsWithBalances = () => {
   return useQuery<AccountWithBalances[] | []>({
     queryKey: ['accountsWithBalances', user?.id],
     queryFn: async () => {
+      console.log('🔍 [DEBUG] useAccountsWithBalances - Iniciando query para user:', user?.id);
       const { data, error } = await getAccountsWithBalances(user?.id);
+      console.log('🔍 [DEBUG] useAccountsWithBalances - Resultado:', {
+        dataLength: data?.length || 0,
+        data: data?.map(acc => ({
+          id: acc.account_id,
+          nome: acc.nome,
+          saldo_disponivel: acc.saldo_disponivel,
+          family_id: acc.family_id
+        })),
+        error
+      });
       if (error) throw error;
       return data || [];
     },

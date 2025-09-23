@@ -86,16 +86,16 @@ const PersonalGoals: React.FC = () => {
   const handleAllocateToGoal = (goal: GoalProgress) => {
     console.log('[DEBUG] PersonalGoals - handleAllocateToGoal chamado com:', {
       goal,
-      goalId: goal.goal_id,
-      goalIdType: typeof goal.goal_id,
-      goalIdIsNull: goal.goal_id === null,
-      goalIdIsUndefined: goal.goal_id === undefined,
+      goalId: goal.id,
+      goalIdType: typeof goal.id,
+      goalIdIsNull: goal.id === null,
+      goalIdIsUndefined: goal.id === undefined,
       goalStructure: Object.keys(goal)
     });
     
-    // Validar se goal_id existe
-    if (!goal.goal_id) {
-      console.error('[DEBUG] PersonalGoals - goal_id é null ou undefined:', goal);
+    // Validar se id existe
+    if (!goal.id) {
+      console.error('[DEBUG] PersonalGoals - id é null ou undefined:', goal);
       alert('Erro: ID do objetivo não encontrado. Tente recarregar a página.');
       return;
     }
@@ -110,17 +110,6 @@ const PersonalGoals: React.FC = () => {
   };
 
   const handleEditGoal = (goal: any) => {
-    console.log('handleEditGoal called with:', goal);
-    console.log('Goal structure:', {
-      id: goal.id,
-      nome: goal.nome,
-      valor_objetivo: goal.valor_objetivo,
-      valor_atual: goal.valor_atual,
-      prazo: goal.prazo,
-      account_id: goal.account_id,
-      family_id: goal.family_id,
-      status: goal.status
-    });
     // O objetivo já vem com todos os dados necessários
     setEditingGoal(goal);
     setShowEditModal(true);
@@ -235,7 +224,7 @@ const PersonalGoals: React.FC = () => {
 
            return (
              <Card 
-               key={goal.goal_id} 
+               key={goal.id} 
                className={`hover:shadow-lg transition-shadow ${
                  isCompleted ? 'border-green-200 bg-green-50' : ''
                }`}
@@ -309,7 +298,7 @@ const PersonalGoals: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDeleteGoal(goal.goal_id)}
+                        onClick={() => handleDeleteGoal(goal.id)}
                         className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                         aria-label="Eliminar objetivo"
                       >
@@ -372,16 +361,16 @@ const PersonalGoals: React.FC = () => {
                 {/* Funding automático */}
                 <ErrorBoundary>
                   <LazyWrapper fallback={<div className="text-sm text-muted-foreground">A carregar funding…</div>}>
-                    <GoalFundingSection goalId={goal.goal_id} canEdit={canEditGoal} />
+                    <GoalFundingSection goalId={goal.id} canEdit={canEditGoal} />
                   </LazyWrapper>
                 </ErrorBoundary>
 
                 {/* Histórico de alterações (Audit Log) */}
                 <Accordion type="single" collapsible className="pt-2">
-                  <AccordionItem value={`hist-${goal.goal_id}`}>
+                  <AccordionItem value={`hist-${goal.id}`}>
                     <AccordionTrigger>Histórico</AccordionTrigger>
                     <AccordionContent>
-                      <PersonalGoalAuditList goalId={goal.goal_id} />
+                      <PersonalGoalAuditList goalId={goal.id} />
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
@@ -469,7 +458,7 @@ const PersonalGoals: React.FC = () => {
           isOpen={showAllocationModal}
           onClose={handleAllocationClose}
           onSuccess={handleAllocationSuccess}
-          goalId={selectedGoal.goal_id}
+          goalId={selectedGoal.id}
           goalName={selectedGoal.nome}
           currentProgress={selectedGoal.total_alocado}
           targetAmount={selectedGoal.valor_objetivo}
@@ -478,11 +467,11 @@ const PersonalGoals: React.FC = () => {
       )}
 
       {/* Deallocation Modal */}
-      {selectedGoal && (
+      {selectedGoal && selectedGoal.id && (
         <GoalDeallocationModal
           isOpen={showDeallocationModal}
           onClose={() => { setShowDeallocationModal(false); setSelectedGoal(null); }}
-          goalId={selectedGoal.goal_id}
+          goalId={selectedGoal.id}
           goalName={selectedGoal.nome}
           canEdit={canEditGoal}
         />

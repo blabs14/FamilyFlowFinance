@@ -16,14 +16,11 @@ export const useGoalAllocations = (goalId?: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  console.log('🔍 [DEBUG] useGoalAllocations - Hook chamado:', {
-    goalId,
-    userId: user?.id,
-    userIdType: typeof user?.id,
-    userIdIsNull: user?.id === null,
-    userIdIsUndefined: user?.id === undefined,
-    userObject: user
-  });
+  // Hook para alocações de objetivos
+
+  // Garantir que sempre temos um goalId válido para evitar hooks condicionais
+  const validGoalId = goalId || 'all';
+  const isValidQuery = !!user?.id;
 
   const {
     data: allocationsData,
@@ -31,15 +28,21 @@ export const useGoalAllocations = (goalId?: string) => {
     error,
     refetch
   } = useQuery({
-    queryKey: ['goalAllocations', user?.id, goalId || 'all'],
+    queryKey: ['goalAllocations', user?.id, validGoalId],
     queryFn: async () => {
+      // Validação defensiva: se goalId é esperado mas está undefined, retorna array vazio
+      if (goalId === undefined) {
+        console.warn('⚠️ [useGoalAllocations] goalId é undefined, retornando array vazio');
+        return [];
+      }
+      
       const { data, error } = goalId 
         ? await getGoalAllocations(goalId, user?.id || '')
         : await getAllGoalAllocations(user?.id || '');
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user?.id
+    enabled: isValidQuery
   });
 
   const createAllocationMutation = useMutation({
@@ -143,19 +146,36 @@ export const useGoalAllocations = (goalId?: string) => {
   });
 
   const deallocateMutation = useMutation({
-    mutationFn: ({ goalId, accountId, amount }: { goalId: string; accountId: string; amount: number }) =>
-      deallocateFromGoal(goalId, accountId, amount, user?.id || ''),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goalAllocations'] });
-      queryClient.invalidateQueries({ queryKey: ['goals'] });
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['accountsWithAllocations'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      if (user?.id) {
-        queryClient.invalidateQueries({ queryKey: ['goalProgress', user.id] });
-        queryClient.invalidateQueries({ queryKey: ['accountsWithBalances', user.id] });
-        queryClient.invalidateQueries({ queryKey: ['accountsWithBalances-domain', user.id] });
+    mutationFn: async ({ goalId, accountId, amount }: { goalId: string; accountId: string; amount: number }) => {
+      if (!goalId || !accountId || !amount || !user?.id) {
+        throw new Error('Parâmetros inválidos para desalocação');
       }
+
+      const result = await deallocateFromGoal({
+        goalId,
+        accountId,
+        amount,
+        userId: user.id
+      });
+      
+      return result;
+    },
+    onSuccess: (data) => {
+      // Invalidar queries relacionadas
+      queryClient.invalidateQueries({
+        queryKey: ['goal-allocations']
+      });
+      
+      queryClient.invalidateQueries({
+        queryKey: ['personal-goals']
+      });
+      
+      queryClient.invalidateQueries({
+        queryKey: ['accounts-with-balances']
+      });
+    },
+    onError: (error) => {
+      console.error('❌ [DEBUG] deallocateMutation - Erro na desalocação:', error);
     }
   });
 

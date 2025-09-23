@@ -184,26 +184,61 @@ export const deallocateFromGoal = async (
   accountId: string,
   amount: number,
   userId: string
-): Promise<{ data: { amountReleased: number } | null; error: unknown }> => {
+): Promise<number> => {
   try {
-    const { data, error } = await supabase.rpc('deallocate_from_goal_with_transaction', {
-      goal_id_param: goalId,
-      account_id_param: accountId,
-      amount_param: amount,
-      user_id_param: userId
-    });
+    // Preparar payload para a função RPC
 
-    if (error) {
-      return { data: null, error };
+    if (authError || !authData.user) {
+      throw new Error('Utilizador não autenticado');
     }
 
-    return { 
-      data: { 
-        amountReleased: data?.amount_released || 0 
-      }, 
-      error: null 
+    // Validar parâmetros antes da chamada
+    if (!goalId || !accountId || !userId) {
+      throw new Error('Parâmetros obrigatórios em falta');
+    }
+
+    if (amount <= 0) {
+      throw new Error('Montante deve ser positivo');
+    }
+
+    // Normalização defensiva similar à allocateToGoal
+    const payload = {
+      goal_id_param: goalId,
+      account_id_param: accountId,
+      amount_param: typeof amount === 'string' ? parseFloat(amount) : amount,
+      user_id_param: userId
     };
+
+    console.debug('[goalAllocations.deallocateFromGoal] RPC request deallocate_from_goal_with_transaction - params:', payload);
+
+    const { data, error } = await supabase.rpc('deallocate_from_goal_with_transaction', payload);
+
+    if (error) {
+      const enriched = {
+        code: (error as any)?.code,
+        message: (error as any)?.message,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+      };
+      console.error('[goalAllocations.deallocateFromGoal] RPC error', enriched);
+      throw new Error(`Erro RPC: ${error.message} (${error.code})`);
+    }
+
+    // RPC executado com sucesso
+    
+    // A função RPC retorna um objeto JSON com amount_released
+    const result = data as { amount_released: number } | null;
+    if (!result || typeof result !== 'object') {
+      console.warn('[goalAllocations.deallocateFromGoal] Resultado inesperado:', data);
+      return 0;
+    }
+    return result.amount_released || 0;
   } catch (error) {
-    return { data: null, error };
+    console.error('❌ [DEBUG] deallocateFromGoal - Erro geral:', {
+      error,
+      errorMessage: error instanceof Error ? error.message : 'Erro desconhecido',
+      errorStack: error instanceof Error ? error.stack : undefined
+    });
+    throw error;
   }
 };

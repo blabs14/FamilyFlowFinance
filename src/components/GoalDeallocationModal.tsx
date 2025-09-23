@@ -37,7 +37,25 @@ const GoalDeallocationModal = ({ isOpen, onClose, goalId, goalName, canEdit = tr
   }, [allocations]);
 
   const allocatedAccounts = useMemo(() => {
-    return accounts.filter(acc => (allocatedByAccount.get(acc.account_id) || 0) > 0);
+    const filtered = accounts.filter(acc => (allocatedByAccount.get(acc.account_id) || 0) > 0);
+    
+    console.log('🔍 [DEBUG] GoalDeallocationModal - Dados de contas:', {
+      accountsLength: accounts.length,
+      accounts: accounts.map(acc => ({
+        id: acc.account_id,
+        nome: acc.nome,
+        family_id: acc.family_id
+      })),
+      allocatedByAccount: Object.fromEntries(allocatedByAccount),
+      allocatedAccountsLength: filtered.length,
+      allocatedAccounts: filtered.map(acc => ({
+        id: acc.account_id,
+        nome: acc.nome,
+        allocated: allocatedByAccount.get(acc.account_id) || 0
+      }))
+    });
+    
+    return filtered;
   }, [accounts, allocatedByAccount]);
 
   const selectedAllocated = allocatedByAccount.get(selectedAccountId) || 0;
@@ -56,36 +74,25 @@ const GoalDeallocationModal = ({ isOpen, onClose, goalId, goalName, canEdit = tr
     setAmount(numericValue);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setValidationError('');
-    
-    if (!canEdit) {
-      setValidationError('Não tem permissões para desalocar fundos de objetivos');
+  const handleSubmit = async () => {
+    if (!canEdit || !selectedAccountId) {
       return;
     }
 
-    if (!selectedAccountId) {
-      setValidationError('Selecione a conta de onde deseja libertar o valor');
-      return;
-    }
-
-    const numericAmount = parseFloat(amount.replace(',', '.'));
-    if (!numericAmount || numericAmount <= 0) {
-      setValidationError('Insira um valor válido');
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
       return;
     }
 
     if (numericAmount > selectedAllocated) {
-      setValidationError('O montante excede o valor alocado nesta conta');
       return;
     }
 
     try {
       await deallocate({ goalId, accountId: selectedAccountId, amount: numericAmount });
       onClose();
-    } catch (err) {
-      setValidationError('Erro ao processar desalocação');
+    } catch (error) {
+      console.error('Erro ao desalocar do objetivo:', error);
     }
   };
 

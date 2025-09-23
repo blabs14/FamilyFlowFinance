@@ -4,10 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Progress } from '../../components/ui/progress';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog';
-import { Input } from '../../components/ui/input';
-import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Label } from '../../components/ui/label';
+
 import { Target, Plus, Edit, Trash2, Calendar, CheckCircle, Trophy, BarChart3 } from 'lucide-react';
 import { getCategoryIcon } from '../../lib/utils';
 import * as LucideIcons from 'lucide-react';
@@ -17,13 +16,13 @@ import { formatCurrency } from '../../lib/utils';
 import GoalForm from '../../components/GoalForm';
 import { GoalFundingSection } from '../../components/GoalFundingSection';
 import { GoalDeallocationModal } from '../../components/GoalDeallocationModal';
+import { GoalAllocationModal } from '../../components/GoalAllocationModal';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { LazyWrapper } from '../../components/ui/lazy-wrapper';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
 import { useConfirmation } from '../../hooks/useConfirmation';
 import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
 import { useFamilyAccountsWithBalances } from '../../hooks/useAccountsQuery';
-import { FormSubmitButton } from '../../components/ui/loading-button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../components/ui/accordion';
 import { getAuditLogsByRow } from '../../services/audit_logs';
 import { logger } from '../../shared/lib/logger';
@@ -38,12 +37,7 @@ const FamilyGoals: React.FC = () => {
   const [editingGoal, setEditingGoal] = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'progress' | 'warn' | 'done'>('all');
   
-  // Estados para o modal de alocação personalizado
-  const [selectedAccountId, setSelectedAccountId] = useState('');
-  const [allocationAmount, setAllocationAmount] = useState('');
-  const [allocationDescription, setAllocationDescription] = useState('');
-  const [isAllocating, setIsAllocating] = useState(false);
-  const [allocationError, setAllocationError] = useState('');
+
   
   // Usar o contexto familiar em vez do pessoal
   const { 
@@ -58,6 +52,19 @@ const FamilyGoals: React.FC = () => {
     refetchAll,
     family
   } = useFamily();
+
+  // Debug: Log da estrutura dos objetivos familiares
+  useEffect(() => {
+    console.log('[DEBUG] FamilyGoals - familyGoals carregados:', {
+      familyGoals,
+      count: familyGoals?.length || 0,
+      firstGoal: familyGoals?.[0],
+      firstGoalKeys: familyGoals?.[0] ? Object.keys(familyGoals[0]) : [],
+      firstGoalId: familyGoals?.[0]?.id,
+      firstGoalGoalId: familyGoals?.[0]?.goal_id,
+      allGoalIds: familyGoals?.map(g => ({ id: g.id, goal_id: g.goal_id, nome: g.nome }))
+    });
+  }, [familyGoals]);
   
   const { data: accounts = [] } = useFamilyAccountsWithBalances();
   const { toast } = useToast();
@@ -107,23 +114,37 @@ const FamilyGoals: React.FC = () => {
   const handleAllocationSuccess = () => {
     setShowAllocationModal(false);
     setSelectedGoal(null);
-    setSelectedAccountId('');
-    setAllocationAmount('');
-    setAllocationDescription('');
-    setAllocationError('');
-    refetchAll();
+    refetchAll(); // Atualizar todos os dados
     toast({
       title: 'Alocação realizada',
       description: 'Valor alocado com sucesso ao objetivo familiar!',
     });
   };
 
+  const handleAllocationClose = () => {
+    setShowAllocationModal(false);
+    setSelectedGoal(null);
+  };
+
   const handleAllocateToGoal = (goal: any) => {
+    console.log('[DEBUG] FamilyGoals - handleAllocateToGoal chamado com:', {
+      goal,
+      goalId: goal.id || goal.goal_id,
+      goalIdType: typeof (goal.id || goal.goal_id),
+      goalIdIsNull: (goal.id || goal.goal_id) === null,
+      goalIdIsUndefined: (goal.id || goal.goal_id) === undefined,
+      goalStructure: Object.keys(goal)
+    });
+    
+    // Validar se goal_id existe
+    const goalId = goal.id || goal.goal_id;
+    if (!goalId) {
+      console.error('[DEBUG] FamilyGoals - goal_id é null ou undefined:', goal);
+      alert('Erro: ID do objetivo não encontrado. Tente recarregar a página.');
+      return;
+    }
+    
     setSelectedGoal(goal);
-    setSelectedAccountId('');
-    setAllocationAmount('');
-    setAllocationDescription('');
-    setAllocationError('');
     setShowAllocationModal(true);
   };
 
@@ -132,53 +153,7 @@ const FamilyGoals: React.FC = () => {
     setShowDeallocationModal(true);
   };
 
-  const handleAllocationSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAllocationError('');
-    setIsAllocating(true);
 
-    if (!selectedAccountId) {
-      setAllocationError('Selecione uma conta');
-      setIsAllocating(false);
-      return;
-    }
-
-    const numericAmount = parseFloat(allocationAmount.replace(',', '.'));
-    if (!numericAmount || numericAmount <= 0) {
-      setAllocationError('Insira um valor válido');
-      setIsAllocating(false);
-      return;
-    }
-
-    const selectedAccount = accounts.find(acc => acc.account_id === selectedAccountId);
-    if (selectedAccount && numericAmount > selectedAccount.saldo_disponivel) {
-      setAllocationError('Saldo insuficiente na conta selecionada');
-      setIsAllocating(false);
-      return;
-    }
-
-    try {
-      await allocateToGoal(
-        selectedGoal.id,
-        numericAmount,
-        selectedAccountId
-      );
-      
-      handleAllocationSuccess();
-    } catch (error: any) {
-      logger.error('Erro na alocação:', error);
-      setAllocationError(error.message || 'Erro ao processar alocação');
-    } finally {
-      setIsAllocating(false);
-    }
-  };
-
-  const handleAllocationAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Permitir apenas números e vírgula/ponto
-    const numericValue = value.replace(/[^\d.,]/g, '').replace(',', '.');
-    setAllocationAmount(numericValue);
-  };
 
   const handleEditGoal = (goal: any) => {
     setEditingGoal(goal);
@@ -526,83 +501,31 @@ const FamilyGoals: React.FC = () => {
       </Dialog>
 
       {/* Allocation Modal */}
-      {showAllocationModal && selectedGoal && (
-        <Dialog open={showAllocationModal} onOpenChange={setShowAllocationModal}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Alocar Valor ao Objetivo: {selectedGoal.nome}</DialogTitle>
-              <DialogDescription>
-                Insira o valor a ser alocado ao objetivo familiar.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleAllocationSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="account-select">Conta de Origem</Label>
-                <Select onValueChange={setSelectedAccountId} value={selectedAccountId}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Selecione uma conta" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map(account => (
-                      <SelectItem key={account.account_id} value={account.account_id}>
-                        {account.nome} - Saldo: {formatCurrency(account.saldo_disponivel)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {allocationError && <p className="text-red-500 text-sm mt-1">{allocationError}</p>}
-              </div>
-              <div>
-                <Label htmlFor="allocation-amount">Valor a Alocar</Label>
-                <Input
-                  id="allocation-amount"
-                  type="text"
-                  value={allocationAmount}
-                  onChange={handleAllocationAmountChange}
-                  placeholder="Ex: 100,00"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="allocation-description">Descrição (Opcional)</Label>
-                <Input
-                  id="allocation-description"
-                  type="text"
-                  value={allocationDescription}
-                  onChange={(e) => setAllocationDescription(e.target.value)}
-                  placeholder="Ex: Alocação para objetivo"
-                />
-              </div>
-              <div className="flex gap-2">
-                <FormSubmitButton
-                  isSubmitting={isAllocating}
-                  submitText="Alocar Valor"
-                  submittingText="A alocar..."
-                  className="flex-1"
-                />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setShowAllocationModal(false)}
-                  className="flex-1"
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+      {selectedGoal && (selectedGoal.id || selectedGoal.goal_id) && (
+        <GoalAllocationModal
+          isOpen={showAllocationModal}
+          onClose={handleAllocationClose}
+          goalId={selectedGoal.id || selectedGoal.goal_id}
+          goalName={selectedGoal.nome}
+          currentProgress={selectedGoal.valor_atual || 0}
+          targetAmount={selectedGoal.valor_objetivo || 0}
+          onSuccess={handleAllocationSuccess}
+          canEdit={canEdit('goal')}
+        />
       )}
 
       {/* Deallocation Modal */}
-      {selectedGoal && (
-        <GoalDeallocationModal
-          isOpen={showDeallocationModal}
-          onClose={() => setShowDeallocationModal(false)}
-          goalId={selectedGoal.id}
-          goalName={selectedGoal.nome}
-        />
-      )}
+      {selectedGoal && (selectedGoal.id || selectedGoal.goal_id) && (
+          <GoalDeallocationModal
+            isOpen={showDeallocationModal}
+            onClose={() => {
+              setShowDeallocationModal(false);
+              setSelectedGoal(null);
+            }}
+            goalId={selectedGoal.id || selectedGoal.goal_id}
+            goalName={selectedGoal.nome}
+          />
+        )}
 
       {/* Confirmation Dialog */}
       <ConfirmationDialog

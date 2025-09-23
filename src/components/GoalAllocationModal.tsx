@@ -46,6 +46,20 @@ const GoalAllocationModal = ({
   const { data: accounts = [] } = useAccountsWithBalances();
   
   // Debug: GoalAllocationModal props and accounts data
+  console.log('🔍 [DEBUG] GoalAllocationModal - Dados de contas:', {
+    accountsLength: accounts.length,
+    accounts: accounts.map(acc => ({
+      id: acc.account_id,
+      nome: acc.nome,
+      saldo_disponivel: acc.saldo_disponivel,
+      family_id: acc.family_id
+    })),
+    filteredAccounts: accounts.filter(account => account.saldo_disponivel > 0).map(acc => ({
+      id: acc.account_id,
+      nome: acc.nome,
+      saldo_disponivel: acc.saldo_disponivel
+    }))
+  });
   
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [amount, setAmount] = useState('');
