@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Progress } from '../components/ui/progress';
 import { Badge } from '../components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { useGoals, useGoalProgress } from '../hooks/useGoalsQuery';
+import { useGoals, useGoalProgress, useDeleteGoal, useCreateGoal, useUpdateGoal } from '../hooks/useGoalsQuery';
 import { useToast } from '../hooks/use-toast';
 import { formatCurrency } from '../lib/utils';
 import { Target, Plus, Edit, Trash2, Calendar, CheckCircle, Trophy } from 'lucide-react';
@@ -23,8 +23,11 @@ export default function Goals() {
   const [selectedGoal, setSelectedGoal] = useState<GoalProgress | null>(null);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   
-  const { goals, isLoading, error, refetch, createGoal, updateGoal, deleteGoal } = useGoals();
+  const { data: goals = [], isLoading, error, refetch } = useGoals();
   const { data: goalProgress = [] } = useGoalProgress();
+  const deleteGoalMutation = useDeleteGoal();
+  const createGoalMutation = useCreateGoal();
+  const updateGoalMutation = useUpdateGoal();
   const { toast } = useToast();
   const confirmation = useConfirmation();
   const { canEdit, canDelete } = useFamily();
@@ -87,10 +90,10 @@ export default function Goals() {
       },
       async () => {
         try {
-          const result = await deleteGoal(goalId);
+          const result = await deleteGoalMutation.mutateAsync(goalId);
           
-          if (result.data) {
-            const { goal_name, total_allocated, goal_progress, restored_to_account } = result.data;
+          if (result && typeof result === 'object') {
+            const { goal_name, total_allocated, goal_progress, restored_to_account } = result;
             
             if (restored_to_account) {
               toast({
@@ -356,7 +359,6 @@ export default function Goals() {
           <GoalForm
             onSuccess={() => {
               setShowCreateModal(false);
-              refetch();
             }}
             onCancel={() => setShowCreateModal(false)}
           />
@@ -377,7 +379,6 @@ export default function Goals() {
             onSuccess={() => {
               setShowEditModal(false);
               setEditingGoal(null);
-              refetch();
             }}
             onCancel={() => {
               setShowEditModal(false);
