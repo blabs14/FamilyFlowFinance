@@ -5,56 +5,30 @@ import { getUserCategoryCustomizations } from './categoryCustomizations';
 
 export const getCategories = async (userId?: string, tipo?: string): Promise<{ data: Category[] | null; error: unknown }> => {
   try {
-    // Debug temporário
-    console.log('🔍 getCategories - INÍCIO - userId:', userId, 'tipo:', tipo);
-    
     let query = supabase
       .from('categories')
       .select('*');
 
     if (userId === undefined) {
       // Quando userId é undefined, queremos categorias padrão (user_id IS NULL)
-      console.log('🔍 getCategories - buscando categorias padrão (user_id IS NULL)');
       query = query.is('user_id', null);
     } else if (userId && userId.trim() !== '') {
       // Quando userId é fornecido e não é string vazia, filtramos por esse user_id específico
-      console.log('🔍 getCategories - buscando categorias do usuário:', userId);
       query = query.eq('user_id', userId);
     } else {
       // Se userId for string vazia ou só espaços, retornamos array vazio
-      console.log('🔍 getCategories - userId vazio, retornando array vazio');
       return { data: [], error: null };
     }
 
     if (tipo) {
       // A coluna 'tipo' pode existir em esquemas anteriores; aplicamos cast controlado para manter compatibilidade
-      console.log('🔍 getCategories - filtrando por tipo:', tipo);
       query = query.eq('tipo', tipo);
     }
 
-    console.log('🔍 getCategories - executando query...');
     const { data, error } = await query.order('nome');
-
-    // Debug temporário
-    console.log('🔍 getCategories - RESULTADO:', { 
-      dataLength: data?.length, 
-      error: error?.message || error,
-      hasData: !!data 
-    });
-    
-    if (data && data.length > 0) {
-      console.log('🔍 getCategories - primeiras 3 categorias:', data.slice(0, 3).map(c => ({ id: c.id, nome: c.nome, user_id: c.user_id })));
-    } else {
-      console.log('🔍 getCategories - NENHUMA CATEGORIA ENCONTRADA!');
-    }
-
-    if (error) {
-      console.error('🔍 getCategories - ERRO:', error);
-    }
 
     return { data: data || null, error };
   } catch (error) {
-    console.error('🔍 getCategories - EXCEÇÃO:', error);
     return { data: null, error };
   }
 };
