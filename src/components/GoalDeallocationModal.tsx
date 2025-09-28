@@ -74,7 +74,9 @@ const GoalDeallocationModal = ({ isOpen, onClose, goalId, goalName, canEdit = tr
     setAmount(numericValue);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!canEdit || !selectedAccountId) {
       return;
     }
