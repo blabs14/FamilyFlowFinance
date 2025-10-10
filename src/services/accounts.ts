@@ -417,10 +417,22 @@ export const getAccountBalances = async (): Promise<{ data: import('../integrati
   }
 };
 
-export const getAccountReserved = async (): Promise<{ data: AccountReserved[] | null; error: unknown }> => {
+export const getAccountReservedScoped = async (
+  options?: { includeFamily?: boolean; originOnly?: boolean }
+): Promise<{ data: { account_id: string; total_reservado: number }[] | null; error: unknown }> => {
   try {
-    const { data, error } = await supabase.rpc('get_user_account_reserved');
-    return { data: data || null, error };
+    const { data, error } = await supabase.rpc('get_user_account_reserved_scoped', {
+      p_include_family: options?.includeFamily ?? true,
+      p_origin_only: options?.originOnly ?? true
+    });
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    // Normalizar o payload devolvido pela RPC (array de { account_id, total_reservado })
+    const rows = (Array.isArray(data) ? data : []) as { account_id: string; total_reservado: number }[];
+    return { data: rows, error: null };
   } catch (error) {
     return { data: null, error };
   }

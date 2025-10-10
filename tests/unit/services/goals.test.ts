@@ -245,7 +245,8 @@ describe('Goals Service', () => {
 
       expect(mockSupabase.rpc).toHaveBeenCalledWith('delete_goal_with_restoration', {
         goal_id_param: 'goal-1',
-        user_id_param: 'user-123'
+        user_id_param: 'user-123',
+        idempotency_key: 'user-123:goal-1:delete'
       });
       expect(result.data).toEqual({ success: true, message: 'Goal deleted successfully' });
       expect(result.error).toBeNull();
@@ -261,7 +262,8 @@ describe('Goals Service', () => {
 
       expect(mockSupabase.rpc).toHaveBeenCalledWith('delete_goal_with_restoration', {
         goal_id_param: 'goal-1',
-        user_id_param: 'user-123'
+        user_id_param: 'user-123',
+        idempotency_key: 'user-123:goal-1:delete'
       });
       expect(result.error).toEqual({ message: 'Delete failed' });
     });

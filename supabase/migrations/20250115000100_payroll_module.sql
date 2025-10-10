@@ -194,8 +194,20 @@ alter table "public"."payroll_payslips" add constraint "payroll_payslips_pkey" P
 alter table "public"."payroll_contracts" add constraint "payroll_contracts_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
 alter table "public"."payroll_contracts" validate constraint "payroll_contracts_user_id_fkey";
 
-alter table "public"."payroll_contracts" add constraint "payroll_contracts_family_id_fkey" FOREIGN KEY (family_id) REFERENCES public.families(id) ON DELETE CASCADE not valid;
-alter table "public"."payroll_contracts" validate constraint "payroll_contracts_family_id_fkey";
+-- Guardar dependência de families: só adicionar FK se a tabela existir
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_schema = 'public' AND table_name = 'families'
+  ) THEN
+    EXECUTE 'alter table public.payroll_contracts add constraint payroll_contracts_family_id_fkey FOREIGN KEY (family_id) REFERENCES public.families(id) ON DELETE CASCADE not valid';
+    EXECUTE 'alter table public.payroll_contracts validate constraint payroll_contracts_family_id_fkey';
+  ELSE
+    RAISE NOTICE 'Skipping payroll_contracts_family_id_fkey - public.families does not exist yet';
+  END IF;
+END;
+$$;
 
 alter table "public"."payroll_ot_policies" add constraint "payroll_ot_policies_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
 alter table "public"."payroll_ot_policies" validate constraint "payroll_ot_policies_user_id_fkey";

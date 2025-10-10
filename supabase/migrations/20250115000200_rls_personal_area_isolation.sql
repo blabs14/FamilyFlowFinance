@@ -20,6 +20,24 @@ AS $$
   SELECT p_family_id IS NOT NULL;
 $$;
 
+-- Helper to conditionally drop a policy if it exists
+CREATE OR REPLACE FUNCTION public._drop_policy_if_exists(p_table text, p_policy text)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  _schema text := split_part(p_table, '.', 1);
+  _table  text := split_part(p_table, '.', 2);
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = _schema AND tablename = _table AND policyname = p_policy
+  ) THEN
+    EXECUTE format('DROP POLICY %I ON %I.%I', p_policy, _schema, _table);
+  END IF;
+END;
+$$;
+
 -- Drop existing policies that mix personal and family access
 SELECT public._drop_policy_if_exists('public.transactions', 'transactions_select_personal_or_family');
 SELECT public._drop_policy_if_exists('public.transactions', 'transactions_insert_personal_or_family_non_viewer');

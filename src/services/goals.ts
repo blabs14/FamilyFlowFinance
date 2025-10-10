@@ -101,23 +101,46 @@ export const deleteGoal = async (id: string, userId?: string): Promise<{ data: {
       resolvedUserId = authData?.user?.id;
     }
     
-    const { data, error } = await supabase.rpc('delete_goal_with_restoration', {
-      goal_id_param: id,
-      user_id_param: resolvedUserId
-    });
+    // Gerar idempotency_key determinística por (userId, goalId)
+    const idempotencyKey = `${resolvedUserId}:${id}:delete`;
+    const operationTag = `[goals.deleteGoal:${id}]`;
+    console.info(`${operationTag} start`, { goalId: id, userId: resolvedUserId, idempotencyKey });
 
-    if (error) return { data: null, error };
+    const payload = {
+      goal_id_param: id,
+      user_id_param: resolvedUserId,
+      idempotency_key: idempotencyKey
+    };
+    console.debug(`${operationTag} RPC request delete_goal_with_restoration`, payload);
+
+    const { data, error } = await supabase.rpc('delete_goal_with_restoration', payload);
+
+    if (error) {
+      const enriched = {
+        code: (error as any)?.code,
+        message: (error as any)?.message,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+      };
+      console.error(`${operationTag} RPC error`, enriched);
+      return { data: null, error };
+    }
+
+    console.debug(`${operationTag} RPC response`, { data });
 
     if (data && typeof data === 'object') {
       const obj = data as Record<string, unknown>;
       if ('success' in obj) {
+        console.info(`${operationTag} success (object)`, obj);
         return { data: { success: Boolean(obj.success), message: typeof obj.message === 'string' ? obj.message : undefined }, error: null };
       }
     }
 
     const success = Boolean(data);
+    console.info(`${operationTag} success (boolean)`, { success });
     return { data: success, error: null };
   } catch (error) {
+    console.error(`[goals.deleteGoal:${id}] unexpected error`, error);
     return { data: null, error };
   }
 };
