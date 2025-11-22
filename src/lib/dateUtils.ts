@@ -47,3 +47,28 @@ export function getWeekStart(date: Date): Date {
 export function isSameDay(date1: Date | string, date2: Date | string): boolean {
   return formatDateLocal(date1) === formatDateLocal(date2);
 }
+
+// Coerção segura de vários formatos de data para Date
+export function coerceDate(value: unknown): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  if (typeof value === 'string') {
+    const s = value.trim();
+    if (!s) return null;
+    // Formato apenas data YYYY-MM-DD → usar timezone local
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+      return parseDateLocal(s);
+    }
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+
+// Extrair data de lembrete de objetos com chaves heterogéneas
+export function getReminderDate(reminder: Record<string, unknown>): Date | null {
+  const raw = (reminder as any).date ?? (reminder as any).data_lembrete ?? (reminder as any).data;
+  return coerceDate(raw);
+}

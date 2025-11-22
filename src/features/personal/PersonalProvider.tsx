@@ -32,14 +32,14 @@ import { useTransactions } from '../../hooks/useTransactionsQuery';
 import { useCrudMutation } from '../../hooks/useMutationWithFeedback';
 import { supabase } from '../../lib/supabaseClient';
 import { allocateToGoal as allocateToGoalService } from '../../services/goals';
-import { GoalProgressRPC } from '../../integrations/supabase/types';
+import { Goal } from '../../integrations/supabase/types';
 
 // Tipos para o contexto
 interface PersonalContextType {
   // Dados pessoais (family_id IS NULL)
   myAccounts: any[];
   myCards: any[];
-  myGoals: GoalProgressRPC[];
+  myGoals: (Goal & { total_alocado: number; progresso_percentual: number })[];
   myBudgets: any[];
   myTransactions: any[];
   
@@ -169,7 +169,7 @@ export const PersonalProvider: React.FC<PersonalProviderProps> = ({ children }) 
           valor_objetivo > 0 ? (valor_atual / valor_objetivo) * 100 : 0,
           100
         );
-        return { ...g, valor_objetivo, valor_atual, total_alocado, progresso_percentual };
+        return { ...g, valor_objetivo, valor_atual, total_alocado, progresso_percentual } as Goal & { total_alocado: number; progresso_percentual: number };
       });
       return normalized;
     },

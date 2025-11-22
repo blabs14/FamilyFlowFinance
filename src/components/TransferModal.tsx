@@ -27,6 +27,7 @@ import { formatCurrency } from '../lib/utils';
 import { supabase } from '../lib/supabaseClient';
 import { payCreditCardFromAccount } from '../services/transactions';
 import { useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/shared/lib/logger';
 
 interface TransferModalProps {
   isOpen: boolean;
@@ -42,7 +43,7 @@ const TransferModal = ({ isOpen, onClose }: TransferModalProps) => {
   const { data: categories = [] } = useCategoriesDomain();
   const { toast } = useToast();
   const canEditTransaction = family?.canEdit?.('transaction') ?? true;
-  
+
   const [fromAccountId, setFromAccountId] = useState('');
   const [toAccountId, setToAccountId] = useState('');
   const [amount, setAmount] = useState('');
@@ -52,20 +53,30 @@ const TransferModal = ({ isOpen, onClose }: TransferModalProps) => {
   // Usar todas as contas disponíveis (pessoais e familiares) para permitir transferências cross-scope
   const allAvailableAccounts = accounts as any[];
 
-  // Filtrar contas com saldo disponível para origem
-  const availableFromAccounts = allAvailableAccounts.filter(account => account.saldo_disponivel > 0);
+  // CORREÇÃO: Mostrar TODAS as contas nos dropdowns (não filtrar por saldo)
+  const availableFromAccounts = allAvailableAccounts;
+  logger.debug('TransferModal availableFromAccounts', {
+    total: availableFromAccounts.length,
+    accounts: availableFromAccounts.map(a => ({ account_id: a.account_id, nome: a.nome, saldo_disponivel: a.saldo_disponivel }))
+  });
 
   // Usar as propriedades corretas das contas com saldos
   const fromAccount = allAvailableAccounts.find(acc => acc.account_id === fromAccountId);
   const toAccount = allAvailableAccounts.find(acc => acc.account_id === toAccountId);
-  
+  logger.debug('TransferModal selected accounts', {
+    fromAccountId,
+    toAccountId,
+    fromSaldoDisponivel: fromAccount?.saldo_disponivel,
+    toSaldoAtual: toAccount?.saldo_atual
+  });
+
   // Detectar transferência cross-scope para mostrar aviso informativo
-  const isCrossScopeTransfer = fromAccount && toAccount && 
+  const isCrossScopeTransfer = fromAccount && toAccount &&
     (fromAccount as any).scope !== (toAccount as any).scope;
 
   // Buscar categoria de transferência ou usar a primeira categoria disponível
-  const transferCategory = categories.find(cat => 
-    cat.nome.toLowerCase().includes('transferência') || 
+  const transferCategory = categories.find(cat =>
+    cat.nome.toLowerCase().includes('transferência') ||
     cat.nome.toLowerCase().includes('transfer')
   ) || categories[0];
 
@@ -114,6 +125,11 @@ const TransferModal = ({ isOpen, onClose }: TransferModalProps) => {
     }
 
     // Verificar saldo disponível usando a propriedade correta
+    logger.debug('TransferModal submit check', {
+      numericAmount,
+      fromSaldoDisponivel: fromAccount?.saldo_disponivel,
+      insufficient: !!fromAccount && numericAmount > (fromAccount?.saldo_disponivel ?? 0)
+    });
     if (fromAccount && numericAmount > fromAccount.saldo_disponivel) {
       setValidationError('Saldo insuficiente na conta de origem');
       return;
@@ -200,167 +216,75 @@ const TransferModal = ({ isOpen, onClose }: TransferModalProps) => {
     }
   };
 
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Permitir apenas números e vírgula/ponto
-    const numericValue = value.replace(/[^\d.,]/g, '').replace(',', '.');
-    setAmount(numericValue);
-  };
-
-  const hasEditPermission = canEditTransaction;
-
   return (
-    <Dialog open={isOpen} onOpenChange={(open)=>{ if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>Transferir entre Contas</DialogTitle>
-          <DialogDescription>
-            {hasEditPermission 
-              ? "Transfere dinheiro de uma conta para outra. A transferência não afeta as estatísticas de receitas e despesas."
-              : "Não tem permissões para realizar transferências. Contacte um administrador da família."
-            }
-          </DialogDescription>
+          <DialogTitle>Transferência</DialogTitle>
+          <DialogDescription>Realize uma transferência entre contas.</DialogDescription>
         </DialogHeader>
-        
-        {!hasEditPermission ? (
-          <div className="text-center py-4">
-            <p className="text-muted-foreground mb-4">Acesso restrito</p>
-            <Button onClick={onClose} variant="outline">
-              Fechar
-            </Button>
+
+        {isCrossScopeTransfer && (
+          <div className="text-xs text-muted-foreground mb-2">
+            Nota: transferência entre escopos (pessoal ↔ família)
           </div>
-        ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="fromAccount" className="text-sm font-medium">
-                Conta de Origem
-              </label>
-              <Select value={fromAccountId} onValueChange={setFromAccountId} disabled={!hasEditPermission}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar conta de origem" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableFromAccounts.map(account => (
-                    <SelectItem key={account.account_id} value={account.account_id}>
-                      <div className="flex items-center justify-between w-full">
-                        <span>{account.nome}</span>
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className={`px-2 py-1 rounded-full ${
-                            (account as any).scope === 'family' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : 'bg-green-100 text-green-800'
-                          }`}>
-                            {(account as any).scope === 'family' ? 'Familiar' : 'Pessoal'}
-                          </span>
-                          <span>€{(account.saldo_disponivel || 0).toFixed(2)} disponível</span>
-                        </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="toAccount" className="text-sm font-medium">
-                Conta de Destino
-              </label>
-              <Select value={toAccountId} onValueChange={setToAccountId} disabled={!hasEditPermission}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar conta de destino" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allAvailableAccounts.map(account => (
-                    <SelectItem key={account.account_id} value={account.account_id}>
-                      <div className="flex items-center justify-between w-full">
-                        <span>{account.nome}</span>
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className={`px-2 py-1 rounded-full ${
-                            (account as any).scope === 'family' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : 'bg-green-100 text-green-800'
-                          }`}>
-                            {(account as any).scope === 'family' ? 'Familiar' : 'Pessoal'}
-                          </span>
-                          <span>€{(account.saldo_atual || 0).toFixed(2)} saldo atual</span>
-                        </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Aviso para transferências cross-scope */}
-            {isCrossScopeTransfer && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                <div className="flex items-start gap-2">
-                  <div className="w-4 h-4 text-blue-600 mt-0.5">⚠</div>
-                  <div className="text-sm text-blue-800">
-                    <p className="font-medium">Transferência entre âmbitos</p>
-                    <p>
-                      Esta transferência é entre uma conta {(fromAccount as any)?.scope === 'personal' ? 'pessoal' : 'familiar'} 
-                      {' '}e uma conta {(toAccount as any)?.scope === 'personal' ? 'pessoal' : 'familiar'}.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <label htmlFor="amount" className="text-sm font-medium">
-                Valor a Transferir (€)
-              </label>
-              <Input
-                id="amount"
-                type="text"
-                placeholder="0,00"
-                value={amount}
-                onChange={handleAmountChange}
-                required
-                disabled={!hasEditPermission}
-                className="w-full"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="description" className="text-sm font-medium">
-                Descrição (Opcional)
-              </label>
-              <Input
-                id="description"
-                type="text"
-                placeholder="Descrição da transferência"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={!hasEditPermission}
-                className="w-full"
-              />
-            </div>
-
-            {validationError && (
-              <div className="text-red-600 text-sm">{validationError}</div>
-            )}
-
-            <div className="flex gap-2">
-              <FormSubmitButton 
-                isSubmitting={isCreating}
-                submitText="Transferir"
-                submittingText="A transferir..."
-                disabled={!hasEditPermission}
-                className="flex-1"
-              />
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={onClose}
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-            </div>
-        </form>
         )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm">Conta de Origem</label>
+              <Select value={fromAccountId} onValueChange={setFromAccountId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a conta de origem" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableFromAccounts.map(acc => (
+                    <SelectItem key={acc.account_id} value={acc.account_id}>
+                      {acc.nome} — Disponível: {formatCurrency(acc.saldo_disponivel)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm">Conta de Destino</label>
+              <Select value={toAccountId} onValueChange={setToAccountId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a conta de destino" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allAvailableAccounts.map(acc => (
+                    <SelectItem key={acc.account_id} value={acc.account_id}>
+                      {acc.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm">Montante</label>
+              <Input value={amount} onChange={e => setAmount(e.target.value)} placeholder="0,00" />
+            </div>
+            <div>
+              <label className="text-sm">Descrição</label>
+              <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Opcional" />
+            </div>
+          </div>
+
+          {validationError && (
+            <div className="text-sm text-red-600">{validationError}</div>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+            <FormSubmitButton loading={isCreating} type="submit">Transferir</FormSubmitButton>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

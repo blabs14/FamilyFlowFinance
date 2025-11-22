@@ -21,6 +21,10 @@ afterEach(() => {
 beforeEach(() => {
   // Reset de timers para cada teste
   vi.useFakeTimers({ shouldAdvanceTime: true });
+  // Garantir window.open disponível em jsdom
+  if (typeof window.open !== 'function') {
+    Object.defineProperty(window, 'open', { writable: true, value: vi.fn() });
+  }
 });
 
 afterEach(() => {

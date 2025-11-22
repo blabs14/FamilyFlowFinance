@@ -34,16 +34,16 @@ const CreditCardForm = ({ initialData, onSuccess, onCancel }: CreditCardFormProp
   const initialCurrentBalance = Number(initialData.saldoAtual || 0);
   const targetChanged = typeof form.saldoAtual === 'number' && Number(form.saldoAtual) !== initialCurrentBalance;
   const hasManualAdjustment = !!Number(form.ajusteSaldo);
-  
+
   const updateAccountMutation = useUpdateAccount();
   const createAccountMutation = useCreateAccount();
-  
+
   const isEditing = Boolean(initialData.id);
-  const isSubmitting = isEditing ? updateAccountMutation.isPending : createAccountMutation.isPending;
+  const isSubmitting = updateAccountMutation.isPending || createAccountMutation.isPending;
 
   const fetchAccountBalance = useCallback(async () => {
     try {
-      if (!initialData.id) return; // evitar uuid inválido
+      if (!initialData.id) return;
       const { data, error } = await supabase
         .from('account_balances')
         .select('saldo_atual')
@@ -70,12 +70,10 @@ const CreditCardForm = ({ initialData, onSuccess, onCancel }: CreditCardFormProp
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (name === 'saldoAtual' || name === 'ajusteSaldo') {
-      // Permitir valores vazios
       if (value === '' || value === '-') {
         setForm({ ...form, [name]: value === '' ? 0 : value });
         return;
       }
-      // Permitir números negativos, positivos e vírgula/ponto
       const numericValue = value.replace(/[^\d.,-]/g, '').replace(',', '.');
       const parsedValue = parseFloat(numericValue);
       if (!isNaN(parsedValue)) {
@@ -83,7 +81,6 @@ const CreditCardForm = ({ initialData, onSuccess, onCancel }: CreditCardFormProp
         if (name === 'saldoAtual') {
           setForm({ ...form, saldoAtual: normalized, ajusteSaldo: 0 });
         } else {
-          // No ajuste permitimos positivo ou negativo
           setForm({ ...form, ajusteSaldo: parsedValue });
         }
       } else if (value === '-') {
@@ -96,6 +93,7 @@ const CreditCardForm = ({ initialData, onSuccess, onCancel }: CreditCardFormProp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setValidationErrors({});
     const errors: Record<string, string> = {};
     if (!form.nome.trim()) {
@@ -107,7 +105,6 @@ const CreditCardForm = ({ initialData, onSuccess, onCancel }: CreditCardFormProp
     }
 
     try {
-      // Parsing seguro e normalização
       let saldoAtual = 0;
       let ajusteSaldo = 0;
       if (form.saldoAtual !== undefined && form.saldoAtual !== null) {
@@ -117,14 +114,12 @@ const CreditCardForm = ({ initialData, onSuccess, onCancel }: CreditCardFormProp
         ajusteSaldo = typeof form.ajusteSaldo === 'string' ? (parseFloat(form.ajusteSaldo) || 0) : (Number(form.ajusteSaldo) || 0);
       }
       saldoAtual = toNegative(saldoAtual);
-      // ajuste pode ser positivo ou negativo
-      // Se o resultado final (saldoAtual + ajuste) ficar > 0, limitar o ajuste para não passar de 0
       let saldoFinal = saldoAtual + ajusteSaldo;
       if (saldoFinal > 0) {
-        ajusteSaldo = -saldoAtual; // para que saldoFinal = 0
+        ajusteSaldo = -saldoAtual;
         saldoFinal = 0;
       }
-      if (saldoAtual > 0) saldoAtual = 0; // cartões nunca positivos
+      if (saldoAtual > 0) saldoAtual = 0;
 
       const payload = {
         nome: form.nome.trim(),
@@ -132,14 +127,19 @@ const CreditCardForm = ({ initialData, onSuccess, onCancel }: CreditCardFormProp
       } as const;
 
       if (isEditing) {
-        // Enviar sempre ambos num único update para garantir saldo final correto (inclui caso 0)
         const base: any = { id: form.id, nome: payload.nome, tipo: payload.tipo };
         await updateAccountMutation.mutateAsync(base);
-        await updateAccountMutation.mutateAsync({ id: form.id, saldoAtual, ajusteSaldo });
+        // Só atualizar saldo se houver mudança
+        if (saldoAtual !== 0 || ajusteSaldo !== 0) {
+          await updateAccountMutation.mutateAsync({ id: form.id, saldoAtual, ajusteSaldo });
+        }
       } else {
         const created = await createAccountMutation.mutateAsync(payload as any);
         if (created?.id) {
-          await updateAccountMutation.mutateAsync({ id: created.id, saldoAtual, ajusteSaldo });
+          // CORREÇÃO: Só atualizar saldo se for diferente de 0
+          if (saldoAtual !== 0 || ajusteSaldo !== 0) {
+            await updateAccountMutation.mutateAsync({ id: created.id, saldoAtual, ajusteSaldo });
+          }
         }
       }
 
@@ -171,14 +171,14 @@ const CreditCardForm = ({ initialData, onSuccess, onCancel }: CreditCardFormProp
         aria-describedby={validationErrors.nome ? 'nome-error' : undefined}
       />
       {validationErrors.nome && <div id="nome-error" className="text-red-600 text-sm">{validationErrors.nome}</div>}
-      
+
       <Alert>
         <CreditCard className="h-4 w-4" />
         <AlertDescription>
           Cartões de crédito começam com saldo 0€. O saldo negativo representa o valor em dívida.
         </AlertDescription>
       </Alert>
-      
+
       <div className="space-y-1">
         <Input
           name="saldoAtual"
@@ -187,7 +187,6 @@ const CreditCardForm = ({ initialData, onSuccess, onCancel }: CreditCardFormProp
           value={form.saldoAtual?.toString() || ''}
           onChange={handleChange}
           className="w-full"
-          disabled={hasManualAdjustment}
           aria-invalid={!!validationErrors.saldoAtual}
           aria-describedby={validationErrors.saldoAtual ? 'saldoAtual-error' : undefined}
         />
@@ -199,12 +198,12 @@ const CreditCardForm = ({ initialData, onSuccess, onCancel }: CreditCardFormProp
               <> Diferença: {((Number(form.saldoAtual) || 0) - initialCurrentBalance).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</>
             )}
             {hasManualAdjustment && (
-              <span className="block">Desativado porque definiu um ajuste manual.</span>
+              <span className="block">Nota: também definiu um ajuste manual; ao guardar, o novo saldo alvo tem precedência e o ajuste será ignorado.</span>
             )}
           </p>
         )}
       </div>
-       
+
       <div className="space-y-1">
         <Input
           name="ajusteSaldo"
@@ -219,13 +218,13 @@ const CreditCardForm = ({ initialData, onSuccess, onCancel }: CreditCardFormProp
         {validationErrors.ajusteSaldo && <div id="ajusteSaldo-error" className="text-red-600 text-sm">{validationErrors.ajusteSaldo}</div>}
         {!validationErrors.ajusteSaldo && (
           <p className="text-xs text-muted-foreground">
-            O ajuste cria uma transação de regularização: valores positivos registam receita; valores negativos registam despesa. {targetChanged && 'Desativado porque definiu um novo saldo alvo.'}
+            O ajuste cria uma transação de regularização: valores positivos registam receita; valores negativos registam despesa. {targetChanged && 'Nota: definiu um novo saldo alvo; o ajuste será ignorado ao guardar.'}
           </p>
         )}
       </div>
-        
+
       <div className="flex flex-col sm:flex-row gap-2">
-        <FormSubmitButton 
+        <FormSubmitButton
           isSubmitting={isSubmitting}
           submitText={isEditing ? "Atualizar" : "Criar Cartão"}
           submittingText={isEditing ? "A atualizar..." : "A criar..."}

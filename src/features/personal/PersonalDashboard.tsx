@@ -56,7 +56,11 @@ const PersonalDashboard: React.FC = () => {
   // Usar useMemo para cálculos pesados
   const { activeGoals, completedGoals, monthlyIncome, monthlyExpenses, cardsInDebt, totalDebt } = React.useMemo(() => {
     const activeGoals = myGoals.filter(goal => goal.ativa).length;
-    const completedGoals = myGoals.filter(goal => goal.status === 'completed').length;
+    const completedGoals = myGoals.filter(goal => {
+      const objetivo = Number(goal.valor_objetivo ?? 0);
+      const atual = Number((goal as any).valor_atual ?? (goal as any).total_alocado ?? 0);
+      return objetivo > 0 && atual >= objetivo;
+    }).length;
     
     // Transações do mês atual
     const currentMonth = new Date().toISOString().slice(0, 7);

@@ -27,6 +27,8 @@ import {
 } from 'lucide-react';
 import { useMediaQuery } from '../hooks/use-mobile';
 import { useAuth } from '../contexts/AuthContext';
+import { formatCurrency } from '../lib/utils';
+import { getReminderDate } from '../lib/dateUtils';
 
 
 // Componentes lazy loading
@@ -63,7 +65,7 @@ const MobileNavigation: React.FC = () => {
       const start = new Date(year, month, 1, 0, 0, 0, 0);
       const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
       return (reminders || []).filter((r) => {
-        const d = new Date(r.date ?? r.data_lembrete ?? r.data);
+        const d = getReminderDate(r) ?? new Date('1970-01-01');
         return d >= start && d <= end && d >= now;
       }).length;
     } catch {
@@ -140,7 +142,7 @@ const DesktopNavigation: React.FC = () => {
       const start = new Date(year, month, 1, 0, 0, 0, 0);
       const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
       return (reminders || []).filter((r) => {
-        const d = new Date(r.date ?? r.data_lembrete ?? r.data);
+        const d = getReminderDate(r) ?? new Date('1970-01-01');
         return d >= start && d <= end && d >= now;
       }).length;
     } catch {
@@ -223,7 +225,7 @@ const PersonalHeader: React.FC = () => {
       const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
       const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
       return (reminders || []).filter((r) => {
-        const d = new Date(r.date ?? r.data_lembrete ?? r.data);
+        const d = getReminderDate(r) ?? new Date('1970-01-01');
         return d >= start && d <= end;
       }).length;
     } catch {
@@ -297,7 +299,7 @@ const QuickKPIs: React.FC = () => {
   
   // Calcular objetivos ativos e concluídos
   const activeGoals = myGoals.filter(goal => goal.ativa).length;
-  const completedGoals = myGoals.filter(goal => goal.status === 'completed').length;
+  const completedGoals = myGoals.filter(goal => (Number((goal as any).progresso_percentual) || Number((goal as any).progress_percentage) || 0) >= 100).length;
   
   // Verificar se estamos na página de objetivos, orçamentos, contas ou transações
   const isGoalsPage = location.pathname === '/personal/goals';
@@ -325,7 +327,7 @@ const QuickKPIs: React.FC = () => {
             <div>
               <p className="text-sm text-muted-foreground">Total Disponível - Conta Objetivos</p>
               <p className="text-2xl font-bold text-foreground">
-                {personalKPIs.goalsAccountBalance.toFixed(2)}€
+                {formatCurrency(personalKPIs.goalsAccountBalance ?? 0)}
               </p>
             </div>
             <Target className="h-8 w-8 text-primary" />
@@ -337,10 +339,10 @@ const QuickKPIs: React.FC = () => {
             <div>
               <p className="text-sm text-muted-foreground">Progresso Objetivo</p>
               <p className="text-2xl font-bold text-foreground">
-                {personalKPIs.goalsProgressPercentage.toFixed(0)}%
+                {Math.round(personalKPIs.goalsProgressPercentage ?? 0)}%
               </p>
               <p className="text-xs text-muted-foreground">
-                {personalKPIs.goalsAccountBalance.toFixed(2)}€ / {personalKPIs.totalGoalsValue.toFixed(2)}€
+                {formatCurrency(personalKPIs.goalsAccountBalance ?? 0)} / {formatCurrency(personalKPIs.totalGoalsValue ?? 0)}
               </p>
             </div>
             <BarChart3 className="h-8 w-8 text-primary" />
@@ -374,7 +376,7 @@ const QuickKPIs: React.FC = () => {
             <div>
               <p className="text-sm text-muted-foreground">Total Gasto - Orçamentos</p>
               <p className="text-2xl font-bold text-foreground">
-                {personalKPIs.totalBudgetSpent.toFixed(2)}€
+                {formatCurrency(personalKPIs.totalBudgetSpent ?? 0)}
               </p>
             </div>
             <BarChart3 className="h-8 w-8 text-primary" />
@@ -386,10 +388,10 @@ const QuickKPIs: React.FC = () => {
             <div>
               <p className="text-sm text-muted-foreground">Percentagem Gasto - Orçamentos</p>
               <p className="text-2xl font-bold text-foreground">
-                {personalKPIs.budgetSpentPercentage.toFixed(0)}%
+                {Math.round(personalKPIs.budgetSpentPercentage ?? 0)}%
               </p>
               <p className="text-xs text-muted-foreground">
-                {personalKPIs.totalBudgetSpent.toFixed(2)}€ / {personalKPIs.totalBudgetAmount.toFixed(2)}€
+                {formatCurrency(personalKPIs.totalBudgetSpent ?? 0)} / {formatCurrency(personalKPIs.totalBudgetAmount ?? 0)}
               </p>
             </div>
             <TrendingUp className="h-8 w-8 text-primary" />
@@ -523,7 +525,7 @@ const QuickKPIs: React.FC = () => {
           <div>
             <p className="text-sm text-muted-foreground">Saldo Total</p>
             <p className="text-2xl font-bold text-foreground">
-              {personalKPIs.totalBalance.toFixed(2)}€
+              {formatCurrency(personalKPIs.totalBalance ?? 0)}
             </p>
           </div>
           <Wallet className="h-8 w-8 text-primary" />
@@ -535,7 +537,7 @@ const QuickKPIs: React.FC = () => {
           <div>
             <p className="text-sm text-muted-foreground">Dívida Cartões</p>
             <p className="text-2xl font-bold text-destructive">
-              {personalKPIs.creditCardDebt.toFixed(2)}€
+              {formatCurrency(personalKPIs.creditCardDebt ?? 0)}
             </p>
           </div>
           <CreditCard className="h-8 w-8 text-destructive" />
@@ -562,7 +564,7 @@ const QuickKPIs: React.FC = () => {
           <div>
             <p className="text-sm text-muted-foreground">Poupança Mensal</p>
             <p className="text-2xl font-bold text-green-600">
-              {personalKPIs.monthlySavings.toFixed(2)}€
+              {formatCurrency(personalKPIs.monthlySavings ?? 0)}
             </p>
           </div>
           <PiggyBank className="h-8 w-8 text-green-600" />

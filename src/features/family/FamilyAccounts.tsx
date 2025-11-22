@@ -21,6 +21,7 @@ import { LazyWrapper } from '../../components/ui/lazy-wrapper';
 import { useToast } from '../../hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../components/ui/accordion';
 import { getAuditLogsByRow } from '../../services/audit_logs';
+import { FamilyAccount } from '@/types/family';
 type AuditEntry = { id: string; timestamp: string; operation: string; old_data?: any; new_data?: any; details?: any };
 
 const FamilyAccounts: React.FC = () => {
@@ -65,7 +66,7 @@ const FamilyAccounts: React.FC = () => {
     refetchAll();
   };
 
-  const handleEdit = (account: AccountWithBalances) => {
+  const handleEdit = (account: FamilyAccount) => {
     // Debug: handleEdit called
     
     // Para cartões de crédito, usar o saldo da conta diretamente
@@ -80,9 +81,9 @@ const FamilyAccounts: React.FC = () => {
     }
     
     const editData = {
-      id: account.account_id,
-      nome: account.nome,
-      tipo: account.tipo,
+      id: account.account_id as string,
+      nome: (account.nome || '') as string,
+      tipo: (account.tipo || 'bank') as string,
       saldoAtual,
     };
     
@@ -99,10 +100,10 @@ const FamilyAccounts: React.FC = () => {
     refetchAll();
   };
 
-  const handleDeleteAccount = (account: AccountWithBalances) => {
+  const handleDeleteAccount = (account: FamilyAccount) => {
     setAccountToDelete({
-      id: account.account_id,
-      nome: account.nome
+      id: (account.account_id || account.id) as string,
+      nome: (account.nome || '') as string
     });
     setShowDeleteConfirmation(true);
   };
@@ -117,6 +118,7 @@ const FamilyAccounts: React.FC = () => {
         description: `A conta familiar "${accountToDelete.nome}" foi eliminada com sucesso.`,
       });
       setShowDeleteConfirmation(false);
+      setAccountToDelete(null);
       setAccountToDelete(null);
     } catch (error: any) {
       toast({
@@ -194,114 +196,85 @@ const FamilyAccounts: React.FC = () => {
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {bankAccounts.map((account) => (
-              <Card key={account.account_id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{account.nome}</CardTitle>
-                    <Badge variant="outline" className="capitalize">
-                      {account.tipo}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Saldo Total */}
-                  <div className="space-y-1">
+            {bankAccounts.map((account) => {
+              logger.debug('FamilyAccounts render account', {
+                account_id: account.account_id,
+                nome: account.nome,
+                saldo_atual: account.saldo_atual,
+                total_reservado: account.total_reservado,
+                saldo_disponivel: account.saldo_disponivel
+              });
+              return (
+                <Card key={account.account_id ?? account.id ?? account.nome} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Saldo Total</span>
-                      <span className="text-lg font-semibold">
-                        {formatCurrency(account.saldo_atual || 0)}
-                      </span>
+                      <CardTitle className="text-lg">{account.nome}</CardTitle>
+                      <Badge variant="outline" className="capitalize">
+                        {account.tipo}
+                      </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground capitalize">{account.tipo}</p>
-                  </div>
-
-                  {/* Saldo Reservado */}
-                  {account.total_reservado > 0 && (
-                    <div className="text-sm text-muted-foreground flex items-center gap-2">
-                      <span className="font-medium">Reservado</span>
-                      <span className="tabular-nums">{formatCurrency(account.total_reservado)}</span>
-                    </div>
-                  )}
-
-                  {/* Percentagem de Reserva - Inline Editor (apenas contas bancárias) */}
-                  {account.tipo !== 'cartão de crédito' && (
-                    <div className="text-sm text-muted-foreground">
-                      <InlineReserveEditor
-                        accountId={account.id}
-                        value={Number(account.reserve_percentage ?? 0)}
-                        disabled={!canEdit('account')}
-                        onSave={async (pct) => {
-                          await updateAccountReservePercentage(account.id, pct);
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Saldo Disponível */}
-                  {(account.saldo_disponivel !== (account.saldo_atual || 0)) && (
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Saldo Total */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Disponível</span>
-                        <span className={`text-sm font-medium ${
-                          account.saldo_disponivel < 0 ? 'text-red-600' : 'text-green-600'
-                        }`}>
-                          {formatCurrency(account.saldo_disponivel)}
+                        <span className="text-sm text-muted-foreground">Saldo Total</span>
+                        <span className="text-lg font-semibold">
+                          {formatCurrency(account.saldo_atual || 0)}
                         </span>
                       </div>
+                      <p className="text-xs text-muted-foreground capitalize">{account.tipo}</p>
                     </div>
-                  )}
 
-                  {/* Aviso: saldo disponível negativo (apenas aviso) */}
-                  {account.saldo_disponivel < 0 && (
-                    <Alert variant="destructive">
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription>
-                        Saldo disponível negativo. Isto é apenas um aviso—as operações continuam permitidas.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {/* Botões de ação - Editar e Eliminar */}
-                  <div className="flex gap-2 pt-2">
-                    {canEdit('account') && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(account)}
-                        className="flex-1"
-                        aria-label="Editar conta"
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Editar
-                      </Button>
+                    {/* Saldo Reservado */}
+                    {account.total_reservado > 0 && (
+                      <div className="text-sm text-muted-foreground flex items-center gap-2">
+                        <span className="font-medium">Reservado</span>
+                        <span className="tabular-nums">{formatCurrency(account.total_reservado)}</span>
+                      </div>
                     )}
-                    {canDelete('account') && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteAccount(account)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        aria-label="Eliminar conta"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Eliminar
-                      </Button>
-                    )}
-                  </div>
 
-                  {/* Histórico de alterações (Audit Log) */}
-                  <Accordion type="single" collapsible className="pt-2">
-                    <AccordionItem value={`hist-${account.account_id}`}>
-                      <AccordionTrigger>Histórico</AccordionTrigger>
-                      <AccordionContent>
-                        <AccountAuditList accountId={account.account_id} />
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                </CardContent>
-              </Card>
-            ))}
+                    {/* Percentagem de Reserva - Inline Editor (apenas contas bancárias) */}
+                    {account.tipo !== 'cartão de crédito' && (
+                      <div className="text-sm text-muted-foreground">
+                        <InlineReserveEditor
+                          accountId={account.account_id}
+                          value={Number((account as any).total_reservado_percentage ?? account.reserve_percentage ?? ((account.saldo_atual && account.saldo_atual > 0) ? ((account.total_reservado || 0) / account.saldo_atual) * 100 : 0))}
+                          disabled={!canEdit('account')}
+                          onSave={async (pct) => {
+                            await updateAccountReservePercentage(account.account_id, pct);
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Saldo Disponível */}
+                    {(account.saldo_disponivel !== (account.saldo_atual || 0)) && (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Disponível</span>
+                          <span className={`text-sm font-medium ${
+                            account.saldo_disponivel < 0 ? 'text-red-600' : 'text-green-600'
+                          }`}>
+                            {formatCurrency(account.saldo_disponivel)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Aviso: saldo disponível negativo (apenas aviso) */}
+                    {account.saldo_disponivel < 0 && (
+                      <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          Saldo disponível negativo. Isto é apenas um aviso—as operações continuam permitidas.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
@@ -601,7 +574,7 @@ function InlineReserveEditor({
       </PopoverTrigger>
       <PopoverContent className="w-72" align="start">
         <div className="space-y-3" aria-live="polite">
-          <label htmlFor={`reserve-input-${accountId}`} className="text-sm font-medium">Percentagem de reserva</label>
+          <label htmlFor={`reserve-input-${accountId}`} className="text-sm font-medium">Percentagem de reserva (%)</label>
           <div className="flex items-center gap-2">
             <Input
               id={`reserve-input-${accountId}`}

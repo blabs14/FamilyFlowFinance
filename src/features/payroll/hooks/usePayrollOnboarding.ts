@@ -47,6 +47,9 @@ export function usePayrollOnboarding(): OnboardingStatus {
         const isInOnboarding = currentPath.includes('/onboarding');
         const isInConfig = currentPath.includes('/config');
         
+        // Em DEV/E2E/Preview não redirecionamos para permitir acesso às rotas de preview (calculator/history)
+        const DISABLE_ONBOARDING_REDIRECT = import.meta.env.DEV || import.meta.env.VITE_E2E === '1' || import.meta.env.VITE_ENABLE_PAYROLL_PREVIEW === '1';
+        
         // Não redirecionar se:
         // 1. Já está no onboarding
         // 2. Está na página de configuração (onde pode criar contratos)
@@ -55,7 +58,7 @@ export function usePayrollOnboarding(): OnboardingStatus {
         const urlParams = new URLSearchParams(location.search);
         const isCreatingContract = urlParams.get('new') === '1';
         
-        if (!hasActiveContract && isInPayrollArea && !isInOnboarding && !isInConfig && !isCreatingContract) {
+        if (!DISABLE_ONBOARDING_REDIRECT && !hasActiveContract && isInPayrollArea && !isInOnboarding && !isInConfig && !isCreatingContract) {
           navigate('/personal/payroll/onboarding', { replace: true });
         }
       } catch (err) {

@@ -14,6 +14,7 @@ import { LocaleProvider } from './contexts/LocaleProvider';
 import { Navigate } from 'react-router-dom';
 import './test-supabase';
 import { performanceService } from './services/performanceService';
+import { ErrorBoundary } from './components/ErrorBoundary';
 // Testes removidos - componente RealTimeNotifications melhorado
 
 
@@ -68,7 +69,8 @@ function App() {
       <AuthProvider>
         <LocaleProvider>
           <Router>
-        <GlobalShortcuts />
+            <ErrorBoundary>
+              <GlobalShortcuts />
             <Routes>
               {/* Páginas públicas */}
               <Route path="/" element={<Index />} />
@@ -135,7 +137,8 @@ function App() {
               {/* Página 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </Router>
+            </ErrorBoundary>
+            </Router>
         </LocaleProvider>
       </AuthProvider>
       <Toaster />

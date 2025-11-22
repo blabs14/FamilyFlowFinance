@@ -6,7 +6,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Label } from '../../components/ui/label';
-
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog';
 import { Target, Plus, Edit, Trash2, Calendar, CheckCircle, Trophy, BarChart3 } from 'lucide-react';
 import { getCategoryIcon } from '../../lib/utils';
 import * as LucideIcons from 'lucide-react';
@@ -242,7 +242,7 @@ const FamilyGoals: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <Label>Estado</Label>
-          <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as any)}>
+          <Select value={filterStatus} onValueChange={(v) => { const allowed = ['all','progress','warn','done']; const val = typeof v === 'string' && allowed.includes(v) ? (v as 'all' | 'progress' | 'warn' | 'done') : 'all'; setFilterStatus(val); }}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>

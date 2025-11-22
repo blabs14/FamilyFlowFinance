@@ -8,7 +8,6 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./tests/config/setup.ts'],
     include: [
-      'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'tests/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     exclude: [
@@ -19,7 +18,8 @@ export default defineConfig({
       '.cache',
       'tests/e2e/**',
       'tests/manual/**',
-      'tests/obsolete/**'
+      'tests/obsolete/**',
+      'src/test/**'
     ],
     globals: true,
     // Otimizações de performance

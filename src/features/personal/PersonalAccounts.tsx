@@ -14,18 +14,19 @@ import RegularAccountForm from '../../components/RegularAccountForm';
 import CreditCardForm from '../../components/CreditCardForm';
 import { TransferModal } from '../../components/TransferModal';
 import { useToast } from '../../hooks/use-toast';
+import { logger } from '@/shared/lib/logger';
 
 const PersonalAccounts: React.FC = () => {
-    const {
+  const {
     myAccounts,
     myCards,
     isLoading,
     deletePersonalAccount,
     refetchAll
   } = usePersonal();
-  
+
   const { toast } = useToast();
-  
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreditCardModal, setShowCreditCardModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
@@ -62,7 +63,7 @@ const PersonalAccounts: React.FC = () => {
   };
 
   const handleEdit = (account: AccountWithBalances) => {
-    
+
     // Para cartões de crédito, usar o saldo da conta diretamente
     // Para outras contas, usar o saldo calculado
     let saldoAtual = 0;
@@ -72,7 +73,7 @@ const PersonalAccounts: React.FC = () => {
     } else {
       saldoAtual = account.saldo_atual || 0;
     }
-    
+
     const editData: {
       id: string;
       nome: string;
@@ -84,7 +85,7 @@ const PersonalAccounts: React.FC = () => {
       tipo: account.tipo,
       saldoAtual,
     };
-    
+
 
     setEditingAccount(editData);
     setShowCreateModal(true);
@@ -162,28 +163,28 @@ const PersonalAccounts: React.FC = () => {
       {/* Contas Bancárias */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-                      <div>
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Wallet className="h-5 w-5" />
-                Contas Bancárias
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Contas correntes e poupanças
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleTransfer} variant="outline" aria-label="Transferir">
-                <ArrowRightLeft className="h-4 w-4 mr-2" />
-                Transferir
-              </Button>
-              <Button onClick={() => {
-                console.log('🎯 Botão Nova Conta clicado!');
-                handleNew();
-              }} aria-label="Nova conta">
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Conta
-              </Button>
-            </div>
+          <div>
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Wallet className="h-5 w-5" />
+              Contas Bancárias
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Contas correntes e poupanças
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleTransfer} variant="outline" aria-label="Transferir">
+              <ArrowRightLeft className="h-4 w-4 mr-2" />
+              Transferir
+            </Button>
+            <Button onClick={() => {
+              console.log('🎯 Botão Nova Conta clicado!');
+              handleNew();
+            }} aria-label="Nova conta">
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Conta
+            </Button>
+          </div>
         </div>
 
         {bankAccounts.length === 0 ? (
@@ -193,98 +194,109 @@ const PersonalAccounts: React.FC = () => {
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {bankAccounts.map((account) => (
-              <Card key={account.account_id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{account.nome}</CardTitle>
-                    <Badge variant="outline" className="capitalize">
-                      {account.tipo}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Saldo Total */}
-                  <div className="space-y-1">
+            {bankAccounts.map((account) => {
+              logger.debug('PersonalAccounts render account', {
+                account_id: account.account_id,
+                nome: account.nome,
+                saldo_atual: account.saldo_atual,
+                total_reservado: account.total_reservado,
+                saldo_disponivel: account.saldo_disponivel
+              });
+              return (
+                <Card key={account.account_id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Saldo Total</span>
-                      <span className="text-lg font-semibold">
-                        {formatCurrency(account.saldo_atual || 0)}
-                      </span>
+                      <CardTitle className="text-lg">{account.nome}</CardTitle>
+                      <Badge variant="outline" className="capitalize">
+                        {account.tipo}
+                      </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground capitalize">{account.tipo}</p>
-                  </div>
-
-                  {/* Saldo Reservado */}
-                  {account.total_reservado > 0 && (
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Saldo Total */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Target className="h-3 w-3" />
-                          Reservado
+                        <span className="text-sm text-muted-foreground">Saldo Total</span>
+                        <span className="text-lg font-semibold">
+                          {formatCurrency(account.saldo_atual || 0)}
                         </span>
-                        <Badge variant="secondary" className="text-xs text-blue-600 bg-blue-50 border-blue-200">
-                          {formatCurrency(account.total_reservado)}
-                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground capitalize">{account.tipo}</p>
+                    </div>
+
+                    {/* Saldo Reservado */}
+                    {account.total_reservado > 0 && (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Target className="h-3 w-3" />
+                            Reservado
+                          </span>
+                          <Badge variant="secondary" className="text-xs text-blue-600 bg-blue-50 border-blue-200">
+                            {formatCurrency(account.total_reservado)}
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Saldo Disponível / Dívida */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          {account.tipo === 'cartão de crédito' ? 'Dívida' : 'Disponível'}
+                        </span>
+                        <span className={`text-sm font-medium ${account.tipo === 'cartão de crédito'
+                            ? (account.saldo_atual < 0 ? 'text-red-600' : 'text-gray-600')
+                            : (account.saldo_disponivel < 0 ? 'text-red-600' : 'text-green-600')
+                          }`}>
+                          {account.tipo === 'cartão de crédito'
+                            ? formatCurrency(account.saldo_atual < 0 ? -account.saldo_atual : 0)
+                            : formatCurrency(account.saldo_disponivel)
+                          }
+                        </span>
                       </div>
                     </div>
-                  )}
 
-                  {/* Saldo Disponível / Dívida */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        {account.tipo === 'cartão de crédito' ? 'Dívida' : 'Disponível'}
-                      </span>
-                      <span className={`text-sm font-medium ${
-                        account.tipo === 'cartão de crédito' 
-                          ? (account.saldo_atual < 0 ? 'text-red-600' : 'text-gray-600')
-                          : (account.saldo_disponivel < 0 ? 'text-red-600' : 'text-green-600')
-                      }`}>
-                        {account.tipo === 'cartão de crédito' 
-                          ? formatCurrency(account.saldo_atual < 0 ? -account.saldo_atual : 0)
-                          : formatCurrency(account.saldo_disponivel)
-                        }
-                      </span>
+                    {/* Aviso: saldo disponível negativo (apenas aviso) */}
+                    {account.saldo_disponivel < 0 && (
+                      <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          Saldo disponível negativo. Isto é apenas um aviso—as operações continuam permitidas.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {/* Botões de ação - Editar e Eliminar */}
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(account)}
+                        className="flex-1"
+                        aria-label="Editar conta"
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Editar
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteAccount(account)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        aria-label="Eliminar conta"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Eliminar
+                      </Button>
                     </div>
-                  </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
 
-                  {/* Aviso: saldo disponível negativo (apenas aviso) */}
-                  {account.saldo_disponivel < 0 && (
-                    <Alert variant="destructive">
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription>
-                        Saldo disponível negativo. Isto é apenas um aviso—as operações continuam permitidas.
-                      </AlertDescription>
-                    </Alert>
-                  )}
 
-                  {/* Botões de ação - Editar e Eliminar */}
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(account)}
-                      className="flex-1"
-                      aria-label="Editar conta"
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Editar
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteAccount(account)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      aria-label="Eliminar conta"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Eliminar
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+
           </div>
         )}
       </div>
@@ -355,9 +367,8 @@ const PersonalAccounts: React.FC = () => {
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Dívida</span>
-                      <span className={`text-sm font-medium ${
-                        account.saldo_atual < 0 ? 'text-red-600' : 'text-gray-600'
-                      }`}>
+                      <span className={`text-sm font-medium ${account.saldo_atual < 0 ? 'text-red-600' : 'text-gray-600'
+                        }`}>
                         {formatCurrency(account.saldo_atual < 0 ? -account.saldo_atual : 0)}
                       </span>
                     </div>
@@ -476,7 +487,7 @@ const PersonalAccounts: React.FC = () => {
         onConfirm={confirmDeleteAccount}
         title="Eliminar Conta"
         message={
-          accountToDelete 
+          accountToDelete
             ? `Tem a certeza que deseja eliminar "${accountToDelete.nome}"? Esta ação não pode ser desfeita e eliminará todas as transações associadas.`
             : 'Tem a certeza que deseja eliminar esta conta?'
         }

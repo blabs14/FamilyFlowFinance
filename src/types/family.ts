@@ -85,7 +85,17 @@ export interface FamilyLoadingStates {
 }
 
 // Tipos mínimos de domínio utilizados nas listas
-export type FamilyAccount = UnknownRecord & { account_id?: string; id?: string; tipo?: string | null };
+export type FamilyAccount = UnknownRecord & {
+  account_id?: string;
+  id?: string;
+  nome?: string | null;
+  tipo?: 'bank' | 'credit' | string | null;
+  saldo_atual?: number | null;
+  saldo_disponivel?: number | null;
+  total_reservado?: number | null;
+  reserve_percentage?: number | null;
+  total_reservado_percentage?: number | null;
+};
 export type FamilyGoal = UnknownRecord & { valor_atual?: number | null; valor_objetivo?: number | null; progresso_percentual?: number; total_alocado?: number };
 export type FamilyBudget = UnknownRecord;
 export type FamilyTransaction = UnknownRecord;

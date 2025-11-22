@@ -149,8 +149,9 @@ export const allocateToGoal = async (
   goalId: string,
   accountId: string,
   amount: number,
-  userId: string
-): Promise<number> => {
+  userId: string,
+  description?: string
+): Promise<{ data: { amount_allocated: number } | null; error: unknown }> => {
   try {
     // Validar parâmetros antes da chamada
     if (!goalId || !accountId || !userId) {
@@ -166,7 +167,8 @@ export const allocateToGoal = async (
       goal_id_param: goalId,
       account_id_param: accountId,
       amount_param: typeof amount === 'string' ? parseFloat(amount) : amount,
-      user_id_param: userId
+      user_id_param: userId,
+      description_param: description,
     };
 
     console.debug('[goals.allocateToGoal] RPC request allocate_to_goal_with_transaction - params:', payload);
@@ -186,11 +188,11 @@ export const allocateToGoal = async (
         console.error('[goals.allocateToGoal] RPC error', enriched);
         
         // Criar erro mais específico baseado no tipo
-        if (error.message?.includes('Failed to fetch') || error.message?.includes('ERR_ABORTED')) {
-          throw new Error(`Erro de conectividade: ${error.message}. Verifique a sua ligação à internet.`);
+        if ((error as any).message?.includes('Failed to fetch') || (error as any).message?.includes('ERR_ABORTED')) {
+          throw new Error(`Erro de conectividade: ${(error as any).message}. Verifique a sua ligação à internet.`);
         }
         
-        throw new Error(`Erro RPC: ${error.message} (${error.code})`);
+        throw new Error(`Erro RPC: ${(error as any).message} (${(error as any).code})`);
       }
 
       return data;
@@ -202,40 +204,13 @@ export const allocateToGoal = async (
     const data = result as { amount_allocated: number } | null;
     if (!data || typeof data !== 'object') {
       console.warn('[goals.allocateToGoal] Resultado inesperado:', result);
-      return 0;
+      return { data: { amount_allocated: 0 }, error: null };
     }
     
     console.log('✅ [allocateToGoal] Alocação bem-sucedida:', data);
-    return data.amount_allocated || 0;
+    return { data: { amount_allocated: data.amount_allocated || 0 }, error: null };
   } catch (error) {
-    // Melhorar mensagens de erro para o utilizador
-    let userFriendlyMessage = 'Erro desconhecido na alocação';
-    
-    if (error instanceof Error) {
-      if (error.message.includes('Failed to fetch') || error.message.includes('ERR_ABORTED')) {
-        userFriendlyMessage = 'Problema de conectividade. Verifique a sua ligação à internet e tente novamente.';
-      } else if (error.message.includes('Timeout após')) {
-        userFriendlyMessage = 'A operação demorou muito tempo. Verifique a sua ligação à internet e tente novamente.';
-      } else if (error.message.includes('Parâmetros obrigatórios')) {
-        userFriendlyMessage = 'Dados inválidos para alocação. Tente recarregar a página.';
-      } else if (error.message.includes('Montante deve ser positivo')) {
-        userFriendlyMessage = 'O montante a alocar deve ser positivo.';
-      } else {
-        userFriendlyMessage = error.message;
-      }
-    }
-    
-    console.error('❌ [DEBUG] allocateToGoal - Erro geral:', {
-      error,
-      errorMessage: error instanceof Error ? error.message : 'Erro desconhecido',
-      errorStack: error instanceof Error ? error.stack : undefined,
-      userFriendlyMessage
-    });
-    
-    // Lançar erro com mensagem amigável para o utilizador
-    const enhancedError = new Error(userFriendlyMessage);
-    (enhancedError as any).originalError = error;
-    throw enhancedError;
+    return { data: null, error };
   }
 };
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useReminders } from './useRemindersQuery';
+import { getReminderDate } from '../lib/dateUtils';
 
 function getTodayKey(): string {
   const now = new Date();
@@ -44,22 +45,11 @@ function saveNotifiedSet(set: Set<string>): void {
   }
 }
 
-function coerceDate(value: unknown): Date | null {
-  if (typeof value === 'string' && value) {
-    const d = new Date(value);
-    if (!Number.isNaN(d.getTime())) return d;
-  }
-  return null;
-}
-
-function getReminderDate(reminder: Record<string, unknown>): Date | null {
-  // Tentar propriedades comuns: date, data_lembrete, data
-  return coerceDate(reminder.date) || coerceDate(reminder.data_lembrete) || coerceDate(reminder.data);
-}
+// Removidas funções locais coerceDate/getReminderDate — usamos util de dateUtils
 
 function getReminderTime(reminder: Record<string, unknown>): string | null {
   // Se houver hora específica, usar (ex.: hora_lembrete)
-  const maybe = reminder.hora_lembrete;
+  const maybe = (reminder as any).hora_lembrete;
   if (typeof maybe === 'string' && maybe.trim()) return maybe.trim();
   return null;
 }

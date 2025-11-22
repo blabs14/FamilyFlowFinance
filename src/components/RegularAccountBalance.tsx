@@ -2,12 +2,20 @@ import { formatCurrency } from '../lib/utils';
 import { Badge } from './ui/badge';
 import { Target } from 'lucide-react';
 import { AccountWithBalances } from '../integrations/supabase/types';
+import { logger } from '@/shared/lib/logger';
 
 interface RegularAccountBalanceProps {
   account: AccountWithBalances;
 }
 
 export const RegularAccountBalance = ({ account }: RegularAccountBalanceProps) => {
+  logger.debug('RegularAccountBalance render', {
+    account_id: account.account_id,
+    nome: (account as any).nome,
+    saldo_atual: account.saldo_atual,
+    total_reservado: account.total_reservado,
+    saldo_disponivel: account.saldo_disponivel
+  });
   return (
     <>
       {/* Saldo Total */}

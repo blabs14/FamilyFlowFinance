@@ -75,7 +75,7 @@ export default function Dashboard() {
 
   // Métricas adicionais
   const totalAccounts = accounts.length;
-  const activeGoals = goals.filter(goal => goal.status === 'active').length;
+  const activeGoals = goals.filter(goal => goal.ativa).length;
   const recentTransactions = transactions.slice(0, 5);
 
   // Lembretes de hoje

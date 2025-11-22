@@ -1,9 +1,9 @@
 import React, { ReactNode, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
-import { 
-  getFamilyData, 
-  getFamilyMembers, 
+import {
+  getFamilyData,
+  getFamilyMembers,
   getPendingInvites,
   inviteFamilyMember,
   updateMemberRole,
@@ -12,7 +12,7 @@ import {
   getFamilyKPIs,
   getFamilyKPIsRange
 } from '../../services/family';
-import { 
+import {
   getAccountsWithBalances,
   getFamilyAccountsWithBalances,
   createAccount,
@@ -20,23 +20,23 @@ import {
   deleteAccount,
   setAccountReservePercentage
 } from '../../services/accounts';
-import { 
-  getGoals, 
-  createGoal, 
-  updateGoal, 
-  deleteGoal 
+import {
+  getGoals,
+  createGoal,
+  updateGoal,
+  deleteGoal
 } from '../../services/goals';
-import { 
-  getBudgets, 
-  createBudget, 
-  updateBudget, 
-  deleteBudget 
+import {
+  getBudgets,
+  createBudget,
+  updateBudget,
+  deleteBudget
 } from '../../services/budgets';
-import { 
-  getTransactions, 
-  createTransaction, 
-  updateTransaction, 
-  deleteTransaction, 
+import {
+  getTransactions,
+  createTransaction,
+  updateTransaction,
+  deleteTransaction,
   getFamilyTransactions
 } from '../../services/transactions';
 import { useCrudMutation } from '../../hooks/useMutationWithFeedback';
@@ -61,7 +61,7 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
     queryKey: ['family', 'current', user?.id],
     queryFn: async () => {
       console.log('[FamilyProvider] familyQuery - userId:', user?.id);
-      
+
       if (!user?.id) {
         console.log('[FamilyProvider] familyQuery - No user ID, returning null');
         return null;
@@ -96,7 +96,7 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
             )
           `)
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (error) {
           return null;
@@ -110,7 +110,7 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
             pending_invites_count: 0, // Será calculado separadamente
             shared_goals_count: 0 // Será calculado separadamente
           } as UnknownRecord;
-          
+
           return result;
         }
       } catch (error: unknown) {
@@ -176,7 +176,7 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
         familyId: family?.id,
         nodeEnv: process.env.NODE_ENV
       });
-      
+
       if (!user?.id) {
         console.log('FamilyProvider - No user ID, returning empty array');
         return [] as FamilyAccount[];
@@ -269,12 +269,12 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
     queryKey: ['family', 'goals', user?.id, family?.id],
     queryFn: async () => {
       if (!user?.id || !family?.id) return [] as FamilyGoal[];
-      
+
       // Usar a função RPC específica para objetivos familiares
       const { data, error } = await supabase.rpc('get_family_goals', {
         p_user_id: user.id
       });
-      
+
       if (error) throw error;
       return (data || []) as unknown as FamilyGoal[];
     },
@@ -304,12 +304,12 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
     queryKey: ['family', 'budgets', user?.id, family?.id],
     queryFn: async () => {
       if (!user?.id || !family?.id) return [] as FamilyBudget[];
-      
+
       // Usar a função RPC específica para orçamentos familiares
       const { data, error } = await supabase.rpc('get_family_budgets', {
         p_user_id: user.id
       });
-      
+
       if (error) throw error;
       return (data || []) as unknown as FamilyBudget[];
     },
@@ -373,8 +373,8 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
       const now = new Date();
       const start = new Date(now.getFullYear(), now.getMonth(), 1);
       const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      const dateStart = start.toISOString().slice(0,10);
-      const dateEnd = end.toISOString().slice(0,10);
+      const dateStart = start.toISOString().slice(0, 10);
+      const dateEnd = end.toISOString().slice(0, 10);
 
       try {
         const { data, error } = await getFamilyKPIsRange(family.id, dateStart, dateEnd, true);
@@ -460,7 +460,7 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
 
   // Mutations para gestão de membros
   const inviteMemberMutation = useCrudMutation(
-    (data: { email: string; role: string }) => 
+    (data: { email: string; role: string }) =>
       inviteFamilyMember(family?.id || '', data.email, data.role),
     {
       operation: 'create',
@@ -472,7 +472,7 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
   );
 
   const updateMemberRoleMutation = useCrudMutation(
-    (data: { memberId: string; role: string }) => 
+    (data: { memberId: string; role: string }) =>
       updateMemberRole(family?.id || '', data.memberId, data.role),
     {
       operation: 'update',
@@ -484,7 +484,7 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
   );
 
   const removeMemberMutation = useCrudMutation(
-    (memberId: string) => 
+    (memberId: string) =>
       removeFamilyMember(family?.id || '', memberId),
     {
       operation: 'delete',
@@ -674,20 +674,20 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
   // Métodos específicos
   const payCreditCard = async (accountId: string, amount: number) => {
     if (!user?.id) throw new Error('Utilizador não autenticado');
-    
+
     const { data, error } = await supabase.rpc('set_credit_card_balance', {
       p_user_id: user.id,
       p_account_id: accountId,
       p_new_balance: amount
     });
-    
+
     if (error) throw error;
     return data;
   };
 
   const allocateToGoal = async (goalId: string, amount: number, accountId: string) => {
     if (!user?.id) throw new Error('Utilizador não autenticado');
-    
+
     try {
       const { data, error } = await supabase.rpc('allocate_to_goal_with_transaction', {
         goal_id_param: goalId,
@@ -696,15 +696,15 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
         user_id_param: user.id,
         description_param: 'Alocação para objetivo familiar'
       });
-      
+
       if (error) throw error;
-      
+
       // Invalidar queries relacionadas para atualizar os dados
       queryClient.invalidateQueries({ queryKey: ['family', 'goals', user.id, family?.id] });
       queryClient.invalidateQueries({ queryKey: ['family', 'accounts', user.id, family?.id] });
       queryClient.invalidateQueries({ queryKey: ['family', 'transactions', user.id, family?.id] });
       queryClient.invalidateQueries({ queryKey: ['family', 'current', user.id] });
-      
+
       return data;
     } catch (error: unknown) {
       logger.error('[FamilyProvider] Error allocating to goal:', error);
@@ -715,7 +715,7 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
   // Funções de permissão
   const canEdit = (resourceType: 'account' | 'goal' | 'budget' | 'transaction' | 'member') => {
     if (!myRole) return false;
-    
+
     switch (myRole) {
       case 'owner':
       case 'admin':
@@ -733,7 +733,7 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
 
   const canDelete = (resourceType: 'account' | 'goal' | 'budget' | 'transaction' | 'member') => {
     if (!myRole) return false;
-    
+
     switch (myRole) {
       case 'owner':
         // Owners podem eliminar tudo
@@ -767,44 +767,44 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
     members: members as FamilyMember[],
     myRole,
     pendingInvites: pendingInvites as FamilyInvite[],
-    
+
     // Dados familiares
     familyAccounts,
     familyCards,
     familyGoals,
     familyBudgets,
     familyTransactions,
-    
+
     // KPIs
     familyKPIs,
-    
+
     // Estados de loading
     isLoading: isLoading,
-    
+
     // Métodos de gestão
-    inviteMember: (email: string, role: 'admin' | 'member' | 'viewer') => 
+    inviteMember: (email: string, role: 'admin' | 'member' | 'viewer') =>
       inviteMemberMutation.mutateAsync({ email, role }),
-    updateMemberRole: (memberId: string, role: 'admin' | 'member' | 'viewer') => 
+    updateMemberRole: (memberId: string, role: 'admin' | 'member' | 'viewer') =>
       updateMemberRoleMutation.mutateAsync({ memberId, role }),
     removeMember: (memberId: string) => removeMemberMutation.mutateAsync(memberId),
     updateFamily: (data: UnknownRecord) => updateFamilyMutation.mutateAsync(data),
-    
+
     // Métodos de gestão de convites
     cancelInvite: async (inviteId: string) => {
       if (!user?.id) throw new Error('Utilizador não autenticado');
       if (!family?.id) throw new Error('Família não encontrada');
-      
+
       try {
         const { data, error } = await supabase.rpc('cancel_family_invite', {
           p_invite_id: inviteId
         });
-        
+
         if (error) throw error;
-        
+
         // Invalidar queries relacionadas
         queryClient.invalidateQueries({ queryKey: ['family', 'invites', family.id] });
         queryClient.invalidateQueries({ queryKey: ['family', 'current', user.id] });
-        
+
         return data as unknown;
       } catch (error: unknown) {
         logger.error('Erro ao cancelar convite:', error);
@@ -814,43 +814,43 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
     acceptInvite: async (inviteId: string) => {
       if (!user?.id) throw new Error('Utilizador não autenticado');
       if (!family?.id) throw new Error('Família não encontrada');
-      
+
       try {
         const { data, error } = await supabase.rpc('accept_family_invite_by_email', {
           p_invite_id: inviteId
         });
-        
+
         if (error) throw error;
-        
+
         // Invalidar queries relacionadas
         queryClient.invalidateQueries({ queryKey: ['family', 'invites', family.id] });
         queryClient.invalidateQueries({ queryKey: ['family', 'members', family.id] });
         queryClient.invalidateQueries({ queryKey: ['family', 'current', user.id] });
-        
+
         return data as unknown;
       } catch (error: unknown) {
         logger.error('Erro ao aceitar convite:', error);
         throw error instanceof Error ? error : new Error('Erro ao aceitar convite');
       }
     },
-    
+
     // Método para eliminar família
     deleteFamily: async () => {
       if (!user?.id || !family?.id) throw new Error('Utilizador não autenticado ou família não encontrada');
-      
+
       // Verificar se o utilizador é owner
       if (myRole !== 'owner') {
         throw new Error('Apenas o proprietário da família pode eliminá-la');
       }
-      
+
       try {
         // Usar a função RPC robusta para eliminar família com cascade
         const { data, error } = await supabase.rpc('delete_family_with_cascade', {
           p_family_id: family.id
         });
-        
+
         if (error) throw error;
-        
+
         // Invalidar todas as queries relacionadas
         queryClient.invalidateQueries({ queryKey: ['family'] });
         queryClient.invalidateQueries({ queryKey: ['family', 'members'] });
@@ -860,27 +860,27 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
         queryClient.invalidateQueries({ queryKey: ['family', 'budgets'] });
         queryClient.invalidateQueries({ queryKey: ['family', 'transactions'] });
         queryClient.invalidateQueries({ queryKey: ['family', 'current', user.id] });
-        
+
         return data as unknown;
       } catch (error: unknown) {
         logger.error('Erro ao eliminar família:', error);
         throw error instanceof Error ? error : new Error('Erro ao eliminar família. Verifique se tem permissões adequadas.');
       }
     },
-    
+
     // Métodos CRUD para dados familiares
     createFamilyAccount: (data: UnknownRecord) => createFamilyAccountMutation.mutateAsync(data),
     updateFamilyAccount: (id: string, data: UnknownRecord) => updateFamilyAccountMutation.mutateAsync({ id, data }),
     deleteFamilyAccount: (id: string) => deleteFamilyAccountMutation.mutateAsync(id),
-    
+
     createFamilyGoal: (data: UnknownRecord) => createFamilyGoalMutation.mutateAsync(data),
     updateFamilyGoal: (id: string, data: UnknownRecord) => updateFamilyGoalMutation.mutateAsync({ id, data }),
     deleteFamilyGoal: (id: string) => deleteFamilyGoalMutation.mutateAsync(id),
-    
+
     createFamilyBudget: (data: UnknownRecord) => createFamilyBudgetMutation.mutateAsync(data),
     updateFamilyBudget: (id: string, data: UnknownRecord) => updateFamilyBudgetMutation.mutateAsync({ id, data }),
     deleteFamilyBudget: (id: string) => deleteFamilyBudgetMutation.mutateAsync(id),
-    
+
     createFamilyTransaction: (data: UnknownRecord) => createFamilyTransactionMutation.mutateAsync(data),
     updateFamilyTransaction: (id: string, data: UnknownRecord) => updateFamilyTransactionMutation.mutateAsync({ id, data }),
     deleteFamilyTransaction: (id: string) => deleteFamilyTransactionMutation.mutateAsync(id),
@@ -888,20 +888,20 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
     // Nova API específica
     updateAccountReservePercentage: (accountId: string, percent: number) =>
       updateAccountReservePercentageMutation.mutateAsync({ accountId, percent }),
-    
+
     // Métodos específicos
     payCreditCard,
     allocateToGoal,
-    
+
     // Utilitários
     refetchAll,
     canEdit,
     canDelete,
-    
+
     // Função para trocar de família
     switchFamily: async (familyId: string) => {
       if (!user?.id) throw new Error('Utilizador não autenticado');
-      
+
       try {
         // Verificar se o utilizador é membro da família
         const { data: memberData, error } = await supabase
@@ -910,24 +910,24 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
           .eq('family_id', familyId)
           .eq('user_id', user.id)
           .single();
-        
+
         if (error || !memberData) {
           throw new Error('Não tem permissão para aceder a esta família');
         }
-        
+
         // Armazenar a família atual no localStorage
         localStorage.setItem('currentFamilyId', familyId);
-        
+
         // Invalidar queries para forçar recarregamento com nova família
         queryClient.invalidateQueries({ queryKey: ['family', 'current', user.id] });
         queryClient.invalidateQueries({ queryKey: ['family'] });
-        
+
         // Aguardar um pouco para garantir que as queries são invalidadas
         await new Promise(resolve => setTimeout(resolve, 100));
-        
+
         // Forçar refetch dos dados da família
         await queryClient.refetchQueries({ queryKey: ['family', 'current', user.id] });
-        
+
       } catch (error: unknown) {
         logger.error('Erro ao trocar de família:', error);
         throw error instanceof Error ? error : new Error('Erro ao trocar de família');

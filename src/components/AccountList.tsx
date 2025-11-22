@@ -67,8 +67,9 @@ const AccountList = ({ onEdit }: AccountListProps) => {
 
   const getAvailableBalance = (account: Account) => {
     const balance = account.saldo || 0;
-    const reserved = allocations[account.id] || 0;
-    return balance - reserved;
+    // Com dupla-entrada ativa nas alocações para objetivos, o saldo da conta de origem já reflecte a saída
+    // Não subtrair novamente o valor reservado para evitar dupla subtração visual
+    return balance;
   };
 
   const uniqueTypes = useMemo(() => {
@@ -146,6 +147,15 @@ const AccountList = ({ onEdit }: AccountListProps) => {
             {filteredAccounts.map((acc) => {
               const reserved = allocations[acc.id] || 0;
               const available = getAvailableBalance(acc);
+              
+              // Log temporário para validar valores após correções
+              logger.debug('[AccountList] Conta:', {
+                accountId: acc.id,
+                nome: acc.nome,
+                saldo: acc.saldo || 0,
+                reserved,
+                available
+              });
               
               return (
                 <TableRow key={acc.id}>

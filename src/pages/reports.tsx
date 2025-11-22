@@ -292,7 +292,7 @@ const ReportsPage = () => {
       const monthIncome = monthTransactions
         .filter(t => t.tipo === 'receita')
         .reduce((sum, t) => sum + (typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0), 0);
-      const expenses = monthlyTransactions
+      const monthExpenses = monthTransactions
         .filter(t => t.tipo === 'despesa')
         .reduce((sum, t) => sum + (typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0), 0);
       

@@ -1,9 +1,9 @@
-
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -16,6 +16,7 @@ export const RegisterForm: React.FC = () => {
   const [success, setSuccess] = useState('');
   const emailRef = useRef<HTMLInputElement>(null);
   const { register } = useAuth();
+  const navigate = useNavigate();
 
   const {
     register: registerField,
@@ -35,11 +36,11 @@ export const RegisterForm: React.FC = () => {
 
     try {
       const result = await register(data.email, data.password, data.nome);
-      
-      if (result?.error) {
+
+      if (result && result.error) {
         // Mapear erros específicos para campos
-        const errorMessage = result.error.message || 'Erro ao criar conta';
-        
+        const errorMessage = (result.error as any).message || 'Erro ao criar conta';
+
         if (errorMessage.includes('email')) {
           setError('email', {
             type: 'server',
@@ -60,7 +61,10 @@ export const RegisterForm: React.FC = () => {
           });
         }
       } else {
-        setSuccess('Conta criada com sucesso! Pode fazer login.');
+        setSuccess('Conta criada com sucesso! A redirecionar para o login...');
+        setTimeout(() => {
+          navigate('/login');
+        }, 1500);
       }
     } catch (err: any) {
       setError('root', {
@@ -79,7 +83,7 @@ export const RegisterForm: React.FC = () => {
           <AlertDescription>{errors.root.message}</AlertDescription>
         </Alert>
       )}
-      
+
       {success && (
         <Alert className="border-green-200 bg-green-50 text-green-800">
           <AlertDescription>{success}</AlertDescription>

@@ -27,6 +27,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { useMediaQuery } from '../hooks/use-mobile';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 // Lazy load das páginas
 const FamilyDashboard = React.lazy(() => import('../features/family/FamilyDashboard'));
@@ -176,7 +177,7 @@ const QuickKPIs: React.FC = () => {
   
   // Calcular objetivos ativos e concluídos
   const activeGoals = familyGoals.filter(goal => goal.ativa).length;
-  const completedGoals = familyGoals.filter(goal => goal.status === 'completed').length;
+  const completedGoals = familyGoals.filter(goal => (Number((goal as any).progresso_percentual) || 0) >= 100).length;
   
   // Verificar se estamos na página de objetivos, orçamentos, contas ou transações
   const isGoalsPage = location.pathname === '/family/goals';
@@ -480,20 +481,22 @@ const FamilyArea: React.FC = () => {
         
         {/* Conteúdo das páginas */}
         <div className="flex-1 overflow-auto">
-          <Suspense fallback={<PageLoading />}>
-            <Routes>
-              <Route path="/" element={<Navigate to="/family/dashboard" replace />} />
-              <Route path="/dashboard" element={<FamilyDashboard />} />
-              <Route path="/accounts/*" element={<FamilyAccounts />} />
-              <Route path="/goals/*" element={<FamilyGoals />} />
-              <Route path="/budgets/*" element={<FamilyBudgets />} />
-              <Route path="/transactions/*" element={<FamilyTransactions />} />
-              <Route path="/recorrentes" element={<RecurrentsPage />} />
-              <Route path="/importar" element={<ImporterPage />} />
-              <Route path="/members/*" element={<FamilyMembers />} />
-              <Route path="/settings" element={<FamilySettings />} />
-            </Routes>
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<PageLoading />}>
+              <Routes>
+                <Route path="/" element={<Navigate to="/family/dashboard" replace />} />
+                <Route path="/dashboard" element={<FamilyDashboard />} />
+                <Route path="/accounts/*" element={<FamilyAccounts />} />
+                <Route path="/goals/*" element={<FamilyGoals />} />
+                <Route path="/budgets/*" element={<FamilyBudgets />} />
+                <Route path="/transactions/*" element={<FamilyTransactions />} />
+                <Route path="/recorrentes" element={<RecurrentsPage />} />
+                <Route path="/importar" element={<ImporterPage />} />
+                <Route path="/members/*" element={<FamilyMembers />} />
+                <Route path="/settings" element={<FamilySettings />} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </div>
     </div>

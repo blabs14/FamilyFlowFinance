@@ -12,6 +12,7 @@ import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useConfirmation } from '../../hooks/useConfirmation';
 import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
+import { getReminderDate } from '../../lib/dateUtils';
 
 interface Reminder {
   id: string;
@@ -52,8 +53,8 @@ const PersonalReminders: React.FC = () => {
 
     return list
       .filter((r) => {
-        const d = new Date(r.date ?? r.data_lembrete ?? r.data ?? '');
-        if (Number.isNaN(d.getTime())) return false;
+        const d = getReminderDate(r as Record<string, unknown>);
+        if (!d) return false;
         switch (filter) {
           case 'today':
             return d >= startOfDay && d <= endOfDay;
@@ -67,7 +68,8 @@ const PersonalReminders: React.FC = () => {
       })
       .filter((r) => {
         if (statusFilter === 'all') return true;
-        const d = new Date(r.date ?? r.data_lembrete ?? r.data ?? '');
+        const d = getReminderDate(r as Record<string, unknown>);
+        if (!d) return false;
         const now = new Date();
         const startOfDayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
         const endOfDayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
@@ -170,14 +172,14 @@ const PersonalReminders: React.FC = () => {
                       <div className="font-medium flex items-center gap-2">
                         {r.title}
                         {(() => {
-                          const d = new Date(r.date ?? r.data_lembrete ?? r.data);
+                          const d = getReminderDate(r as Record<string, unknown>);
                           const now = new Date();
                           const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
                           const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-                          const isOverdue = d < startOfDay;
-                          const isToday = d >= startOfDay && d <= endOfDay;
+                          const isOverdue = !!d && d < startOfDay;
+                          const isToday = !!d && d >= startOfDay && d <= endOfDay;
                           const isRecurring = Boolean(r.recurring);
-                          const badges = [];
+                          const badges = [] as React.ReactNode[];
                           if (isOverdue) {
                             badges.push(<Badge key={`${r.id}-overdue`} variant="destructive">Em atraso</Badge>);
                           }
@@ -191,7 +193,7 @@ const PersonalReminders: React.FC = () => {
                         })()}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {r.description || '—'} • {new Date(r.date ?? r.data_lembrete ?? r.data).toLocaleDateString('pt-PT')} {r.recurring ? '• Recorrente' : ''}
+                        {r.description || '—'} • {(getReminderDate(r as Record<string, unknown>)?.toLocaleDateString('pt-PT')) ?? '—'} {r.recurring ? '• Recorrente' : ''}
                       </div>
                     </div>
                     <div className="flex gap-2">

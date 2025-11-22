@@ -2,8 +2,7 @@
 -- Creates tables for payroll, timesheets, and mileage tracking
 -- All tables use RLS with user_id = auth.uid() policy
 
--- Create payroll_contracts table
-create table "public"."payroll_contracts" (
+create table if not exists "public"."payroll_contracts" (
     "id" uuid not null default gen_random_uuid(),
     "user_id" uuid not null,
     "family_id" uuid,
@@ -22,8 +21,7 @@ create table "public"."payroll_contracts" (
 
 alter table "public"."payroll_contracts" enable row level security;
 
--- Create payroll_ot_policies table
-create table "public"."payroll_ot_policies" (
+create table if not exists "public"."payroll_ot_policies" (
     "id" uuid not null default gen_random_uuid(),
     "user_id" uuid not null,
     "family_id" uuid,
@@ -43,8 +41,7 @@ create table "public"."payroll_ot_policies" (
 
 alter table "public"."payroll_ot_policies" enable row level security;
 
--- Create payroll_holidays table
-create table "public"."payroll_holidays" (
+create table if not exists "public"."payroll_holidays" (
     "id" uuid not null default gen_random_uuid(),
     "user_id" uuid not null,
     "family_id" uuid,
@@ -56,8 +53,7 @@ create table "public"."payroll_holidays" (
 
 alter table "public"."payroll_holidays" enable row level security;
 
--- Create payroll_time_entries table
-create table "public"."payroll_time_entries" (
+create table if not exists "public"."payroll_time_entries" (
     "id" uuid not null default gen_random_uuid(),
     "user_id" uuid not null,
     "family_id" uuid,
@@ -74,8 +70,7 @@ create table "public"."payroll_time_entries" (
 
 alter table "public"."payroll_time_entries" enable row level security;
 
--- Create payroll_mileage_policies table
-create table "public"."payroll_mileage_policies" (
+create table if not exists "public"."payroll_mileage_policies" (
     "id" uuid not null default gen_random_uuid(),
     "user_id" uuid not null,
     "family_id" uuid,
@@ -91,8 +86,7 @@ create table "public"."payroll_mileage_policies" (
 
 alter table "public"."payroll_mileage_policies" enable row level security;
 
--- Create payroll_mileage_trips table
-create table "public"."payroll_mileage_trips" (
+create table if not exists "public"."payroll_mileage_trips" (
     "id" uuid not null default gen_random_uuid(),
     "user_id" uuid not null,
     "family_id" uuid,
@@ -110,8 +104,7 @@ create table "public"."payroll_mileage_trips" (
 
 alter table "public"."payroll_mileage_trips" enable row level security;
 
--- Create payroll_periods table
-create table "public"."payroll_periods" (
+create table if not exists "public"."payroll_periods" (
     "id" uuid not null default gen_random_uuid(),
     "user_id" uuid not null,
     "family_id" uuid,
@@ -130,8 +123,7 @@ create table "public"."payroll_periods" (
 
 alter table "public"."payroll_periods" enable row level security;
 
--- Create payroll_items table
-create table "public"."payroll_items" (
+create table if not exists "public"."payroll_items" (
     "id" uuid not null default gen_random_uuid(),
     "user_id" uuid not null,
     "family_id" uuid,
@@ -146,8 +138,7 @@ create table "public"."payroll_items" (
 
 alter table "public"."payroll_items" enable row level security;
 
--- Create payroll_payslips table (for manual receipt comparison)
-create table "public"."payroll_payslips" (
+create table if not exists "public"."payroll_payslips" (
     "id" uuid not null default gen_random_uuid(),
     "user_id" uuid not null,
     "family_id" uuid,
@@ -170,29 +161,69 @@ create table "public"."payroll_payslips" (
 alter table "public"."payroll_payslips" enable row level security;
 
 -- Add primary keys
-CREATE UNIQUE INDEX payroll_contracts_pkey ON public.payroll_contracts USING btree (id);
-CREATE UNIQUE INDEX payroll_ot_policies_pkey ON public.payroll_ot_policies USING btree (id);
-CREATE UNIQUE INDEX payroll_holidays_pkey ON public.payroll_holidays USING btree (id);
-CREATE UNIQUE INDEX payroll_time_entries_pkey ON public.payroll_time_entries USING btree (id);
-CREATE UNIQUE INDEX payroll_mileage_policies_pkey ON public.payroll_mileage_policies USING btree (id);
-CREATE UNIQUE INDEX payroll_mileage_trips_pkey ON public.payroll_mileage_trips USING btree (id);
-CREATE UNIQUE INDEX payroll_periods_pkey ON public.payroll_periods USING btree (id);
-CREATE UNIQUE INDEX payroll_items_pkey ON public.payroll_items USING btree (id);
-CREATE UNIQUE INDEX payroll_payslips_pkey ON public.payroll_payslips USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_contracts_pkey ON public.payroll_contracts USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_ot_policies_pkey ON public.payroll_ot_policies USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_holidays_pkey ON public.payroll_holidays USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_time_entries_pkey ON public.payroll_time_entries USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_mileage_policies_pkey ON public.payroll_mileage_policies USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_mileage_trips_pkey ON public.payroll_mileage_trips USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_periods_pkey ON public.payroll_periods USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_items_pkey ON public.payroll_items USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_payslips_pkey ON public.payroll_payslips USING btree (id);
 
-alter table "public"."payroll_contracts" add constraint "payroll_contracts_pkey" PRIMARY KEY using index "payroll_contracts_pkey";
-alter table "public"."payroll_ot_policies" add constraint "payroll_ot_policies_pkey" PRIMARY KEY using index "payroll_ot_policies_pkey";
-alter table "public"."payroll_holidays" add constraint "payroll_holidays_pkey" PRIMARY KEY using index "payroll_holidays_pkey";
-alter table "public"."payroll_time_entries" add constraint "payroll_time_entries_pkey" PRIMARY KEY using index "payroll_time_entries_pkey";
-alter table "public"."payroll_mileage_policies" add constraint "payroll_mileage_policies_pkey" PRIMARY KEY using index "payroll_mileage_policies_pkey";
-alter table "public"."payroll_mileage_trips" add constraint "payroll_mileage_trips_pkey" PRIMARY KEY using index "payroll_mileage_trips_pkey";
-alter table "public"."payroll_periods" add constraint "payroll_periods_pkey" PRIMARY KEY using index "payroll_periods_pkey";
-alter table "public"."payroll_items" add constraint "payroll_items_pkey" PRIMARY KEY using index "payroll_items_pkey";
-alter table "public"."payroll_payslips" add constraint "payroll_payslips_pkey" PRIMARY KEY using index "payroll_payslips_pkey";
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_contracts_pkey') THEN
+    alter table "public"."payroll_contracts" add constraint "payroll_contracts_pkey" PRIMARY KEY using index "payroll_contracts_pkey";
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_ot_policies_pkey') THEN
+    alter table "public"."payroll_ot_policies" add constraint "payroll_ot_policies_pkey" PRIMARY KEY using index "payroll_ot_policies_pkey";
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_holidays_pkey') THEN
+    alter table "public"."payroll_holidays" add constraint "payroll_holidays_pkey" PRIMARY KEY using index "payroll_holidays_pkey";
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_time_entries_pkey') THEN
+    alter table "public"."payroll_time_entries" add constraint "payroll_time_entries_pkey" PRIMARY KEY using index "payroll_time_entries_pkey";
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_mileage_policies_pkey') THEN
+    alter table "public"."payroll_mileage_policies" add constraint "payroll_mileage_policies_pkey" PRIMARY KEY using index "payroll_mileage_policies_pkey";
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_mileage_trips_pkey') THEN
+    alter table "public"."payroll_mileage_trips" add constraint "payroll_mileage_trips_pkey" PRIMARY KEY using index "payroll_mileage_trips_pkey";
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_periods_pkey') THEN
+    alter table "public"."payroll_periods" add constraint "payroll_periods_pkey" PRIMARY KEY using index "payroll_periods_pkey";
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_items_pkey') THEN
+    alter table "public"."payroll_items" add constraint "payroll_items_pkey" PRIMARY KEY using index "payroll_items_pkey";
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_payslips_pkey') THEN
+    alter table "public"."payroll_payslips" add constraint "payroll_payslips_pkey" PRIMARY KEY using index "payroll_payslips_pkey";
+  END IF;
+END $$;
 
 -- Add foreign key constraints
-alter table "public"."payroll_contracts" add constraint "payroll_contracts_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-alter table "public"."payroll_contracts" validate constraint "payroll_contracts_user_id_fkey";
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_contracts_user_id_fkey') THEN
+    alter table "public"."payroll_contracts" add constraint "payroll_contracts_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
+    alter table "public"."payroll_contracts" validate constraint "payroll_contracts_user_id_fkey";
+  END IF;
+END $$;
 
 -- Guardar dependência de families: só adicionar FK se a tabela existir
 DO $$
@@ -201,210 +232,592 @@ BEGIN
     SELECT 1 FROM information_schema.tables 
     WHERE table_schema = 'public' AND table_name = 'families'
   ) THEN
-    EXECUTE 'alter table public.payroll_contracts add constraint payroll_contracts_family_id_fkey FOREIGN KEY (family_id) REFERENCES public.families(id) ON DELETE CASCADE not valid';
-    EXECUTE 'alter table public.payroll_contracts validate constraint payroll_contracts_family_id_fkey';
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_contracts_family_id_fkey') THEN
+      EXECUTE 'alter table public.payroll_contracts add constraint payroll_contracts_family_id_fkey FOREIGN KEY (family_id) REFERENCES public.families(id) ON DELETE CASCADE not valid';
+      EXECUTE 'alter table public.payroll_contracts validate constraint payroll_contracts_family_id_fkey';
+    END IF;
   ELSE
     RAISE NOTICE 'Skipping payroll_contracts_family_id_fkey - public.families does not exist yet';
   END IF;
 END;
 $$;
 
-alter table "public"."payroll_ot_policies" add constraint "payroll_ot_policies_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-alter table "public"."payroll_ot_policies" validate constraint "payroll_ot_policies_user_id_fkey";
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_ot_policies_user_id_fkey') THEN
+    alter table "public"."payroll_ot_policies" add constraint "payroll_ot_policies_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
+    alter table "public"."payroll_ot_policies" validate constraint "payroll_ot_policies_user_id_fkey";
+  END IF;
+END $$;
 
-alter table "public"."payroll_ot_policies" add constraint "payroll_ot_policies_contract_id_fkey" FOREIGN KEY (contract_id) REFERENCES public.payroll_contracts(id) ON DELETE CASCADE not valid;
-alter table "public"."payroll_ot_policies" validate constraint "payroll_ot_policies_contract_id_fkey";
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_ot_policies_contract_id_fkey') THEN
+    alter table "public"."payroll_ot_policies" add constraint "payroll_ot_policies_contract_id_fkey" FOREIGN KEY (contract_id) REFERENCES public.payroll_contracts(id) ON DELETE CASCADE not valid;
+    alter table "public"."payroll_ot_policies" validate constraint "payroll_ot_policies_contract_id_fkey";
+  END IF;
+END $$;
 
-alter table "public"."payroll_holidays" add constraint "payroll_holidays_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-alter table "public"."payroll_holidays" validate constraint "payroll_holidays_user_id_fkey";
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_holidays_user_id_fkey') THEN
+    alter table "public"."payroll_holidays" add constraint "payroll_holidays_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
+    alter table "public"."payroll_holidays" validate constraint "payroll_holidays_user_id_fkey";
+  END IF;
+END $$;
 
-alter table "public"."payroll_time_entries" add constraint "payroll_time_entries_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-alter table "public"."payroll_time_entries" validate constraint "payroll_time_entries_user_id_fkey";
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_time_entries_user_id_fkey') THEN
+    alter table "public"."payroll_time_entries" add constraint "payroll_time_entries_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
+    alter table "public"."payroll_time_entries" validate constraint "payroll_time_entries_user_id_fkey";
+  END IF;
+END $$;
 
-alter table "public"."payroll_time_entries" add constraint "payroll_time_entries_contract_id_fkey" FOREIGN KEY (contract_id) REFERENCES public.payroll_contracts(id) ON DELETE CASCADE not valid;
-alter table "public"."payroll_time_entries" validate constraint "payroll_time_entries_contract_id_fkey";
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_time_entries_contract_id_fkey') THEN
+    alter table "public"."payroll_time_entries" add constraint "payroll_time_entries_contract_id_fkey" FOREIGN KEY (contract_id) REFERENCES public.payroll_contracts(id) ON DELETE CASCADE not valid;
+    alter table "public"."payroll_time_entries" validate constraint "payroll_time_entries_contract_id_fkey";
+  END IF;
+END $$;
 
-alter table "public"."payroll_mileage_policies" add constraint "payroll_mileage_policies_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-alter table "public"."payroll_mileage_policies" validate constraint "payroll_mileage_policies_user_id_fkey";
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_mileage_policies_user_id_fkey') THEN
+    alter table "public"."payroll_mileage_policies" add constraint "payroll_mileage_policies_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
+    alter table "public"."payroll_mileage_policies" validate constraint "payroll_mileage_policies_user_id_fkey";
+  END IF;
+END $$;
 
-alter table "public"."payroll_mileage_trips" add constraint "payroll_mileage_trips_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-alter table "public"."payroll_mileage_trips" validate constraint "payroll_mileage_trips_user_id_fkey";
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_mileage_trips_user_id_fkey') THEN
+    alter table "public"."payroll_mileage_trips" add constraint "payroll_mileage_trips_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
+    alter table "public"."payroll_mileage_trips" validate constraint "payroll_mileage_trips_user_id_fkey";
+  END IF;
+END $$;
 
-alter table "public"."payroll_mileage_trips" add constraint "payroll_mileage_trips_policy_id_fkey" FOREIGN KEY (policy_id) REFERENCES public.payroll_mileage_policies(id) ON DELETE CASCADE not valid;
-alter table "public"."payroll_mileage_trips" validate constraint "payroll_mileage_trips_policy_id_fkey";
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_mileage_trips_policy_id_fkey') THEN
+    alter table "public"."payroll_mileage_trips" add constraint "payroll_mileage_trips_policy_id_fkey" FOREIGN KEY (policy_id) REFERENCES public.payroll_mileage_policies(id) ON DELETE CASCADE not valid;
+    alter table "public"."payroll_mileage_trips" validate constraint "payroll_mileage_trips_policy_id_fkey";
+  END IF;
+END $$;
 
-alter table "public"."payroll_periods" add constraint "payroll_periods_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-alter table "public"."payroll_periods" validate constraint "payroll_periods_user_id_fkey";
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_periods_user_id_fkey') THEN
+    alter table "public"."payroll_periods" add constraint "payroll_periods_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
+    alter table "public"."payroll_periods" validate constraint "payroll_periods_user_id_fkey";
+  END IF;
+END $$;
 
-alter table "public"."payroll_periods" add constraint "payroll_periods_contract_id_fkey" FOREIGN KEY (contract_id) REFERENCES public.payroll_contracts(id) ON DELETE CASCADE not valid;
-alter table "public"."payroll_periods" validate constraint "payroll_periods_contract_id_fkey";
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_periods_contract_id_fkey') THEN
+    alter table "public"."payroll_periods" add constraint "payroll_periods_contract_id_fkey" FOREIGN KEY (contract_id) REFERENCES public.payroll_contracts(id) ON DELETE CASCADE not valid;
+    alter table "public"."payroll_periods" validate constraint "payroll_periods_contract_id_fkey";
+  END IF;
+END $$;
 
-alter table "public"."payroll_items" add constraint "payroll_items_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-alter table "public"."payroll_items" validate constraint "payroll_items_user_id_fkey";
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_items_user_id_fkey') THEN
+    alter table "public"."payroll_items" add constraint "payroll_items_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
+    alter table "public"."payroll_items" validate constraint "payroll_items_user_id_fkey";
+  END IF;
+END $$;
 
-alter table "public"."payroll_items" add constraint "payroll_items_period_id_fkey" FOREIGN KEY (period_id) REFERENCES public.payroll_periods(id) ON DELETE CASCADE not valid;
-alter table "public"."payroll_items" validate constraint "payroll_items_period_id_fkey";
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_items_period_id_fkey') THEN
+    alter table "public"."payroll_items" add constraint "payroll_items_period_id_fkey" FOREIGN KEY (period_id) REFERENCES public.payroll_periods(id) ON DELETE CASCADE not valid;
+    alter table "public"."payroll_items" validate constraint "payroll_items_period_id_fkey";
+  END IF;
+END $$;
 
-alter table "public"."payroll_payslips" add constraint "payroll_payslips_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-alter table "public"."payroll_payslips" validate constraint "payroll_payslips_user_id_fkey";
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_payslips_user_id_fkey') THEN
+    alter table "public"."payroll_payslips" add constraint "payroll_payslips_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
+    alter table "public"."payroll_payslips" validate constraint "payroll_payslips_user_id_fkey";
+  END IF;
+END $$;
 
-alter table "public"."payroll_payslips" add constraint "payroll_payslips_period_id_fkey" FOREIGN KEY (period_id) REFERENCES public.payroll_periods(id) ON DELETE CASCADE not valid;
-alter table "public"."payroll_payslips" validate constraint "payroll_payslips_period_id_fkey";
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_payslips_period_id_fkey') THEN
+    alter table "public"."payroll_payslips" add constraint "payroll_payslips_period_id_fkey" FOREIGN KEY (period_id) REFERENCES public.payroll_periods(id) ON DELETE CASCADE not valid;
+    alter table "public"."payroll_payslips" validate constraint "payroll_payslips_period_id_fkey";
+  END IF;
+END $$;
 
 -- Add unique constraints
-CREATE UNIQUE INDEX payroll_periods_user_period_key ON public.payroll_periods USING btree (user_id, period_key);
-CREATE UNIQUE INDEX payroll_time_entries_dedupe_hash_key ON public.payroll_time_entries USING btree (user_id, dedupe_hash) WHERE dedupe_hash IS NOT NULL;
-CREATE UNIQUE INDEX payroll_mileage_trips_dedupe_hash_key ON public.payroll_mileage_trips USING btree (user_id, dedupe_hash) WHERE dedupe_hash IS NOT NULL;
-CREATE UNIQUE INDEX payroll_holidays_user_date_key ON public.payroll_holidays USING btree (user_id, date);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_periods_user_period_key ON public.payroll_periods USING btree (user_id, period_key);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_time_entries_dedupe_hash_key ON public.payroll_time_entries USING btree (user_id, dedupe_hash) WHERE dedupe_hash IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_mileage_trips_dedupe_hash_key ON public.payroll_mileage_trips USING btree (user_id, dedupe_hash) WHERE dedupe_hash IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_holidays_user_date_key ON public.payroll_holidays USING btree (user_id, date);
 
 -- Add indexes for performance
-CREATE INDEX payroll_time_entries_user_date_idx ON public.payroll_time_entries USING btree (user_id, date);
-CREATE INDEX payroll_mileage_trips_user_date_idx ON public.payroll_mileage_trips USING btree (user_id, date);
-CREATE INDEX payroll_items_period_kind_idx ON public.payroll_items USING btree (period_id, kind);
+CREATE INDEX IF NOT EXISTS payroll_time_entries_user_date_idx ON public.payroll_time_entries USING btree (user_id, date);
+CREATE INDEX IF NOT EXISTS payroll_mileage_trips_user_date_idx ON public.payroll_mileage_trips USING btree (user_id, date);
+CREATE INDEX IF NOT EXISTS payroll_items_period_kind_idx ON public.payroll_items USING btree (period_id, kind);
 
 -- Create RLS policies
 -- Payroll Contracts
-CREATE POLICY "Users can view own payroll contracts" ON "public"."payroll_contracts"
-    FOR SELECT USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_contracts' AND policyname = 'Users can view own payroll contracts'
+  ) THEN
+    CREATE POLICY "Users can view own payroll contracts" ON "public"."payroll_contracts"
+        FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can insert own payroll contracts" ON "public"."payroll_contracts"
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_contracts' AND policyname = 'Users can insert own payroll contracts'
+  ) THEN
+    CREATE POLICY "Users can insert own payroll contracts" ON "public"."payroll_contracts"
+        FOR INSERT WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can update own payroll contracts" ON "public"."payroll_contracts"
-    FOR UPDATE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_contracts' AND policyname = 'Users can update own payroll contracts'
+  ) THEN
+    CREATE POLICY "Users can update own payroll contracts" ON "public"."payroll_contracts"
+        FOR UPDATE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can delete own payroll contracts" ON "public"."payroll_contracts"
-    FOR DELETE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_contracts' AND policyname = 'Users can delete own payroll contracts'
+  ) THEN
+    CREATE POLICY "Users can delete own payroll contracts" ON "public"."payroll_contracts"
+        FOR DELETE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Payroll OT Policies
-CREATE POLICY "Users can view own payroll ot policies" ON "public"."payroll_ot_policies"
-    FOR SELECT USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_ot_policies' AND policyname = 'Users can view own payroll ot policies'
+  ) THEN
+    CREATE POLICY "Users can view own payroll ot policies" ON "public"."payroll_ot_policies"
+        FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can insert own payroll ot policies" ON "public"."payroll_ot_policies"
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_ot_policies' AND policyname = 'Users can insert own payroll ot policies'
+  ) THEN
+    CREATE POLICY "Users can insert own payroll ot policies" ON "public"."payroll_ot_policies"
+        FOR INSERT WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can update own payroll ot policies" ON "public"."payroll_ot_policies"
-    FOR UPDATE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_ot_policies' AND policyname = 'Users can update own payroll ot policies'
+  ) THEN
+    CREATE POLICY "Users can update own payroll ot policies" ON "public"."payroll_ot_policies"
+        FOR UPDATE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can delete own payroll ot policies" ON "public"."payroll_ot_policies"
-    FOR DELETE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_ot_policies' AND policyname = 'Users can delete own payroll ot policies'
+  ) THEN
+    CREATE POLICY "Users can delete own payroll ot policies" ON "public"."payroll_ot_policies"
+        FOR DELETE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Payroll Holidays
-CREATE POLICY "Users can view own payroll holidays" ON "public"."payroll_holidays"
-    FOR SELECT USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_holidays' AND policyname = 'Users can view own payroll holidays'
+  ) THEN
+    CREATE POLICY "Users can view own payroll holidays" ON "public"."payroll_holidays"
+        FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can insert own payroll holidays" ON "public"."payroll_holidays"
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_holidays' AND policyname = 'Users can insert own payroll holidays'
+  ) THEN
+    CREATE POLICY "Users can insert own payroll holidays" ON "public"."payroll_holidays"
+        FOR INSERT WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can update own payroll holidays" ON "public"."payroll_holidays"
-    FOR UPDATE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_holidays' AND policyname = 'Users can update own payroll holidays'
+  ) THEN
+    CREATE POLICY "Users can update own payroll holidays" ON "public"."payroll_holidays"
+        FOR UPDATE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can delete own payroll holidays" ON "public"."payroll_holidays"
-    FOR DELETE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_holidays' AND policyname = 'Users can delete own payroll holidays'
+  ) THEN
+    CREATE POLICY "Users can delete own payroll holidays" ON "public"."payroll_holidays"
+        FOR DELETE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Payroll Time Entries
-CREATE POLICY "Users can view own payroll time entries" ON "public"."payroll_time_entries"
-    FOR SELECT USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_time_entries' AND policyname = 'Users can view own payroll time entries'
+  ) THEN
+    CREATE POLICY "Users can view own payroll time entries" ON "public"."payroll_time_entries"
+        FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can insert own payroll time entries" ON "public"."payroll_time_entries"
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_time_entries' AND policyname = 'Users can insert own payroll time entries'
+  ) THEN
+    CREATE POLICY "Users can insert own payroll time entries" ON "public"."payroll_time_entries"
+        FOR INSERT WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can update own payroll time entries" ON "public"."payroll_time_entries"
-    FOR UPDATE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_time_entries' AND policyname = 'Users can update own payroll time entries'
+  ) THEN
+    CREATE POLICY "Users can update own payroll time entries" ON "public"."payroll_time_entries"
+        FOR UPDATE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can delete own payroll time entries" ON "public"."payroll_time_entries"
-    FOR DELETE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_time_entries' AND policyname = 'Users can delete own payroll time entries'
+  ) THEN
+    CREATE POLICY "Users can delete own payroll time entries" ON "public"."payroll_time_entries"
+        FOR DELETE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Payroll Mileage Policies
-CREATE POLICY "Users can view own payroll mileage policies" ON "public"."payroll_mileage_policies"
-    FOR SELECT USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_mileage_policies' AND policyname = 'Users can view own payroll mileage policies'
+  ) THEN
+    CREATE POLICY "Users can view own payroll mileage policies" ON "public"."payroll_mileage_policies"
+        FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can insert own payroll mileage policies" ON "public"."payroll_mileage_policies"
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_mileage_policies' AND policyname = 'Users can insert own payroll mileage policies'
+  ) THEN
+    CREATE POLICY "Users can insert own payroll mileage policies" ON "public"."payroll_mileage_policies"
+        FOR INSERT WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can update own payroll mileage policies" ON "public"."payroll_mileage_policies"
-    FOR UPDATE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_mileage_policies' AND policyname = 'Users can update own payroll mileage policies'
+  ) THEN
+    CREATE POLICY "Users can update own payroll mileage policies" ON "public"."payroll_mileage_policies"
+        FOR UPDATE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can delete own payroll mileage policies" ON "public"."payroll_mileage_policies"
-    FOR DELETE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_mileage_policies' AND policyname = 'Users can delete own payroll mileage policies'
+  ) THEN
+    CREATE POLICY "Users can delete own payroll mileage policies" ON "public"."payroll_mileage_policies"
+        FOR DELETE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Payroll Mileage Trips
-CREATE POLICY "Users can view own payroll mileage trips" ON "public"."payroll_mileage_trips"
-    FOR SELECT USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_mileage_trips' AND policyname = 'Users can view own payroll mileage trips'
+  ) THEN
+    CREATE POLICY "Users can view own payroll mileage trips" ON "public"."payroll_mileage_trips"
+        FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can insert own payroll mileage trips" ON "public"."payroll_mileage_trips"
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_mileage_trips' AND policyname = 'Users can insert own payroll mileage trips'
+  ) THEN
+    CREATE POLICY "Users can insert own payroll mileage trips" ON "public"."payroll_mileage_trips"
+        FOR INSERT WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can update own payroll mileage trips" ON "public"."payroll_mileage_trips"
-    FOR UPDATE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_mileage_trips' AND policyname = 'Users can update own payroll mileage trips'
+  ) THEN
+    CREATE POLICY "Users can update own payroll mileage trips" ON "public"."payroll_mileage_trips"
+        FOR UPDATE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can delete own payroll mileage trips" ON "public"."payroll_mileage_trips"
-    FOR DELETE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_mileage_trips' AND policyname = 'Users can delete own payroll mileage trips'
+  ) THEN
+    CREATE POLICY "Users can delete own payroll mileage trips" ON "public"."payroll_mileage_trips"
+        FOR DELETE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Payroll Periods
-CREATE POLICY "Users can view own payroll periods" ON "public"."payroll_periods"
-    FOR SELECT USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_periods' AND policyname = 'Users can view own payroll periods'
+  ) THEN
+    CREATE POLICY "Users can view own payroll periods" ON "public"."payroll_periods"
+        FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can insert own payroll periods" ON "public"."payroll_periods"
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_periods' AND policyname = 'Users can insert own payroll periods'
+  ) THEN
+    CREATE POLICY "Users can insert own payroll periods" ON "public"."payroll_periods"
+        FOR INSERT WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can update own payroll periods" ON "public"."payroll_periods"
-    FOR UPDATE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_periods' AND policyname = 'Users can update own payroll periods'
+  ) THEN
+    CREATE POLICY "Users can update own payroll periods" ON "public"."payroll_periods"
+        FOR UPDATE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can delete own payroll periods" ON "public"."payroll_periods"
-    FOR DELETE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_periods' AND policyname = 'Users can delete own payroll periods'
+  ) THEN
+    CREATE POLICY "Users can delete own payroll periods" ON "public"."payroll_periods"
+        FOR DELETE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Payroll Items
-CREATE POLICY "Users can view own payroll items" ON "public"."payroll_items"
-    FOR SELECT USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_items' AND policyname = 'Users can view own payroll items'
+  ) THEN
+    CREATE POLICY "Users can view own payroll items" ON "public"."payroll_items"
+        FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can insert own payroll items" ON "public"."payroll_items"
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_items' AND policyname = 'Users can insert own payroll items'
+  ) THEN
+    CREATE POLICY "Users can insert own payroll items" ON "public"."payroll_items"
+        FOR INSERT WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can update own payroll items" ON "public"."payroll_items"
-    FOR UPDATE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_items' AND policyname = 'Users can update own payroll items'
+  ) THEN
+    CREATE POLICY "Users can update own payroll items" ON "public"."payroll_items"
+        FOR UPDATE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can delete own payroll items" ON "public"."payroll_items"
-    FOR DELETE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_items' AND policyname = 'Users can delete own payroll items'
+  ) THEN
+    CREATE POLICY "Users can delete own payroll items" ON "public"."payroll_items"
+        FOR DELETE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Payroll Payslips
-CREATE POLICY "Users can view own payroll payslips" ON "public"."payroll_payslips"
-    FOR SELECT USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_payslips' AND policyname = 'Users can view own payroll payslips'
+  ) THEN
+    CREATE POLICY "Users can view own payroll payslips" ON "public"."payroll_payslips"
+        FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can insert own payroll payslips" ON "public"."payroll_payslips"
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_payslips' AND policyname = 'Users can insert own payroll payslips'
+  ) THEN
+    CREATE POLICY "Users can insert own payroll payslips" ON "public"."payroll_payslips"
+        FOR INSERT WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can update own payroll payslips" ON "public"."payroll_payslips"
-    FOR UPDATE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_payslips' AND policyname = 'Users can update own payroll payslips'
+  ) THEN
+    CREATE POLICY "Users can update own payroll payslips" ON "public"."payroll_payslips"
+        FOR UPDATE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can delete own payroll payslips" ON "public"."payroll_payslips"
-    FOR DELETE USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' AND tablename = 'payroll_payslips' AND policyname = 'Users can delete own payroll payslips'
+  ) THEN
+    CREATE POLICY "Users can delete own payroll payslips" ON "public"."payroll_payslips"
+        FOR DELETE USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Add check constraints
-alter table "public"."payroll_contracts" add constraint "payroll_contracts_base_salary_positive" CHECK (base_salary_cents > 0);
-alter table "public"."payroll_contracts" add constraint "payroll_contracts_meal_allowance_non_negative" CHECK (meal_allowance_cents_per_day >= 0);
-alter table "public"."payroll_contracts" add constraint "payroll_contracts_vacation_bonus_mode_valid" CHECK (vacation_bonus_mode IN ('monthly', 'june', 'december', 'off'));
-alter table "public"."payroll_contracts" add constraint "payroll_contracts_christmas_bonus_mode_valid" CHECK (christmas_bonus_mode IN ('monthly', 'december', 'off'));
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_contracts_base_salary_positive') THEN
+    alter table "public"."payroll_contracts" add constraint "payroll_contracts_base_salary_positive" CHECK (base_salary_cents > 0);
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_contracts_meal_allowance_non_negative') THEN
+    alter table "public"."payroll_contracts" add constraint "payroll_contracts_meal_allowance_non_negative" CHECK (meal_allowance_cents_per_day >= 0);
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_contracts_vacation_bonus_mode_valid') THEN
+    alter table "public"."payroll_contracts" add constraint "payroll_contracts_vacation_bonus_mode_valid" CHECK (vacation_bonus_mode IN ('monthly', 'june', 'december', 'off'));
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_contracts_christmas_bonus_mode_valid') THEN
+    alter table "public"."payroll_contracts" add constraint "payroll_contracts_christmas_bonus_mode_valid" CHECK (christmas_bonus_mode IN ('monthly', 'december', 'off'));
+  END IF;
+END $$;
 
-alter table "public"."payroll_ot_policies" add constraint "payroll_ot_policies_multipliers_positive" CHECK (day_multiplier > 0 AND night_multiplier > 0 AND weekend_multiplier > 0 AND holiday_multiplier > 0);
-alter table "public"."payroll_ot_policies" add constraint "payroll_ot_policies_rounding_positive" CHECK (rounding_minutes > 0);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_ot_policies_multipliers_positive') THEN
+    alter table "public"."payroll_ot_policies" add constraint "payroll_ot_policies_multipliers_positive" CHECK (day_multiplier > 0 AND night_multiplier > 0 AND weekend_multiplier > 0 AND holiday_multiplier > 0);
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_ot_policies_rounding_positive') THEN
+    alter table "public"."payroll_ot_policies" add constraint "payroll_ot_policies_rounding_positive" CHECK (rounding_minutes > 0);
+  END IF;
+END $$;
 
-alter table "public"."payroll_time_entries" add constraint "payroll_time_entries_break_non_negative" CHECK (break_minutes >= 0);
-alter table "public"."payroll_time_entries" add constraint "payroll_time_entries_time_order" CHECK (start_time < end_time);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_time_entries_break_non_negative') THEN
+    alter table "public"."payroll_time_entries" add constraint "payroll_time_entries_break_non_negative" CHECK (break_minutes >= 0);
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_time_entries_time_order') THEN
+    alter table "public"."payroll_time_entries" add constraint "payroll_time_entries_time_order" CHECK (start_time < end_time);
+  END IF;
+END $$;
 
-alter table "public"."payroll_mileage_policies" add constraint "payroll_mileage_policies_rate_positive" CHECK (rate_cents_per_km > 0);
-alter table "public"."payroll_mileage_policies" add constraint "payroll_mileage_policies_cap_positive" CHECK (monthly_cap_cents IS NULL OR monthly_cap_cents > 0);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_mileage_policies_rate_positive') THEN
+    alter table "public"."payroll_mileage_policies" add constraint "payroll_mileage_policies_rate_positive" CHECK (rate_cents_per_km > 0);
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_mileage_policies_cap_positive') THEN
+    alter table "public"."payroll_mileage_policies" add constraint "payroll_mileage_policies_cap_positive" CHECK (monthly_cap_cents IS NULL OR monthly_cap_cents > 0);
+  END IF;
+END $$;
 
-alter table "public"."payroll_mileage_trips" add constraint "payroll_mileage_trips_km_positive" CHECK (km > 0);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_mileage_trips_km_positive') THEN
+    alter table "public"."payroll_mileage_trips" add constraint "payroll_mileage_trips_km_positive" CHECK (km > 0);
+  END IF;
+END $$;
 
-alter table "public"."payroll_periods" add constraint "payroll_periods_year_valid" CHECK (year >= 2000 AND year <= 2100);
-alter table "public"."payroll_periods" add constraint "payroll_periods_month_valid" CHECK (month >= 1 AND month <= 12);
-alter table "public"."payroll_periods" add constraint "payroll_periods_minutes_non_negative" CHECK (planned_minutes >= 0 AND worked_minutes >= 0);
-alter table "public"."payroll_periods" add constraint "payroll_periods_cents_non_negative" CHECK (gross_cents >= 0 AND net_expected_cents >= 0);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_periods_year_valid') THEN
+    alter table "public"."payroll_periods" add constraint "payroll_periods_year_valid" CHECK (year >= 2000 AND year <= 2100);
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_periods_month_valid') THEN
+    alter table "public"."payroll_periods" add constraint "payroll_periods_month_valid" CHECK (month >= 1 AND month <= 12);
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_periods_minutes_non_negative') THEN
+    alter table "public"."payroll_periods" add constraint "payroll_periods_minutes_non_negative" CHECK (planned_minutes >= 0 AND worked_minutes >= 0);
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_periods_cents_non_negative') THEN
+    alter table "public"."payroll_periods" add constraint "payroll_periods_cents_non_negative" CHECK (gross_cents >= 0 AND net_expected_cents >= 0);
+  END IF;
+END $$;
 
-alter table "public"."payroll_items" add constraint "payroll_items_kind_valid" CHECK (kind IN ('base', 'ot_day', 'ot_night', 'ot_weekend', 'ot_holiday', 'meal', 'vacation_bonus', 'christmas_bonus', 'mileage', 'allowance', 'deduction'));
-alter table "public"."payroll_items" add constraint "payroll_items_quantity_non_negative" CHECK (quantity IS NULL OR quantity >= 0);
-alter table "public"."payroll_items" add constraint "payroll_items_rate_non_negative" CHECK (rate_cents IS NULL OR rate_cents >= 0);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_items_kind_valid') THEN
+    alter table "public"."payroll_items" add constraint "payroll_items_kind_valid" CHECK (kind IN ('base', 'ot_day', 'ot_night', 'ot_weekend', 'ot_holiday', 'meal', 'vacation_bonus', 'christmas_bonus', 'mileage', 'allowance', 'deduction'));
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_items_quantity_non_negative') THEN
+    alter table "public"."payroll_items" add constraint "payroll_items_quantity_non_negative" CHECK (quantity IS NULL OR quantity >= 0);
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payroll_items_rate_non_negative') THEN
+    alter table "public"."payroll_items" add constraint "payroll_items_rate_non_negative" CHECK (rate_cents IS NULL OR rate_cents >= 0);
+  END IF;
+END $$;
 
 -- Add comments for documentation
 COMMENT ON TABLE "public"."payroll_contracts" IS 'Employee contracts with base salary and schedule configuration';

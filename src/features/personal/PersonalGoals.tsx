@@ -191,7 +191,7 @@ const PersonalGoals: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <Label>Estado</Label>
-          <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as 'all' | 'active' | 'completed')}>
+          <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as 'all' | 'progress' | 'warn' | 'done')}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -219,7 +219,7 @@ const PersonalGoals: React.FC = () => {
             return true;
           })
           .map((goal) => {
-          const isCompleted = (goal as any).progress_percentage >= 100;
+          const isCompleted = ((goal as any).progresso_percentual ?? (goal as any).progress_percentage ?? 0) >= 100;
           const remaining = Math.max((goal.valor_objetivo ?? 0) - (goal.total_alocado ?? 0), 0);
 
            return (
