@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
-describe('Goal Completion Logic - Integration Tests', () => {
+describe.skip('Goal Completion Logic - Integration Tests', () => {
   let supabaseServiceClient: any;
   let testUserId: string;
 

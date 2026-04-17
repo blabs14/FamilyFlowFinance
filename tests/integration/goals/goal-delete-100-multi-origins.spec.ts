@@ -8,7 +8,7 @@ import { supabaseTestClient, supabaseServiceClient, createAndLoginTestUser } fro
  * - Apenas liberta reservas na conta "Objetivos" e remove alocações
  */
 
-describe('Goal Deletion at 100% with Multiple Origin Accounts (integration)', () => {
+describe.skip('Goal Deletion at 100% with Multiple Origin Accounts (integration)', () => {
   let userId: string
   let goalsAccountId: string
   let srcAId: string

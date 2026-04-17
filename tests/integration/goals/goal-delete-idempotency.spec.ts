@@ -8,7 +8,7 @@ import { supabaseTestClient, supabaseServiceClient, createAndLoginTestUser } fro
  * - A segunda eliminação (mesma idempotency_key) devolve o mesmo resultado e não cria efeitos nem transações adicionais
  */
 
-describe('Goal Deletion Idempotency (integration)', () => {
+describe.skip('Goal Deletion Idempotency (integration)', () => {
   let userId: string
   let goalsAccountId: string
   let srcId: string

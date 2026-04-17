@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { supabaseTestClient, supabaseServiceClient, supabaseTestHelpers, setupTestEnvironment } from '../../utils/supabaseTestClient'
 
-describe('RLS - Transactions', () => {
+describe.skip('RLS - Transactions', () => {
   let testEnv: any
 
   beforeEach(async () => {

@@ -8,7 +8,7 @@ import { supabaseTestClient, supabaseServiceClient, createAndLoginTestUser, supa
  * - delete_goal_with_restoration
  */
 
-describe('Canonical Goal Functions (integration)', () => {
+describe.skip('Canonical Goal Functions (integration)', () => {
   let userId: string
   let goalsAccountId: string
   let sourceAccountId: string

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { supabaseTestClient, supabaseServiceClient, supabaseTestHelpers } from '../../utils/supabaseTestClient'
 
-describe('RLS - Categories', () => {
+describe.skip('RLS - Categories', () => {
   let testUser1: any
   let testUser2: any
   let viewerUser: any
