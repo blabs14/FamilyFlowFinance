@@ -1,0 +1,12 @@
+ALTER FUNCTION public._is_family_context(p_family_id uuid) SET search_path = public;
+ALTER FUNCTION public._is_personal_context(p_family_id uuid) SET search_path = public;
+ALTER FUNCTION public.is_family_non_viewer(p_family_id uuid) SET search_path = public;
+ALTER FUNCTION public.get_current_user_id() SET search_path = public;
+ALTER FUNCTION public.handle_goal_creation() SET search_path = public;
+ALTER FUNCTION public.handle_goal_completion() SET search_path = public;
+ALTER FUNCTION public.allocate_to_goal_with_transaction(goal_id_param uuid, account_id_param uuid, amount_param numeric, user_id_param uuid, description_param text) SET search_path = public;
+ALTER FUNCTION public.deallocate_from_goal_with_transaction(goal_id_param uuid, account_id_param uuid, amount_param numeric, user_id_param uuid) SET search_path = public;
+ALTER FUNCTION public.delete_goal_with_restoration(goal_id_param uuid, user_id_param uuid) SET search_path = public;
+ALTER FUNCTION public.delete_goal_with_restoration(goal_id_param uuid, user_id_param uuid, idempotency_key text) SET search_path = public;
+ALTER FUNCTION public.fn_goal_deallocate(goal_id_param uuid, destination_account_id_param uuid, amount_param numeric, user_id_param uuid, description_param text, force_param boolean, transaction_date_param date) SET search_path = public;
+ALTER FUNCTION public.fn_goal_delete_with_correct_logic(goal_id_param uuid, user_id_param uuid, destination_account_id_param uuid, idempotency_key text) SET search_path = public;
