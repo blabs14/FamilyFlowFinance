@@ -5,10 +5,10 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
-import { vi } from 'vitest';
-import { expect } from 'vitest';
+import { expect, vi } from 'vitest';
 
 // Mock do AuthContext
 const AuthContext = React.createContext(null);
@@ -105,11 +105,11 @@ export const waitForLoadingToFinish = async () => {
 // Mock helpers para serviços
 export const createMockService = (methods: Record<string, any>) => {
   const mockService: Record<string, any> = {};
-  
+
   Object.keys(methods).forEach(method => {
     mockService[method] = vi.fn().mockResolvedValue(methods[method]);
   });
-  
+
   return mockService;
 };
 
@@ -125,3 +125,24 @@ export const mockUseNavigate = () => mockNavigate;
 // Mock do toast
 export const mockToast = vi.fn();
 export const mockUseToast = () => ({ toast: mockToast });
+
+/**
+ * Always use this instead of calling userEvent.setup() inline.
+ * Centralising means future changes (e.g. advance-timers) land in one place.
+ */
+export function setupUser() {
+  return userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+}
+
+/** Fill multiple labelled inputs in one call. */
+export async function fillForm(
+  user: ReturnType<typeof setupUser>,
+  fields: Record<string, string>,
+  getByLabel: (label: string | RegExp) => HTMLElement
+) {
+  for (const [label, value] of Object.entries(fields)) {
+    const el = getByLabel(new RegExp(label, 'i'));
+    await user.clear(el);
+    await user.type(el, value);
+  }
+}

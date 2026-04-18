@@ -162,6 +162,22 @@ export const makeBudget = (
     ...overrides,
   }) as Tables['budgets']['Row'];
 
+export const makeReminder = (
+  overrides: Partial<Tables['reminders']['Row']> = {}
+): Tables['reminders']['Row'] =>
+  ({
+    id: uuid(),
+    user_id: uuid(),
+    family_id: null,
+    title: 'Lembrete teste',
+    description: null,
+    date: now().slice(0, 10),
+    data: null,
+    recurring: false,
+    created_at: now(),
+    ...overrides,
+  }) as Tables['reminders']['Row'];
+
 export const resetFactoryCounter = () => {
   idCounter = 1;
 };

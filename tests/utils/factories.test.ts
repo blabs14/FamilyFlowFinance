@@ -8,6 +8,7 @@ import {
   makeFamilyMember,
   makeGoal,
   makeProfile,
+  makeReminder,
   makeTransaction,
   makeUser,
   resetFactoryCounter,
@@ -37,8 +38,24 @@ describe('test factories', () => {
       makeTransaction,
       makeCategory,
       makeGoal,
+      makeReminder,
     ]) {
       expect(factory()).toHaveProperty('id');
     }
+  });
+
+  it('budget factory returns a budget-shaped object', () => {
+    const budget = makeBudget();
+
+    expect(budget).toHaveProperty('id');
+    expect(budget).toHaveProperty('valor');
+  });
+
+  it('reminder factory respects overrides', () => {
+    expect(makeReminder({ title: 'X' }).title).toBe('X');
+  });
+
+  it('family member factory defaults role to member', () => {
+    expect(makeFamilyMember().role).toBe('member');
   });
 });
