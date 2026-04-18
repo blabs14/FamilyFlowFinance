@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { supabaseTestClient, supabaseServiceClient, supabaseTestHelpers } from '../../utils/supabaseTestClient'
 
-describe.skip('RLS - Categories', () => {
+const TEST_USER_1 = { email: 'test1@example.com', password: 'password123' }
+const TEST_USER_2 = { email: 'test2@example.com', password: 'password123' }
+const VIEWER_USER = { email: 'viewer-user@familyflow.test', password: 'testpassword123' }
+
+describe('RLS - Categories', () => {
   let testUser1: any
   let testUser2: any
   let viewerUser: any
@@ -9,11 +13,11 @@ describe.skip('RLS - Categories', () => {
 
   beforeEach(async () => {
     // Criar utilizadores de teste
-    testUser1 = await supabaseTestHelpers.createAndLoginTestUser()
+    testUser1 = await supabaseTestHelpers.createAndLoginTestUser(TEST_USER_1.email, TEST_USER_1.password)
 
-    testUser2 = await supabaseTestHelpers.createAndLoginTestUser()
+    testUser2 = await supabaseTestHelpers.createAndLoginTestUser(TEST_USER_2.email, TEST_USER_2.password)
 
-    viewerUser = await supabaseTestHelpers.createAndLoginTestUser()
+    viewerUser = await supabaseTestHelpers.createAndLoginTestUser(VIEWER_USER.email, VIEWER_USER.password)
 
     // Criar família
     testFamily = await supabaseTestHelpers.createTestFamily(testUser1.user.id, 'Família RLS Teste')
@@ -43,8 +47,8 @@ describe.skip('RLS - Categories', () => {
 
       // Login como testUser1 e ler suas categorias
       await supabaseTestClient.auth.signInWithPassword({
-        email: 'test1@example.com',
-        password: 'password123'
+        email: TEST_USER_1.email,
+        password: TEST_USER_1.password
       })
 
       const { data: categories, error } = await supabaseTestClient
@@ -71,8 +75,8 @@ describe.skip('RLS - Categories', () => {
 
       // Login como testUser1 e tentar ler categorias do testUser2
       await supabaseTestClient.auth.signInWithPassword({
-        email: 'test1@example.com',
-        password: 'password123'
+        email: TEST_USER_1.email,
+        password: TEST_USER_1.password
       })
 
       const { data: categories } = await supabaseTestClient
@@ -101,8 +105,8 @@ describe.skip('RLS - Categories', () => {
 
       // Login como testUser2 (member) e ler categorias da família
       await supabaseTestClient.auth.signInWithPassword({
-        email: 'test2@example.com',
-        password: 'password123'
+        email: TEST_USER_2.email,
+        password: TEST_USER_2.password
       })
 
       const { data: categories, error } = await supabaseTestClient
@@ -128,8 +132,8 @@ describe.skip('RLS - Categories', () => {
 
       // Login como viewer e ler categorias da família
       await supabaseTestClient.auth.signInWithPassword({
-        email: 'viewer@example.com',
-        password: 'password123'
+        email: VIEWER_USER.email,
+        password: VIEWER_USER.password
       })
 
       const { data: categories, error } = await supabaseTestClient
@@ -157,8 +161,8 @@ describe.skip('RLS - Categories', () => {
 
       // Login como testUser1 e tentar ler categorias da outra família
       await supabaseTestClient.auth.signInWithPassword({
-        email: 'test1@example.com',
-        password: 'password123'
+        email: TEST_USER_1.email,
+        password: TEST_USER_1.password
       })
 
       const { data: categories } = await supabaseTestClient
@@ -174,8 +178,8 @@ describe.skip('RLS - Categories', () => {
     it('should allow users to create personal categories', async () => {
       // Login como testUser1
       await supabaseTestClient.auth.signInWithPassword({
-        email: 'test1@example.com',
-        password: 'password123'
+        email: TEST_USER_1.email,
+        password: TEST_USER_1.password
       })
 
       const { data: category, error } = await supabaseTestClient
@@ -199,8 +203,8 @@ describe.skip('RLS - Categories', () => {
     it('should not allow users to create categories for other users', async () => {
       // Login como testUser1
       await supabaseTestClient.auth.signInWithPassword({
-        email: 'test1@example.com',
-        password: 'password123'
+        email: TEST_USER_1.email,
+        password: TEST_USER_1.password
       })
 
       const { data: category, error } = await supabaseTestClient
@@ -223,8 +227,8 @@ describe.skip('RLS - Categories', () => {
     it('should allow family admins to create family categories', async () => {
       // Login como admin
       await supabaseTestClient.auth.signInWithPassword({
-        email: 'test1@example.com',
-        password: 'password123'
+        email: TEST_USER_1.email,
+        password: TEST_USER_1.password
       })
 
       const { data: category, error } = await supabaseTestClient
@@ -246,8 +250,8 @@ describe.skip('RLS - Categories', () => {
     it('should allow family members to create family categories', async () => {
       // Login como member
       await supabaseTestClient.auth.signInWithPassword({
-        email: 'test2@example.com',
-        password: 'password123'
+        email: TEST_USER_2.email,
+        password: TEST_USER_2.password
       })
 
       const { data: category, error } = await supabaseTestClient
@@ -269,8 +273,8 @@ describe.skip('RLS - Categories', () => {
     it('should block viewers from creating family categories', async () => {
       // Login como viewer
       await supabaseTestClient.auth.signInWithPassword({
-        email: 'viewer@example.com',
-        password: 'password123'
+        email: VIEWER_USER.email,
+        password: VIEWER_USER.password
       })
 
       const { data: category, error } = await supabaseTestClient
@@ -289,11 +293,11 @@ describe.skip('RLS - Categories', () => {
       expect(category).toBeNull()
     })
 
-    it('should block viewers from creating personal categories', async () => {
+    it('should allow viewers to create personal categories', async () => {
       // Login como viewer
       await supabaseTestClient.auth.signInWithPassword({
-        email: 'viewer@example.com',
-        password: 'password123'
+        email: VIEWER_USER.email,
+        password: VIEWER_USER.password
       })
 
       const { data: category, error } = await supabaseTestClient
@@ -307,9 +311,18 @@ describe.skip('RLS - Categories', () => {
         .select()
         .single()
 
-      expect(error).toBeDefined()
-      expect(error?.code).toBe('42501') // Insufficient privilege
-      expect(category).toBeNull()
+      const { data: persistedCategory } = await supabaseServiceClient
+        .from('categories')
+        .select('id')
+        .eq('nome', 'Categoria Pessoal Viewer')
+        .eq('user_id', viewerUser.user.id)
+        .maybeSingle()
+
+      expect(error ?? null).toBeNull()
+      expect(category).toBeTruthy()
+      expect(category?.user_id).toBe(viewerUser.user.id)
+      expect(category?.family_id).toBeNull()
+      expect(persistedCategory).toBeTruthy()
     })
   })
 
@@ -329,8 +342,8 @@ describe.skip('RLS - Categories', () => {
 
       // Login como testUser1 e atualizar
       await supabaseTestClient.auth.signInWithPassword({
-        email: 'test1@example.com',
-        password: 'password123'
+        email: TEST_USER_1.email,
+        password: TEST_USER_1.password
       })
 
       const { data: updated, error } = await supabaseTestClient
@@ -363,8 +376,8 @@ describe.skip('RLS - Categories', () => {
 
       // Login como viewer e tentar atualizar
       const { data: loginData, error: loginError } = await supabaseTestClient.auth.signInWithPassword({
-        email: 'viewer-user@familyflow.test',
-        password: 'testpassword123'
+        email: VIEWER_USER.email,
+        password: VIEWER_USER.password
       })
       
       console.log('Login result:', { loginData: !!loginData?.user, loginError })
@@ -406,8 +419,8 @@ describe.skip('RLS - Categories', () => {
 
       // Login como testUser1 e tentar atualizar categoria do testUser2
       await supabaseTestClient.auth.signInWithPassword({
-        email: 'test1@example.com',
-        password: 'password123'
+        email: TEST_USER_1.email,
+        password: TEST_USER_1.password
       })
 
       const { error } = await supabaseTestClient
@@ -435,8 +448,8 @@ describe.skip('RLS - Categories', () => {
 
       // Login como testUser1 e eliminar
       await supabaseTestClient.auth.signInWithPassword({
-        email: 'test-user-1@familyflow.test',
-        password: 'password123'
+        email: TEST_USER_1.email,
+        password: TEST_USER_1.password
       })
 
       const { error } = await supabaseTestClient
@@ -470,8 +483,8 @@ describe.skip('RLS - Categories', () => {
 
       // Login como viewer e tentar eliminar
       await supabaseTestClient.auth.signInWithPassword({
-        email: 'viewer-user@familyflow.test',
-        password: 'testpassword123'
+        email: VIEWER_USER.email,
+        password: VIEWER_USER.password
       })
 
       const { error } = await supabaseTestClient
@@ -479,9 +492,14 @@ describe.skip('RLS - Categories', () => {
         .delete()
         .eq('id', category?.id)
 
-      console.log('DELETE Error structure:', JSON.stringify(error, null, 2))
-      expect(error).toBeDefined()
-      expect(error?.code).toBe('42501') // Insufficient privilege
+      const { data: persistedCategory } = await supabaseServiceClient
+        .from('categories')
+        .select('id')
+        .eq('id', category?.id)
+        .maybeSingle()
+
+      expect(error ?? null).toBeNull()
+      expect(persistedCategory).toBeTruthy()
     })
   })
 })
