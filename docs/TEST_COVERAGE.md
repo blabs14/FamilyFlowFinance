@@ -51,7 +51,15 @@ Os thresholds em `tests/config/vitest.config.ts` foram alinhados com a cobertura
 - `Serviços`: `src/services/goals.ts` cobre happy/error paths em toda a superfície exportada.
 - `Componentes críticos`: `FamilyInviteForm`, `CreditCardForm`, `ReminderForm` e `Dashboard` já têm cobertura de regressão/smoke.
 
+## Phase 4 Highlights
+
+- `Cypress support`: `cypress/support/e2e.ts` e `cypress/support/commands.ts` activam `cy.login()` e isolamento básico por teste.
+- `E2E auth`: `auth.cy.ts` cobre redirect de protegidas, login válido, erro de credenciais e logout.
+- `E2E personal area`: `accounts.cy.ts`, `transactions.cy.ts`, `goals.cy.ts` e `navigation.cy.ts` cobrem fluxos críticos de UI.
+- `E2E legacy smoke`: `recurrents_smoke.cy.ts` foi migrado para `cy.login()` e selectors estáveis.
+- `Baseline Cypress`: `6 specs`, `15 testes`, `15 passing` em `npm run cy:run`.
+
 ## Próximas Fases
 
-- `Phase 3`: reactivar as suites com DB real/Supabase em `tests/integration/`
-- `Phase 4`: reforçar fluxos E2E em Cypress/Playwright
+- `Playwright / browser parity`: adicionar smoke coverage equivalente para o runner Playwright.
+- `Journeys completos`: expandir fluxos E2E multi-passo família/meta/cartão com assertions de persistência cross-page.

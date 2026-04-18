@@ -42,3 +42,4 @@ code_summary.json
 cypress.env.json
 cypress/videos/
 cypress/screenshots/
+cypress/downloads/

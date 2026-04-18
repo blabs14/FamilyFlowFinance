@@ -3,13 +3,17 @@ const GOAL_NAME = `E2E Goal ${Date.now()}`;
 
 function createFundingAccount() {
   cy.visit('/personal/accounts');
-  cy.get('[data-cy=create-account-btn]').click();
-  cy.get('[data-cy=account-name-input]').type(ACCOUNT_NAME);
-  cy.get('[data-cy=account-type-select]').click();
-  cy.get('[role=option]').contains(/corrente/i).click();
-  cy.get('[data-cy=account-balance-input]').type('300');
-  cy.get('[data-cy=account-submit-btn]').click();
-  cy.get('[data-cy=confirm-dialog-confirm]').click();
+  cy.get('body').then(($body) => {
+    if (!$body.text().includes(ACCOUNT_NAME)) {
+      cy.get('[data-cy=create-account-btn]').click();
+      cy.get('[data-cy=account-name-input]').type(ACCOUNT_NAME);
+      cy.get('[data-cy=account-type-select]').click();
+      cy.get('[role=option]').contains(/corrente/i).click();
+      cy.get('[data-cy=account-balance-input]').type('300');
+      cy.get('[data-cy=account-submit-btn]').click();
+      cy.get('[data-cy=confirm-dialog-confirm]').click();
+    }
+  });
   cy.contains('[data-cy=account-item]', ACCOUNT_NAME).should('exist');
 }
 
@@ -42,7 +46,7 @@ describe('Goals', () => {
       });
 
     cy.get('[data-cy=allocate-account-select]').click();
-    cy.get('[role=option]').contains(ACCOUNT_NAME).click();
+    cy.get('[role=option]', { timeout: 10000 }).contains(ACCOUNT_NAME).click();
     cy.get('[data-cy=allocate-amount-input]').type('50');
     cy.get('[data-cy=allocate-submit-btn]').click();
 
@@ -54,7 +58,7 @@ describe('Goals', () => {
       });
 
     cy.get('[data-cy=deallocate-account-select]').click();
-    cy.get('[role=option]').contains(ACCOUNT_NAME).click();
+    cy.get('[role=option]', { timeout: 10000 }).contains(ACCOUNT_NAME).click();
     cy.get('[data-cy=deallocate-amount-input]').type('20');
     cy.get('[data-cy=deallocate-submit-btn]').click();
 

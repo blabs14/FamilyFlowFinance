@@ -361,6 +361,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
                       variant="outline"
                       size="sm"
                       onClick={() => form.setValue('isCreatingNewCategory', true)}
+                      data-cy="create-category-inline-btn"
                       className="w-full"
                     >
                       + Criar nova categoria
@@ -375,6 +376,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
                         render={({ field: nameField }) => (
                           <Input
                             placeholder="Nome da nova categoria"
+                            data-cy="new-category-name-input"
                             {...nameField}
                             className="flex-1"
                           />
@@ -405,6 +407,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
                         type="button"
                         size="sm"
                         onClick={handleCreateCategory}
+                        data-cy="create-category-confirm-btn"
                         disabled={!watchedValues.newCategoryName?.trim() || Boolean(existingCategory) || createCategoryMutation.isPending}
                         className="flex-1"
                       >
