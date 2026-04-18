@@ -223,7 +223,28 @@ Nessa altura, Claude invoca a skill `writing-plans` para produzir um **plano de 
 
 ### Fase 1 — Decisões cruzadas
 
-*(nenhuma decisão ainda)*
+#### Unit 1: Scope model
+- **Data:** 2026-04-18
+- **Decisão:** Scope como estado (Opção B). Área única `/app/*` com `ScopeProvider` e toggle no header (`Pessoal` / `Família: X`). Páginas unificadas recebem scope via contexto. RPCs unificados com parâmetro de scope.
+- **Contexto:** Hoje há duplicação UI/serviço entre Personal e Family (7 áreas duplicadas, `PersonalProvider` 523 linhas + `FamilyProvider` 942 linhas, RPCs paralelos `get_personal_X`/`get_family_X`), enquanto a DB já é unificada (tabelas únicas com `family_id` nullable). Sintomas: hotfix defensivo em [accounts.ts:482](src/services/accounts.ts), cross-scope transfers tratados como caso especial, `Familia.tsx` morto, `family.legacy.ts` por limpar.
+- **Alternativas consideradas:**
+  - A — Manter split, só limpar mortos (rejeitada: 50% manutenção duplicada para sempre).
+  - B — Scope como estado (escolhida).
+  - C — Split com componente genérico (rejeitada: mantém mental model duplicado, meio-caminho sem resolver UX).
+- **Razão:** DB já suporta; UI é onde está o problema; alinha com mental model SaaS (um sítio, com contexto); ~50% menos código; cross-scope vira trivial; base de testes permite fazer refactor em segurança.
+- **Depende de / Afeta:** Afeta Unit 2 (valida tabelas unificadas), Unit 3 (define como aparece o toggle na nav), Unit 5-10 (cada página passa a usar `useScope()`), Unit 13 (fica restrito a members/invites/roles), Unit 11 (confirma que Payroll fica fora do scope, é propriedade do user).
+- **Implicações:**
+  - Refactor em 4 sub-fases: (1) `ScopeProvider` + toggle + rotas; (2) fundir `PersonalX.tsx`+`FamilyX.tsx` em `X.tsx`; (3) unificar RPCs + rever RLS; (4) apagar `Familia.tsx`, `family.legacy.ts`, sobras.
+  - Áreas exclusivas de família (Members, Invites, família-Settings) só visíveis com scope família.
+  - Payroll fora do scope.
+  - Cross-scope transfers simplificam: mudar scope ou operação explícita entre scopes.
+- **Evidência a preservar:**
+  - Ficheiros mortos a apagar: `src/pages/Familia.tsx`, `src/services/family.legacy.ts`.
+  - Hotfix defensivo a remover: `src/services/accounts.ts:482-484`.
+  - RPCs a unificar: `get_personal_transactions`/`get_family_transactions`, `get_personal_goals`/`get_family_goals`, `get_personal_kpis`/`get_family_kpis`, `get_personal_budgets`/`get_family_budgets`.
+  - Providers a fundir/substituir: `src/features/personal/PersonalProvider.tsx` (523L), `src/features/family/FamilyProvider.tsx` (942L), `src/features/family/FamilyContext.tsx`.
+  - Páginas duplicadas a fundir: PersonalAccounts/FamilyAccounts, PersonalGoals/FamilyGoals, PersonalBudgets/FamilyBudgets, PersonalTransactions/FamilyTransactions, PersonalDashboard/FamilyDashboard, PersonalSettings/FamilySettings.
+- **Estado:** decidido
 
 ### Fase 2 — Features
 
