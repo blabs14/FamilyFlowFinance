@@ -291,7 +291,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
               <FormLabel>Conta</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger data-cy="transaction-account-select" className="w-full">
                     <SelectValue placeholder="Selecionar conta" />
                   </SelectTrigger>
                 </FormControl>
@@ -317,7 +317,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
                 <FormLabel>Operação</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger className="w-full">
+                      <SelectTrigger data-cy="transaction-operation-select" className="w-full">
                       <SelectValue placeholder="Selecionar operação" />
                     </SelectTrigger>
                   </FormControl>
@@ -344,7 +344,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
                   <div className="space-y-2">
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger data-cy="transaction-category-select" className="w-full">
                           <SelectValue placeholder="Selecionar categoria" />
                         </SelectTrigger>
                       </FormControl>
@@ -466,7 +466,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
               <FormLabel>Tipo</FormLabel>
               <Select onValueChange={field.onChange} value={isSelectedAccountCreditCard ? 'despesa' : field.value} disabled={isSelectedAccountCreditCard}>
                 <FormControl>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger data-cy="transaction-type-select" className="w-full">
                     <SelectValue placeholder="Selecionar tipo" />
                   </SelectTrigger>
                 </FormControl>
@@ -491,6 +491,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
                   type="number"
                   step="0.01"
                   placeholder="0,00"
+                  data-cy="transaction-amount-input"
                   {...field}
                   onChange={(e) => field.onChange(processNumericValue(e.target.value))}
                   className="w-full"
@@ -510,6 +511,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
               <FormControl>
                 <Input
                   placeholder="Descrição da transação"
+                  data-cy="transaction-description-input"
                   {...field}
                   className="w-full"
                 />
@@ -528,6 +530,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
               <FormControl>
                 <Input
                   type="date"
+                  data-cy="transaction-date-input"
                   {...field}
                   className="w-full"
                 />
@@ -542,6 +545,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
             isSubmitting={isSubmitting}
             submitText={initialData?.id ? 'Atualizar' : 'Criar'}
             submittingText={initialData?.id ? 'A atualizar...' : 'A criar...'}
+            data-cy="transaction-submit-btn"
             className="w-full"
           />
           {onCancel && (

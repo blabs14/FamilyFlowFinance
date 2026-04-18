@@ -333,7 +333,7 @@ const PersonalTransactions: React.FC = () => {
             <Download className="h-4 w-4 mr-2" />
             {isExporting ? 'A exportar...' : 'Exportar'}
           </Button>
-          <Button onClick={handleNew}>
+          <Button onClick={handleNew} data-cy="create-transaction-btn">
             <Plus className="h-4 w-4 mr-2" />
             Nova Transação
           </Button>
@@ -418,7 +418,7 @@ const PersonalTransactions: React.FC = () => {
             {/* Filtro por Tipo */}
             <div>
               <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger>
+                <SelectTrigger data-cy="transaction-type-filter">
                   <SelectValue placeholder="Tipo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -509,7 +509,7 @@ const PersonalTransactions: React.FC = () => {
           ) : (
             <div className="space-y-3">
               {filteredTransactions.slice(0, 50).map((transaction) => (
-                <Card key={transaction.id} className="hover:shadow-md transition-shadow">
+                <Card key={transaction.id} data-cy="transaction-item" className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
