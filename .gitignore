@@ -26,3 +26,14 @@ dist-ssr
 # Env files
 .env*
 !.env.example
+
+# Test/build artifacts
+coverage/
+
+# Lint/analysis dumps
+lint-*.json
+*-lint.json
+eslint-*.json
+security-report.json
+.eslintrc.temp.json
+code_summary.json
