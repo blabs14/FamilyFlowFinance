@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
-describe.skip('Goal Completion Logic - Integration Tests', () => {
+describe('Goal Completion Logic - Integration Test', () => {
   let supabaseServiceClient: any;
   let testUserId: string;
 
   beforeAll(async () => {
     // Importar o service client que bypassa RLS
-    const { supabaseServiceClient: serviceClient } = await import('../utils/supabaseTestClient');
+    const {
+      supabaseServiceClient: serviceClient,
+      supabaseTestHelpers
+    } = await import('../utils/supabaseTestClient');
     
     if (!serviceClient) {
       throw new Error('Service role client não está configurado. Verifique SUPABASE_SERVICE_ROLE_KEY no .env');
@@ -14,8 +17,12 @@ describe.skip('Goal Completion Logic - Integration Tests', () => {
     
     supabaseServiceClient = serviceClient;
     
-    // Criar um utilizador de teste único
-    testUserId = `test-user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Reutilizar um utilizador de teste real para garantir UUID válido
+    const testUser = await supabaseTestHelpers.createAndLoginTestUser(
+      'test-user-8@familyflow.test',
+      'TestPassword123!'
+    );
+    testUserId = testUser.user.id;
     
     console.log('Setting up test data with user ID:', testUserId);
   });
@@ -73,7 +80,7 @@ describe.skip('Goal Completion Logic - Integration Tests', () => {
         nome: 'Objetivo Teste Integração',
         valor_objetivo: 500.00,
         valor_atual: 0.00,
-        status: 'ativo',
+        status: 'active',
         account_id: testAccountId,
         user_id: testUserId
       })
@@ -89,7 +96,7 @@ describe.skip('Goal Completion Logic - Integration Tests', () => {
     expect(goalData.nome).toBe('Objetivo Teste Integração');
     expect(goalData.valor_objetivo).toBe(500.00);
     expect(goalData.valor_atual).toBe(0.00);
-    expect(goalData.status).toBe('ativo');
+    expect(goalData.status).toBe('active');
 
     testGoalId = goalData.id;
     console.log('Test goal ID:', testGoalId);
@@ -134,7 +141,7 @@ describe.skip('Goal Completion Logic - Integration Tests', () => {
     expect(updateError).toBeNull();
     expect(updatedGoal).toBeDefined();
     expect(updatedGoal.valor_atual).toBe(300.00);
-    expect(updatedGoal.status).toBe('ativo'); // Deve continuar ativo
+    expect(updatedGoal.status).toBe('active'); // Deve continuar ativo
 
     // Verificar que a conta principal não foi alterada
     const { data: accountData2, error: accountError2 } = await supabaseServiceClient
@@ -152,7 +159,7 @@ describe.skip('Goal Completion Logic - Integration Tests', () => {
       .from('goals')
       .update({
         valor_atual: 500.00, // 100% do objetivo
-        status: 'concluido'
+        status: 'completed'
       })
       .eq('id', testGoalId)
       .select()
@@ -164,7 +171,7 @@ describe.skip('Goal Completion Logic - Integration Tests', () => {
     expect(completionError).toBeNull();
     expect(completedGoal).toBeDefined();
     expect(completedGoal.valor_atual).toBe(500.00);
-    expect(completedGoal.status).toBe('concluido');
+    expect(completedGoal.status).toBe('completed');
 
     // PASSO 6: Verificação final da consistência dos dados
     console.log('Step 6: Final data consistency check...');
@@ -181,7 +188,7 @@ describe.skip('Goal Completion Logic - Integration Tests', () => {
 
     expect(finalGoalError).toBeNull();
     expect(finalGoal).toBeDefined();
-    expect(finalGoal.status).toBe('concluido');
+    expect(finalGoal.status).toBe('completed');
     expect(finalGoal.valor_atual).toBe(500.00);
     expect(finalGoal.valor_objetivo).toBe(500.00);
 
