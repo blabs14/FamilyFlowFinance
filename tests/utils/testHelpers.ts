@@ -131,7 +131,12 @@ export const mockUseToast = () => ({ toast: mockToast });
  * Centralising means future changes (e.g. advance-timers) land in one place.
  */
 export function setupUser() {
-  return userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+  try {
+    vi.getTimerCount();
+    return userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+  } catch {
+    return userEvent.setup();
+  }
 }
 
 /** Fill multiple labelled inputs in one call. */
