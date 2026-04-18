@@ -8,7 +8,7 @@ import { supabaseTestClient, supabaseServiceClient, createAndLoginTestUser, supa
  * - delete_goal_with_restoration
  */
 
-describe.skip('Canonical Goal Functions (integration)', () => {
+describe('Canonical Goal Functions (integration)', () => {
   let userId: string
   let goalsAccountId: string
   let sourceAccountId: string
@@ -89,11 +89,11 @@ describe.skip('Canonical Goal Functions (integration)', () => {
 
     // Validar progresso do objetivo (view RPC)
     const { data: goalProgressRows, error: gpErr } = await supabaseTestClient
-      .rpc('get_user_goal_progress')
+      .rpc('get_user_goal_progress', { user_id_param: userId })
     expect(gpErr).toBeNull()
     const gp = goalProgressRows?.find((g: any) => g.id === goalId)
     expect(gp).toBeTruthy()
-    expect(gp?.total_alocado).toBeGreaterThanOrEqual(amount)
+    expect((gp?.total_alocado_real ?? 0)).toBeGreaterThanOrEqual(amount)
 
     // Validar existência de transações ligadas ao goal
     const { data: txRows, error: txErr } = await supabaseTestClient
@@ -135,11 +135,11 @@ describe.skip('Canonical Goal Functions (integration)', () => {
 
     // Progresso do objetivo deve refletir redução
     const { data: goalProgressRows, error: gpErr } = await supabaseTestClient
-      .rpc('get_user_goal_progress')
+      .rpc('get_user_goal_progress', { user_id_param: userId })
     expect(gpErr).toBeNull()
     const gp = goalProgressRows?.find((g: any) => g.id === goalId)
     expect(gp).toBeTruthy()
-    expect((gp?.total_alocado ?? 0)).toBeGreaterThanOrEqual(50)
+    expect((gp?.total_alocado_real ?? 0)).toBeGreaterThanOrEqual(50)
   })
 
   it('delete_goal_with_restoration deve eliminar o objetivo e restaurar reservas/ligação', async () => {
