@@ -15,12 +15,12 @@
 
 ## Cobertura Actual
 
-Medição de referência da Phase 1 (`npm run test:coverage`):
+Medição de referência da Phase 2 (`npm run test:coverage`):
 
-- `Branches`: `54.1%`
-- `Functions`: `29.97%`
-- `Lines`: `13.07%`
-- `Statements`: `13.07%`
+- `Branches`: `56.68%`
+- `Functions`: `32.66%`
+- `Lines`: `15.56%`
+- `Statements`: `15.56%`
 
 O directório `src/validation/` está neste momento em:
 
@@ -33,10 +33,10 @@ O directório `src/validation/` está neste momento em:
 
 Os thresholds em `tests/config/vitest.config.ts` foram alinhados com a cobertura medida e arredondados para baixo ao múltiplo de `5` mais próximo:
 
-- `global.branches`: `50`
-- `global.functions`: `25`
-- `global.lines`: `10`
-- `global.statements`: `10`
+- `global.branches`: `55`
+- `global.functions`: `30`
+- `global.lines`: `15`
+- `global.statements`: `15`
 - `src/validation/**`: `branches 80`, `functions 90`, `lines 90`, `statements 90`
 
 ## Relatórios
@@ -45,8 +45,13 @@ Os thresholds em `tests/config/vitest.config.ts` foram alinhados com a cobertura
 - JSON: `coverage/coverage-final.json`
 - HTML: `coverage/index.html`
 
+## Phase 2 Highlights
+
+- `Auth`: `LoginForm` e `RegisterForm` agora cobertos com submit válido, validações, estados de erro e pending.
+- `Serviços`: `src/services/goals.ts` cobre happy/error paths em toda a superfície exportada.
+- `Componentes críticos`: `FamilyInviteForm`, `CreditCardForm`, `ReminderForm` e `Dashboard` já têm cobertura de regressão/smoke.
+
 ## Próximas Fases
 
-- `Phase 2`: component tests críticos com `renderWithProviders`
-- `Phase 3`: reactivar as 7 suites com DB real em `tests/integration/`
+- `Phase 3`: reactivar as suites com DB real/Supabase em `tests/integration/`
 - `Phase 4`: reforçar fluxos E2E em Cypress/Playwright

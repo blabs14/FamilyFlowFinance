@@ -64,10 +64,10 @@ export default defineConfig({
       ],
       thresholds: {
         global: {
-          branches: 50,
-          functions: 25,
-          lines: 10,
-          statements: 10
+          branches: 55,
+          functions: 30,
+          lines: 15,
+          statements: 15
         },
         'src/validation/**': {
           branches: 80,
