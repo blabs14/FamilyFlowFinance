@@ -1,149 +1,52 @@
-# Guia de Cobertura de Testes
+# Cobertura de Testes
 
-## Visão Geral
+## Runners
 
-Este documento descreve a configuração e uso das métricas de cobertura de testes no projeto Family Flow Finance.
+- `npm run test` / `npm run test:run`: suite principal Vitest com jsdom para unit tests e component tests leves.
+- `npm run test:integration`: suite Vitest separada para testes com dependências de integração.
+- `npm run cy:run`: Cypress para fluxos E2E legados.
+- `npm run test:e2e:pw`: Playwright para fluxos E2E modernos.
 
-## Scripts Disponíveis
+## Localização dos Testes
 
-### Execução de Testes com Cobertura
+- `src/**/__tests__/` e `src/**/*.{test,spec}.*`: testes unitários puros e testes co-localizados ao código.
+- `tests/integration/`: testes de integração e suites dependentes de serviços externos/DB.
+- `tests/utils/`: helpers partilhados de teste.
 
-```bash
-# Executar testes com cobertura (relatório no terminal)
-npm run test:coverage
+## Cobertura Actual
 
-# Executar testes com cobertura e abrir relatório HTML
-npm run test:coverage:report
+Medição de referência da Phase 1 (`npm run test:coverage`):
 
-# Abrir relatório HTML existente
-npm run test:coverage:open
+- `Branches`: `54.1%`
+- `Functions`: `29.97%`
+- `Lines`: `13.07%`
+- `Statements`: `13.07%`
 
-# Executar testes com cobertura em modo watch
-npm run test:coverage:watch
+O directório `src/validation/` está neste momento em:
 
-# Executar testes com cobertura e interface UI
-npm run test:coverage:ui
-```
+- `Branches`: `100%`
+- `Functions`: `89.18%`
+- `Lines`: `100%`
+- `Statements`: `100%`
 
-## Configuração de Thresholds
+## Ratchet Actual
 
-Os thresholds de cobertura estão configurados em `tests/config/vitest.config.ts`:
+Os thresholds em `tests/config/vitest.config.ts` foram alinhados com a cobertura medida e arredondados para baixo ao múltiplo de `5` mais próximo:
 
-### Thresholds Globais
-- **Branches**: 35%
-- **Functions**: 25%
-- **Lines**: 9%
-- **Statements**: 9%
+- `global.branches`: `50`
+- `global.functions`: `25`
+- `global.lines`: `10`
+- `global.statements`: `10`
+- `src/validation/**`: `branches 80`, `functions 90`, `lines 90`, `statements 90`
 
-### Thresholds por Componente
+## Relatórios
 
-#### Componentes UI (`src/components/ui/**`)
-- **Branches**: 20%
-- **Functions**: 10%
-- **Lines**: 13%
-- **Statements**: 13%
+- Terminal: resumo textual no fim de `npm run test:coverage`
+- JSON: `coverage/coverage-final.json`
+- HTML: `coverage/index.html`
 
-#### Serviços (`src/services/**`)
-- **Branches**: 35%
-- **Functions**: 25%
-- **Lines**: 9%
-- **Statements**: 9%
+## Próximas Fases
 
-#### Hooks (`src/hooks/**`)
-- **Branches**: 60%
-- **Functions**: 50%
-- **Lines**: 19%
-- **Statements**: 19%
-
-## Relatórios Gerados
-
-### Formatos Disponíveis
-1. **HTML**: `coverage/index.html` - Relatório interativo detalhado
-2. **LCOV**: `coverage/lcov.info` - Para integração com ferramentas externas
-3. **JSON**: `coverage/coverage-final.json` - Dados estruturados
-4. **Text**: Saída no terminal durante execução
-
-### Visualização
-
-O relatório HTML oferece:
-- Visão geral da cobertura por diretório
-- Detalhes linha por linha para cada arquivo
-- Navegação interativa pelo código
-- Identificação de linhas não cobertas
-
-## Áreas de Melhoria
-
-### Arquivos com 0% de Cobertura
-
-Os seguintes arquivos precisam de testes:
-
-#### Schemas de Validação
-- `attachmentSchema.ts`
-- `budgetSchema.ts`
-- `familyInviteSchema.ts`
-- `fixedExpenseSchema.ts`
-- `goalAllocationSchema.ts`
-- `goalSchema.ts`
-- `notificationSchema.ts`
-- `personalSettingsSchema.ts`
-- `profileSchema.ts`
-- `reminderSchema.ts`
-- `settingsSchema.ts`
-- `transactionSchema.ts`
-- `webhookSchema.ts`
-
-#### Outros Arquivos
-- Vários componentes UI
-- Alguns serviços específicos
-- Hooks personalizados
-
-## Estratégia de Melhoria
-
-### Prioridades
-1. **Alta**: Componentes críticos de UI e serviços principais
-2. **Média**: Hooks e utilitários
-3. **Baixa**: Schemas de validação e arquivos auxiliares
-
-### Abordagem Incremental
-1. Começar com arquivos mais utilizados
-2. Focar em funcionalidades críticas
-3. Aumentar thresholds gradualmente
-4. Manter qualidade dos testes existentes
-
-## Integração CI/CD
-
-A cobertura de testes está integrada no pipeline de CI/CD:
-- Execução automática em pull requests
-- Falha do build se thresholds não forem atingidos
-- Relatórios disponíveis como artefatos
-
-## Comandos Úteis
-
-```bash
-# Executar apenas testes que passam (excluindo problemáticos)
-npx vitest run --coverage --config tests/config/vitest.config.ts tests/unit/components tests/unit/hooks tests/unit/services/accounts.test.ts
-
-# Verificar cobertura de um arquivo específico
-npx vitest run --coverage --config tests/config/vitest.config.ts tests/unit/services/accounts.test.ts
-
-# Executar com verbose para mais detalhes
-npx vitest run --coverage --reporter=verbose --config tests/config/vitest.config.ts
-```
-
-## Troubleshooting
-
-### Problemas Comuns
-
-1. **Thresholds não atingidos**: Ajustar valores em `vitest.config.ts`
-2. **Testes falhando**: Excluir temporariamente com `--exclude`
-3. **Relatório não gerado**: Verificar se `@vitest/coverage-v8` está instalado
-
-### Logs e Debug
-
-- Usar `--reporter=verbose` para mais detalhes
-- Verificar logs no terminal para erros específicos
-- Consultar `coverage/lcov-report/index.html` para detalhes visuais
-
----
-
-**Nota**: Este documento será atualizado conforme a cobertura de testes evolui e novos thresholds são estabelecidos.
+- `Phase 2`: component tests críticos com `renderWithProviders`
+- `Phase 3`: reactivar as 7 suites com DB real em `tests/integration/`
+- `Phase 4`: reforçar fluxos E2E em Cypress/Playwright
