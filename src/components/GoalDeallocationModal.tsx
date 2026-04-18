@@ -109,7 +109,7 @@ const GoalDeallocationModal = ({ isOpen, onClose, goalId, goalName, canEdit = tr
           <div className="space-y-2">
             <label className="text-sm font-medium">Conta de Origem (alocada)</label>
             <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-              <SelectTrigger>
+              <SelectTrigger data-cy="deallocate-account-select">
                 <SelectValue placeholder="Selecionar conta" />
               </SelectTrigger>
               <SelectContent>
@@ -127,6 +127,7 @@ const GoalDeallocationModal = ({ isOpen, onClose, goalId, goalName, canEdit = tr
             <Input
               type="text"
               placeholder="0,00"
+              data-cy="deallocate-amount-input"
               value={amount}
               onChange={handleAmountChange}
               required
@@ -146,6 +147,7 @@ const GoalDeallocationModal = ({ isOpen, onClose, goalId, goalName, canEdit = tr
               isSubmitting={isSubmitting}
               submitText="Desalocar"
               submittingText="A desalocar..."
+              data-cy="deallocate-submit-btn"
               className="flex-1"
             />
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">

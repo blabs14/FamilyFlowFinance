@@ -136,6 +136,7 @@ const GoalForm = ({ initialData, onSuccess, onCancel, familyId }: GoalFormProps)
           id="nome"
           name="nome"
           placeholder="Ex: Férias no Algarve"
+          data-cy="goal-name-input"
           value={form.nome}
           onChange={handleChange}
           required
@@ -154,6 +155,7 @@ const GoalForm = ({ initialData, onSuccess, onCancel, familyId }: GoalFormProps)
           name="valor_objetivo"
           type="text"
           placeholder="0,00"
+          data-cy="goal-target-input"
           value={form.valor_objetivo?.toString() || '0'}
           onChange={handleChange}
           required
@@ -184,6 +186,7 @@ const GoalForm = ({ initialData, onSuccess, onCancel, familyId }: GoalFormProps)
           isSubmitting={isSubmitting}
           submitText={initialData?.id ? 'Atualizar' : 'Criar'}
           submittingText={initialData?.id ? 'A atualizar...' : 'A criar...'}
+          data-cy="goal-submit-btn"
           className="w-full"
         />
         {onCancel && (

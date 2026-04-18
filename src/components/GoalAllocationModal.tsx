@@ -207,7 +207,7 @@ const GoalAllocationModal = ({
                 });
                 setSelectedAccountId(value);
               }}>
-                <SelectTrigger>
+                <SelectTrigger data-cy="allocate-account-select">
                   <SelectValue placeholder="Selecionar conta" />
                 </SelectTrigger>
                 <SelectContent>
@@ -230,6 +230,7 @@ const GoalAllocationModal = ({
                 id="amount"
                 type="text"
                 placeholder="0,00"
+                data-cy="allocate-amount-input"
                 value={amount}
                 onChange={handleAmountChange}
                 required
@@ -248,6 +249,7 @@ const GoalAllocationModal = ({
                 id="description"
                 type="text"
                 placeholder="Descrição da alocação"
+                data-cy="allocate-description-input"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full"
@@ -263,6 +265,7 @@ const GoalAllocationModal = ({
                 isSubmitting={isAllocating}
                 submitText="Alocar"
                 submittingText="A alocar..."
+                data-cy="allocate-submit-btn"
                 className="flex-1"
               />
               <Button 

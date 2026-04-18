@@ -180,7 +180,7 @@ const PersonalGoals: React.FC = () => {
           </p>
         </div>
         {canEditGoal && (
-          <Button onClick={handleCreateGoal} aria-label="Criar novo objetivo financeiro">
+          <Button onClick={handleCreateGoal} data-cy="create-goal-btn" aria-label="Criar novo objetivo financeiro">
             <Plus className="h-4 w-4 mr-2" />
             Novo Objetivo
           </Button>
@@ -223,8 +223,9 @@ const PersonalGoals: React.FC = () => {
           const remaining = Math.max((goal.valor_objetivo ?? 0) - (goal.total_alocado ?? 0), 0);
 
            return (
-             <Card 
+            <Card 
                key={goal.id} 
+              data-cy="goal-card"
                className={`hover:shadow-lg transition-shadow ${
                  isCompleted ? 'border-green-200 bg-green-50' : ''
                }`}
@@ -250,6 +251,7 @@ const PersonalGoals: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleAllocateToGoal(goal)}
+                            data-cy="allocate-goal-btn"
                             className="h-8 w-8 p-0"
                             aria-label="Alocar ao objetivo"
                           >
@@ -260,6 +262,7 @@ const PersonalGoals: React.FC = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => handleDeallocateFromGoal(goal)}
+                              data-cy="deallocate-goal-btn"
                               className="h-8 w-8 p-0"
                               aria-label="Desalocar do objetivo"
                             >
@@ -299,6 +302,7 @@ const PersonalGoals: React.FC = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteGoal(goal.id)}
+                        data-cy="delete-goal-btn"
                         className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                         aria-label="Eliminar objetivo"
                       >
@@ -401,7 +405,7 @@ const PersonalGoals: React.FC = () => {
             Cria o teu primeiro objetivo para começar a poupar
           </p>
           {canEditGoal && (
-            <Button onClick={handleCreateGoal}>
+        <Button onClick={handleCreateGoal} data-cy="create-goal-btn">
               <Plus className="h-4 w-4 mr-2" />
               Criar Objetivo
             </Button>
