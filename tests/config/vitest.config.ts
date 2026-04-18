@@ -18,6 +18,7 @@ export default defineConfig({
       '.idea',
       '.git',
       '.cache',
+      'tests/integration/**',
       'tests/e2e/**',
       'tests/manual/**',
       'tests/obsolete/**',
