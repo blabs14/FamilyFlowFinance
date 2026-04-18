@@ -5,7 +5,7 @@ import { supabaseTestClient, supabaseServiceClient, supabaseTestHelpers } from '
 // Carregar variáveis de ambiente explicitamente
 config({ path: '.env.local' })
 
-describe.skip('RLS - Transactions (Simplified)', () => {
+describe('RLS - Transactions (Simplified)', () => {
   let testUser: any
   let familyId: string
   let accountId: string
