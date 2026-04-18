@@ -1,31 +1,18 @@
 describe('Recorrentes - Smoke', () => {
-  const email = 'teste2@teste';
-  const password = 'teste14';
-
-  function login() {
-    cy.visit('/login');
-    cy.get('input#email').type(email);
-    cy.get('input#password').type(password);
-    cy.contains('button', 'Entrar').click();
-    cy.url().should('include', '/app');
-  }
-
   it('abre página e mostra lista', () => {
-    login();
-    cy.visit('/personal');
+    cy.login();
     cy.visit('/personal/recorrentes');
     cy.contains('Recorrentes');
   });
 
   it('mostra dialog e previsualização', () => {
-    login();
-    cy.visit('/personal');
+    cy.login();
     cy.visit('/personal/recorrentes');
-    cy.contains('Nova Regra').click();
-    cy.get('input[placeholder="Descrição/Vendor"]').type('Teste Netflix');
-    cy.get('input[placeholder="Valor (cêntimos)"]').clear().type('999');
+    cy.get('[data-cy=create-rule-btn]').click();
+    cy.get('[data-cy=rule-description-input]').type('Teste Netflix');
+    cy.get('[data-cy=rule-amount-input]').clear().type('999');
     cy.get('input[type="date"]').first().should('exist');
-    cy.contains('Próximos 3 lançamentos');
-    cy.contains('Cancelar').click();
+    cy.get('[data-cy=rule-preview]').should('contain.text', 'Próximos 3 lançamentos');
+    cy.get('[data-cy=cancel-rule-btn]').click();
   });
 }); 

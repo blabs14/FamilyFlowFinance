@@ -156,7 +156,7 @@ export default function RecurrentsPage() {
               <SelectItem value="amount_asc">Valor (↑)</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={() => setOpen(true)} aria-label="Criar nova regra de transação recorrente">Nova Regra</Button>
+          <Button data-cy="create-rule-btn" onClick={() => setOpen(true)} aria-label="Criar nova regra de transação recorrente">Nova Regra</Button>
         </div>
       </div>
 
@@ -271,7 +271,7 @@ export default function RecurrentsPage() {
             <DialogTitle>Nova Regra</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <Input placeholder="Descrição/Vendor" value={form.vendor || form.description || ''} onChange={(e)=>setForm(f=>({...f, vendor: e.target.value}))} />
+            <Input data-cy="rule-description-input" placeholder="Descrição/Vendor" value={form.vendor || form.description || ''} onChange={(e)=>setForm(f=>({...f, vendor: e.target.value}))} />
             
             <Select value={form.transaction_type} onValueChange={(v)=>setForm(f=>({...f, transaction_type: v as 'expense' | 'income' | 'transfer'}))}>
               <SelectTrigger><SelectValue placeholder="Tipo de Transação" /></SelectTrigger>
@@ -339,7 +339,7 @@ export default function RecurrentsPage() {
              )}
              
              <div className="flex gap-2">
-              <Input type="number" placeholder="Valor (cêntimos)" value={form.amount_cents} onChange={(e)=>setForm(f=>({...f, amount_cents: Number(e.target.value||0)}))} />
+              <Input data-cy="rule-amount-input" type="number" placeholder="Valor (cêntimos)" value={form.amount_cents} onChange={(e)=>setForm(f=>({...f, amount_cents: Number(e.target.value||0)}))} />
               <Input placeholder="Moeda" value={form.currency} onChange={(e)=>setForm(f=>({...f, currency: e.target.value}))} />
             </div>
             <div className="flex gap-2">
@@ -365,7 +365,7 @@ export default function RecurrentsPage() {
               <Input type="date" value={form.next_run_date} onChange={(e)=>setForm(f=>({...f, next_run_date: e.target.value}))} />
             </div>
             <div>
-              <p className="text-sm font-medium">Próximos 3 lançamentos</p>
+              <p data-cy="rule-preview" className="text-sm font-medium">Próximos 3 lançamentos</p>
               <div className="text-xs text-muted-foreground">
                 {preview.map((p)=> (
                   <div key={p.period_key} className="flex gap-2"><span>{p.due_date}</span><span>{p.period_key}</span></div>
@@ -373,7 +373,7 @@ export default function RecurrentsPage() {
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={()=>setOpen(false)}>Cancelar</Button>
+              <Button data-cy="cancel-rule-btn" variant="outline" onClick={()=>setOpen(false)}>Cancelar</Button>
               <Button onClick={onCreate}>Criar</Button>
             </div>
           </div>
