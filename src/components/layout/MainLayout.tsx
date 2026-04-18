@@ -35,7 +35,7 @@ export function MainLayout() {
   return (
     <div className="min-h-screen bg-background w-full">
       {/* Header fixo no topo */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-card border-b border-border shadow-sm">
+      <header data-cy="app-nav" className="fixed top-0 left-0 right-0 z-50 h-16 bg-card border-b border-border shadow-sm">
         <div className="flex items-center justify-between px-4 h-full">
           {/* Botão de menu - visível apenas em mobile */}
           <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>

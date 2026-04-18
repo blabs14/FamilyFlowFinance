@@ -25,6 +25,7 @@ export default function LogoutButton() {
       onClick={handleLogout}
       variant="ghost"
       size="sm"
+      data-cy="logout-btn"
       className={cn(
         "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200",
         "text-muted-foreground hover:text-primary hover:bg-primary-light"

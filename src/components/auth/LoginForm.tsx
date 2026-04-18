@@ -96,7 +96,7 @@ export default function LoginForm() {
     <div className="space-y-6">
       <form onSubmit={handleSubmit(handleLogin)} className="space-y-4">
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" data-cy="login-error">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
