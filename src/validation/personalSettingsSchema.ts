@@ -121,9 +121,13 @@ export const formatPhoneNumber = (phone: string): string => {
 // Função para validar e formatar telefone
 export const validateAndFormatPhone = (phone: string): string | null => {
   if (!phone) return null;
-  
-  const formatted = formatPhoneNumber(phone);
-  const result = phoneRegex.test(formatted);
-  
-  return result ? formatted : null;
+
+  const cleaned = phone.replace(/\D/g, '');
+  const withoutCountry = cleaned.startsWith('351') ? cleaned.slice(3) : cleaned;
+
+  if (!/^[2-9]\d{8}$/.test(withoutCountry)) {
+    return null;
+  }
+
+  return formatPhoneNumber(phone);
 };

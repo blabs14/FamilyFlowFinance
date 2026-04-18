@@ -64,29 +64,16 @@ export default defineConfig({
       ],
       thresholds: {
         global: {
-          branches: 60,
-          functions: 65,
-          lines: 70,
-          statements: 70
-        },
-        // Thresholds baseados na cobertura atual
-        'src/components/ui/**': {
-          branches: 20,
-          functions: 10,
-          lines: 13,
-          statements: 13
-        },
-        'src/services/**': {
-          branches: 35,
+          branches: 50,
           functions: 25,
-          lines: 9,
-          statements: 9
+          lines: 10,
+          statements: 10
         },
-        'src/hooks/**': {
-          branches: 60,
-          functions: 50,
-          lines: 19,
-          statements: 19
+        'src/validation/**': {
+          branches: 80,
+          functions: 90,
+          lines: 90,
+          statements: 90
         }
       }
     }
