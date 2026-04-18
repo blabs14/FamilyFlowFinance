@@ -232,6 +232,7 @@ const AccountForm = ({ initialData, onSuccess, onCancel, family_id }: AccountFor
       <Input
         name="nome"
         placeholder="Nome da Conta"
+        data-cy="account-name-input"
         value={form.nome}
         onChange={handleChange}
         required
@@ -242,7 +243,7 @@ const AccountForm = ({ initialData, onSuccess, onCancel, family_id }: AccountFor
       {validationErrors.nome && <div id="nome-error" className="text-red-600 text-sm">{validationErrors.nome}</div>}
       
       <Select value={form.tipo} onValueChange={handleTipoChange}>
-        <SelectTrigger className="w-full">
+        <SelectTrigger data-cy="account-type-select" className="w-full">
           <SelectValue placeholder="Tipo de Conta" />
         </SelectTrigger>
         <SelectContent>
@@ -269,6 +270,7 @@ const AccountForm = ({ initialData, onSuccess, onCancel, family_id }: AccountFor
           name="saldoAtual"
           type="text"
           placeholder="Saldo Atual (€) - Opcional"
+          data-cy="account-balance-input"
           value={form.saldoAtual?.toString() || ''}
           onChange={handleChange}
           className="w-full"
@@ -317,6 +319,7 @@ const AccountForm = ({ initialData, onSuccess, onCancel, family_id }: AccountFor
           isSubmitting={isSubmitting}
           submitText={initialData?.id ? 'Atualizar' : 'Criar'}
           submittingText={initialData?.id ? 'A atualizar...' : 'A criar...'}
+          data-cy="account-submit-btn"
           className="w-full"
           onClick={() => console.log('🔘 FormSubmitButton clicado! isSubmitting:', isSubmitting)}
         />

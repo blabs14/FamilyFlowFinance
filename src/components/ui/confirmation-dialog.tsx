@@ -65,13 +65,14 @@ export const ConfirmationDialog = ({
           <AlertDialogDescription>{safeMessage}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={handleCancel} ref={cancelRef} aria-label={cancelText}>
+          <AlertDialogCancel onClick={handleCancel} ref={cancelRef} aria-label={cancelText} data-cy="confirm-dialog-cancel">
             {cancelText}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
             className={variant === 'destructive' ? 'bg-red-600 hover:bg-red-700' : ''}
             aria-label={confirmText}
+            data-cy="confirm-dialog-confirm"
           >
             {confirmText}
           </AlertDialogAction>

@@ -177,7 +177,7 @@ const PersonalAccounts: React.FC = () => {
               <ArrowRightLeft className="h-4 w-4 mr-2" />
               Transferir
             </Button>
-            <Button onClick={() => {
+            <Button data-cy="create-account-btn" onClick={() => {
               console.log('🎯 Botão Nova Conta clicado!');
               handleNew();
             }} aria-label="Nova conta">
@@ -203,7 +203,7 @@ const PersonalAccounts: React.FC = () => {
                 saldo_disponivel: account.saldo_disponivel
               });
               return (
-                <Card key={account.account_id} className="hover:shadow-md transition-shadow">
+                <Card key={account.account_id} data-cy="account-item" className="hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg">{account.nome}</CardTitle>
@@ -283,6 +283,7 @@ const PersonalAccounts: React.FC = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleDeleteAccount(account)}
+                        data-cy="delete-account-btn"
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         aria-label="Eliminar conta"
                       >
