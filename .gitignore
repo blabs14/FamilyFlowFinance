@@ -37,3 +37,8 @@ eslint-*.json
 security-report.json
 .eslintrc.temp.json
 code_summary.json
+
+# Cypress
+cypress.env.json
+cypress/videos/
+cypress/screenshots/

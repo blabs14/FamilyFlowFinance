@@ -109,6 +109,7 @@ export default function LoginForm() {
               id="email"
               type="email"
               placeholder="exemplo@email.com"
+              data-cy="email-input"
               {...register('email')}
               autoFocus
               className={`pl-10 ${showEmailError ? 'border-red-500 focus:border-red-500' : ''}`}
@@ -129,6 +130,7 @@ export default function LoginForm() {
               id="password"
               type="password"
               placeholder="Password"
+              data-cy="password-input"
               {...register('password')}
               className={`pl-10 ${showPasswordError ? 'border-red-500 focus:border-red-500' : ''}`}
               aria-invalid={showPasswordError}
@@ -140,7 +142,7 @@ export default function LoginForm() {
           <p className="text-xs text-muted-foreground">Deve ter pelo menos 6 caracteres.</p>
         </div>
 
-        <Button type="submit" disabled={isSubmitting || loading} className="w-full" variant="default">
+        <Button type="submit" disabled={isSubmitting || loading} className="w-full" variant="default" data-cy="login-btn">
           {(isSubmitting || loading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {(isSubmitting || loading) ? 'A entrar...' : 'Entrar'}
         </Button>
