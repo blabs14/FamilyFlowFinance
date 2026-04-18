@@ -940,8 +940,7 @@ describe('PayrollService Integration Tests', () => {
         expect(result.missingConfigurations).toHaveLength(0);
       });
       
-      it.skip('should return invalid when configuration is incomplete', async () => {
-        // Mock de feriados não corresponde à mensagem actual gerada pelo serviço
+      it('should return invalid when configuration is incomplete', async () => {
         const { supabase } = await import('@/lib/supabaseClient');
         
         // Mock para simular configuração incompleta
@@ -993,7 +992,7 @@ describe('PayrollService Integration Tests', () => {
         
         vi.mocked(supabase.from).mockImplementation(mockFrom);
         
-        const result = await payrollService.validatePayrollConfiguration('user1', 'contract1');
+        const result = await payrollService.validatePayrollConfiguration('user1', 'contract1', 2025);
         
         expect(result.isValid).toBe(false);
         expect(result.missingConfigurations).toContain('Feriados não configurados para o ano 2025');

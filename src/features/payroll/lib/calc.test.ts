@@ -116,12 +116,16 @@ describe('Payroll Calculation Functions', () => {
       expect(centsToEuros(123)).toBe(1.23);
     });
 
-    it.skip('should format currency correctly', () => {
-      // formatCurrency recebe euros, não cêntimos — expectativas erradas (1050 = €1050, não €10.50)
-      expect(formatCurrency(1050)).toMatch(/10,50\s*€/);
-      expect(formatCurrency(0)).toMatch(/0,00\s*€/);
-      expect(formatCurrency(123)).toMatch(/1,23\s*€/);
-      expect(formatCurrency(100000)).toMatch(/1000,00\s*€/);
+    it('should format currency correctly', () => {
+      const formatter = new Intl.NumberFormat('pt-PT', {
+        style: 'currency',
+        currency: 'EUR'
+      });
+
+      expect(formatCurrency(10.5)).toBe(formatter.format(10.5));
+      expect(formatCurrency(0)).toBe(formatter.format(0));
+      expect(formatCurrency(1.23)).toBe(formatter.format(1.23));
+      expect(formatCurrency(1000)).toBe(formatter.format(1000));
     });
   });
 
@@ -465,11 +469,16 @@ describe('Payroll Calculation Functions', () => {
       expect(total.mealAllowance).toBe(1020); // Default meal allowance value
     });
 
-    it.skip('should handle very large numbers correctly', () => {
-      // formatCurrency recebe euros directamente — expectativa de cêntimos está errada
-      const largeAmount = 999999999; // €9,999,999.99
-      expect(centsToEuros(largeAmount)).toBe(9999999.99);
-      expect(formatCurrency(largeAmount)).toMatch(/9\s*999\s*999,99\s*€/);
+    it('should handle very large numbers correctly', () => {
+      const formatter = new Intl.NumberFormat('pt-PT', {
+        style: 'currency',
+        currency: 'EUR'
+      });
+      const largeAmountCents = 999999999;
+      const largeAmountEuros = centsToEuros(largeAmountCents);
+
+      expect(largeAmountEuros).toBe(9999999.99);
+      expect(formatCurrency(largeAmountEuros)).toBe(formatter.format(largeAmountEuros));
     });
   });
 

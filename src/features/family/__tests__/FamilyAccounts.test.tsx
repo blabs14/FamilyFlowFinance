@@ -439,8 +439,7 @@ describe('FamilyAccounts - Cenários de Teste', () => {
   });
 
   describe('Cenário 9: Formatação de Valores', () => {
-    it.skip('deve formatar valores monetários corretamente', async () => {
-      // Expectativas de formatação dependem do locale do ambiente (separadores de milhar)
+    it('deve formatar valores monetários corretamente', async () => {
       const getAccountsWithBalances = vi.mocked(accountsService.getAccountsWithBalances);
       getAccountsWithBalances.mockResolvedValue([...mockBankAccounts, ...mockCreditCards]);
 
@@ -454,9 +453,9 @@ describe('FamilyAccounts - Cenários de Teste', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('5000,00 €')).toBeInTheDocument();
-        expect(screen.getByText('10 000,00 €')).toBeInTheDocument();
-        expect(screen.getByText('-1500,00 €')).toBeInTheDocument();
+        expect(screen.getByText('Conta Corrente').closest('[class*="card"]')).toHaveTextContent(/500\s*000,00\s*€/);
+        expect(screen.getByText('Poupança').closest('[class*="card"]')).toHaveTextContent(/1\s*000\s*000,00\s*€/);
+        expect(screen.getByText('Cartão Principal').closest('[class*="card"]')).toHaveTextContent(/-150\s*000,00\s*€/);
       });
     });
   });
