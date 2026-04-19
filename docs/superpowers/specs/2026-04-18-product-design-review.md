@@ -298,6 +298,48 @@ Nessa altura, Claude invoca a skill `writing-plans` para produzir um **plano de 
   - Rotas a consolidar: manter `/app/payroll/*`; apagar `/personal/payroll/*`; apagar todas as `/personal/*` e `/family/*`; rota `/app/importar` vira submenu interno de Transações.
 - **Estado:** decidido
 
+#### Unit 4: Auth & Onboarding
+- **Data:** 2026-04-19
+- **Decisão:** (1) Limpeza imediata de código morto e vulnerabilidades de auth; (2) Onboarding híbrido (Opção C) — empty states inteligentes em cada página + mini-wizard de 3 passos opcional no primeiro login; (3) Investigar agora o fallback timer de 3s em `AuthContext`; (4) OAuth desabilitado com label "Em breve" até unit dedicada pré-lançamento (Opção 2).
+- **Contexto:** Auth flow tem vulnerabilidades ativas (password a ser impressa em `console.log` em [LoginForm.tsx:34-59](src/components/auth/LoginForm.tsx)), componente de debug `DirectLoginTest` renderizado na página pública de login, rota pública `/test` não-autenticada em produção, `AuthContext.backup.tsx` como cópia morta, providers OAuth declarados mas nunca validados E2E (sem `redirectTo`, sem handling de edge cases do trigger `handle_new_auth_user`), ausência total de onboarding — user novo aterra num dashboard vazio sem orientação, nem sequer são criadas categorias seed. Fallback timer de 3s em `AuthContext` força `loading=false` mesmo sem resposta, mascarando potenciais problemas de rede/Supabase.
+- **Alternativas consideradas para onboarding:**
+  - A — Empty states por página (rejeitada: sozinha, não orienta sequência crítica contas→categorias→primeira tx).
+  - B — Wizard obrigatório no primeiro login (rejeitada: fricção, utilizador pode querer explorar antes).
+  - C — Híbrido: empty states + mini-wizard opcional (escolhida).
+- **Alternativas consideradas para OAuth:**
+  - 1 — Remover botões OAuth completamente (rejeitada: perde a intenção como sinal para o futuro).
+  - 2 — Desabilitar com "Em breve" (escolhida).
+  - 3 — Implementar já (rejeitada: ~meio dia de trabalho cross-system sem valor para dogfood família/amigos).
+- **Razão:**
+  - Vulnerabilidades são bloqueadoras de dogfood — limpar é pré-requisito.
+  - Híbrido de onboarding respeita estilos de exploração diferentes sem fricção obrigatória; empty states reaproveitam-se depois em fluxos normais (contas vazias, sem transações, etc.).
+  - Fallback timer pode estar a mascarar race conditions reais — mais barato investigar agora do que debugar em dogfood.
+  - OAuth adia-se porque: (a) dogfood família não precisa, (b) configuração cross-system (Google Console + Supabase Dashboard + redirect URIs + adaptação do trigger `handle_new_auth_user` para `raw_user_meta_data` do Google) é melhor tratada como unit dedicada quando chegar a altura de lançar, (c) manter botões desabilitados preserva a intenção no design.
+- **Depende de / Afeta:** Depende de Unit 3 (onboarding aterra em `/app` com scope Pessoal default). Afeta Unit 2 (seed de categorias PT como parte do onboarding toca em `categories.is_system`), Unit 5 (empty state "criar primeira conta" reutilizado), Unit 6 (empty state "registar primeira transação"), Unit 15 (Settings recebe opção "rever onboarding"). Prepara terreno para unit OAuth pré-lançamento.
+- **Implicações:**
+  - **Cleanup imediato:**
+    - Remover `console.log` de password em [LoginForm.tsx:34-59](src/components/auth/LoginForm.tsx) e todos os `console.log` de debug em `auth/*`.
+    - Apagar `src/components/auth/DirectLoginTest.tsx` e referência em [login.tsx](src/pages/login.tsx).
+    - Apagar `src/pages/AuthTest.tsx`, `src/pages/TestPage.tsx` e a rota `/test` em [App.tsx](src/App.tsx).
+    - Apagar `src/contexts/AuthContext.backup.tsx`.
+  - **OAuth desabilitado:**
+    - Botões Google/Apple/Facebook mantidos visualmente mas `disabled` com tooltip/badge "Em breve".
+    - `src/services/authProviders.ts` mantém-se (evita refactor posterior quando ativarem).
+  - **Onboarding híbrido:**
+    - Empty state em cada página principal (Dashboard, Contas, Transações, Categorias, Objetivos, Orçamentos) com CTA primária.
+    - Mini-wizard opcional no primeiro login: Passo 1 = criar conta, Passo 2 = confirmar categorias seed PT, Passo 3 = (opcional) primeira transação. Skippable a qualquer passo.
+    - Categorias PT seed criadas automaticamente no primeiro login (via trigger ou onboarding step).
+  - **Fallback timer:**
+    - Investigar root cause do timeout de 3s antes de remover/alterar; registar conclusão como sub-decisão dentro desta unit.
+- **Evidência a preservar:**
+  - Vulnerabilidades a fechar: `console.log('[DEBUG] Password:', data.password)` em [LoginForm.tsx:34-59](src/components/auth/LoginForm.tsx).
+  - Código morto a apagar: `src/components/auth/DirectLoginTest.tsx`, `src/pages/AuthTest.tsx`, `src/pages/TestPage.tsx`, `src/contexts/AuthContext.backup.tsx`, rota `/test` em `src/App.tsx`.
+  - Código a investigar: fallback timer em `src/contexts/AuthContext.tsx` (setTimeout 3000ms).
+  - Código a manter (com mudança de estado): `src/services/authProviders.ts`, botões OAuth em `LoginForm.tsx`/`RegisterForm.tsx` (passam a `disabled` com "Em breve").
+  - Código a criar: `src/features/onboarding/*` (wizard + empty states reutilizáveis), seed de categorias PT (migration DB ou função TS).
+  - Trigger DB existente: `handle_new_auth_user` — pode precisar de ajuste para também fazer seed de categorias (ou fazer-se em TS no primeiro login).
+- **Estado:** decidido
+
 ### Fase 2 — Features
 
 *(nenhuma decisão ainda)*
@@ -308,3 +350,4 @@ Nessa altura, Claude invoca a skill `writing-plans` para produzir um **plano de 
 
 - **2026-04-18** — Criação. Processo, mapa e formato acordados. Decision log vazio.
 - **2026-04-18** — Revisão pós-reviewer: adicionados estados `parked-aceite` e `superseded`; protocolos de revisão de decisões anteriores, retoma de `parked`, e retoma de sessão; campos `Depende de / Afeta`, `Evidência a preservar` e `Supersedes / Superseded by` no decision log.
+- **2026-04-19** — Decisões registadas: Unit 1 (scope como estado), Unit 2 (refactor incremental do modelo de dados), Unit 3 (flat sidebar + scope toggle), Unit 4 (cleanup auth + onboarding híbrido + OAuth em breve).
