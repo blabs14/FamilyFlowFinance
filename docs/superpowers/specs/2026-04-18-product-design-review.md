@@ -246,6 +246,30 @@ Nessa altura, Claude invoca a skill `writing-plans` para produzir um **plano de 
   - Páginas duplicadas a fundir: PersonalAccounts/FamilyAccounts, PersonalGoals/FamilyGoals, PersonalBudgets/FamilyBudgets, PersonalTransactions/FamilyTransactions, PersonalDashboard/FamilyDashboard, PersonalSettings/FamilySettings.
 - **Estado:** decidido
 
+#### Unit 2: Modelo de dados central
+- **Data:** 2026-04-19
+- **Decisão:** Refactor incremental do modelo de dados (Opção C), em 4 fases: (1) kill dead code, (2) `goal_ledger` unificado, (3) money em bigint cents + currency, (4) `categories.is_system`. Reminders fica para Unit 9.
+- **Contexto:** Schema tem vestígios de várias iterações — 5 mecanismos paralelos para dinheiro de goals (`goal_allocations`, `goal_contributions`, `goal_deallocations`, `goal_funding_rules`, `transactions.goal_id`, `accounts.is_goals`), 2 sistemas de recurrents (`fixed_expenses` legacy vs `recurring_rules`+`recurring_instances`), mistura de `numeric` e `int cents` para valores monetários. Produção tem 0 rows na maior parte destas tabelas — são built-but-never-used.
+- **Alternativas consideradas:**
+  - A — Manter tudo, só documentar uso (rejeitada: adia o problema; bugs de units permanecem).
+  - B — Refactor big-bang numa release (rejeitada: risco alto, bloqueia outras unidades).
+  - C — Refactor incremental fatiado (escolhida).
+- **Razão:** Dados reais são 0-20 rows → migrações triviais mecanicamente; base de testes + E2E reconstruídos dão rede de segurança; faseado permite dogfood intermediário; cada fase é reversível isoladamente; não bloqueia discussão de outras unidades.
+- **Depende de / Afeta:** Depende de Unit 1 (scope já unificado em DB, este refactor é sobre conceitos não sobre scope). Afeta Unit 5 (cartões/saldo em cents), Unit 6 (tx em cents + revalidar `transfer_group_id` que nunca foi usado em prod), Unit 7 (goals simplificadas drasticamente via ledger), Unit 8 (budgets em cents), Unit 9 (kill `fixed_expenses`, decisão final sobre reminders).
+- **Implicações:**
+  - **Fase 1 — Kill dead code:** apagar tabelas `fixed_expenses`, `goal_contributions`, `goal_deallocations`, `goal_funding_rules`; apagar colunas `accounts.is_goals`, possivelmente `goals.account_id` (após ledger). Reminders decide-se na Unit 9.
+  - **Fase 2 — Goal ledger:** criar `goal_ledger(goal_id, account_id?, tipo, amount_cents, signed, transaction_id?, rule_id?, data, operation_id)`; migrar 2 rows de `goal_allocations` + 5 rows de `transactions.goal_id`; view `goals_with_balance` deriva `valor_atual` via `SUM`. Apagar `goal_allocations`.
+  - **Fase 3 — Money cents:** migrar `transactions.valor`, `accounts.saldo`, `budgets.valor`, `goal_ledger.valor` para `amount_cents bigint`; adicionar `currency text NOT NULL DEFAULT 'EUR'` onde falta. Uma tabela por commit.
+  - **Fase 4 — `categories.is_system`:** flag booleana, permite NULL/NULL apenas para seed global.
+- **Evidência a preservar:**
+  - Tabelas a apagar (com counts confirmados como 0 em produção): `fixed_expenses`, `goal_contributions`, `goal_deallocations`, `goal_funding_rules`.
+  - Colunas a apagar: `accounts.is_goals`, `goals.account_id` (após ledger substituir).
+  - Tabelas a criar: `goal_ledger` (FK para goals, accounts, transactions, goal_funding_rules — esta última se ressuscitarmos o conceito).
+  - Views/funções DB a ajustar: `goal_progress`, `account_balances`, `account_balances_v1`, `budget_progress`, RPCs `get_personal_*`/`get_family_*` que vão ser unificados em Unit 1.
+  - Money unit counts em produção: `transactions=13`, `goal_allocations=2`, `goals=20`, `accounts=11` — volumes triviais para migração.
+  - Notar: `transactions.transfer_group_id` nunca usado em produção (0 rows com NOT NULL) → a testar seriamente quando chegarmos a Unit 5/6 (pode estar partido e ninguém sabe).
+- **Estado:** decidido
+
 ### Fase 2 — Features
 
 *(nenhuma decisão ainda)*
