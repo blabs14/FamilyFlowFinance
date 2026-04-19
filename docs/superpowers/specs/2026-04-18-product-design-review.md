@@ -257,7 +257,7 @@ Nessa altura, Claude invoca a skill `writing-plans` para produzir um **plano de 
 - **Razão:** Dados reais são 0-20 rows → migrações triviais mecanicamente; base de testes + E2E reconstruídos dão rede de segurança; faseado permite dogfood intermediário; cada fase é reversível isoladamente; não bloqueia discussão de outras unidades.
 - **Depende de / Afeta:** Depende de Unit 1 (scope já unificado em DB, este refactor é sobre conceitos não sobre scope). Afeta Unit 5 (cartões/saldo em cents), Unit 6 (tx em cents + revalidar `transfer_group_id` que nunca foi usado em prod), Unit 7 (goals simplificadas drasticamente via ledger), Unit 8 (budgets em cents), Unit 9 (kill `fixed_expenses`, decisão final sobre reminders).
 - **Implicações:**
-  - **Fase 1 — Kill dead code:** apagar tabelas `fixed_expenses`, `goal_contributions`, `goal_deallocations`, `goal_funding_rules`; apagar colunas `accounts.is_goals`, possivelmente `goals.account_id` (após ledger). Reminders decide-se na Unit 9.
+  - **Fase 1 — Kill dead code:** apagar tabelas `fixed_expenses`, `goal_contributions`, `goal_deallocations`, ~~`goal_funding_rules`~~ (ver supersedência abaixo); apagar colunas `accounts.is_goals`, possivelmente `goals.account_id` (após ledger). Reminders decide-se na Unit 9.
   - **Fase 2 — Goal ledger:** criar `goal_ledger(goal_id, account_id?, tipo, amount_cents, signed, transaction_id?, rule_id?, data, operation_id)`; migrar 2 rows de `goal_allocations` + 5 rows de `transactions.goal_id`; view `goals_with_balance` deriva `valor_atual` via `SUM`. Apagar `goal_allocations`.
   - **Fase 3 — Money cents:** migrar `transactions.valor`, `accounts.saldo`, `budgets.valor`, `goal_ledger.valor` para `amount_cents bigint`; adicionar `currency text NOT NULL DEFAULT 'EUR'` onde falta. Uma tabela por commit.
   - **Fase 4 — `categories.is_system`:** flag booleana, permite NULL/NULL apenas para seed global.
@@ -268,6 +268,7 @@ Nessa altura, Claude invoca a skill `writing-plans` para produzir um **plano de 
   - Views/funções DB a ajustar: `goal_progress`, `account_balances`, `account_balances_v1`, `budget_progress`, RPCs `get_personal_*`/`get_family_*` que vão ser unificados em Unit 1.
   - Money unit counts em produção: `transactions=13`, `goal_allocations=2`, `goals=20`, `accounts=11` — volumes triviais para migração.
   - Notar: `transactions.transfer_group_id` nunca usado em produção (0 rows com NOT NULL) → a testar seriamente quando chegarmos a Unit 5/6 (pode estar partido e ninguém sabe).
+- **Superseded by:** Unit 7 (2026-04-19) — parcialmente, apenas quanto a `goal_funding_rules`: Unit 7 decidiu manter e remodelar a tabela em vez de apagar, para suportar funding rules ativas com cron. Restante da decisão de Unit 2 mantém-se.
 - **Estado:** decidido
 
 #### Unit 3: Navegação / IA
@@ -444,7 +445,70 @@ Nessa altura, Claude invoca a skill `writing-plans` para produzir um **plano de 
   - Testes existentes a preservar: `tests/unit/services/transactions.test.ts`, `tests/integration/rls/transactions.spec.ts`, `src/validation/__tests__/transactionSchema.test.ts`.
 - **Estado:** decidido
 
-
+#### Unit 7: Goals
+- **Data:** 2026-04-19
+- **Decisão:** Oito sub-decisões: (1) alocação como **reserva** — dinheiro fica na conta origem e aparece como "reservado" (Opção B), `goal_ledger` é fonte da verdade, sem transações em `transactions` para alocações; (2) funding rules completas com cron/Edge Function agendada, 3 tipos (`fixed_monthly`, `income_percent`, `roundup_expense`) (Opção b); (3) tipo de goal expandido para incluir `amortization` (FK a `accounts` ou `credit_cards`), alocar = pagar dívida (Opção b); (4) prioridades (smallint 1-5) + drag-n-drop na lista + cascata em funding rules; (5) cálculo "precisas X€/mês" quando `data_limite` preenchida + badge de atraso vs progressão linear esperada; (6) contribuições em goals família com tracking obrigatório (`goal_ledger.created_by`) + meta individual opcional por contribuidor; (7) fluxo de completion com CTA "o que fazer?" (transferir para conta livre / snowball para outro goal / gastar / manter reservado); (8) limpeza alinhada com Units 1/2/3 — migrar `goal_allocations` → `goal_ledger`, apagar `goal_contributions`/`goal_deallocations`/`goal_funding_rules`, remover `accounts.is_goals` + conta Objetivos oculta, remover `goals.account_id` e colunas `valor_atual`/`valor_meta`.
+- **Contexto:** Goals foi a zona mais debugada nos últimos commits — `ac98402 Goals-funcionais a 100%` resolveu delete incompleto, `f5be151` criou runbook de rollback da `fn_goal_delete_with_correct_logic`. Fluxo atual usa conta "Objetivos" oculta (marcada por `accounts.is_goals=true`, criada por `ensure_goals_account`) onde o dinheiro alocado é "guardado" via dupla-entrada em `transactions`. User nunca vê esta conta nem estas transações no extrato — viola mental model e causou os bugs que o runbook documenta. Funding rules tem UI + tabelas + RPCs mas sem cron → regras inertes. Data limite aceita valores sem lógica. Sem prioridades. Sem tracking de quem contribuiu em goal família. Sem fluxo de completion — dinheiro fica preso. `valor_atual` coluna coexiste com view derivada (confusão). `valor_meta` é dead code. Testes são os mais sólidos da app (unit + integration + E2E).
+- **Razão:**
+  - **(1) Reservado:** honesto mental model ("poupei sem mover"), alinhado com Unit 2 que decidiu kill `accounts.is_goals` e `goals.account_id`, reutiliza `saldo_disponivel`/`total_reservado` já presentes nas RPCs, evita artificialidade de conta oculta e simplicidade excessiva de modelo virtual.
+  - **(2) Funding rules completas:** alinhadas com proposta de valor PT-payroll ("10% do ordenado vai para goal X" é feature killer); roundup é toque de qualidade de vida; Supabase tem `pg_cron` ou Edge Function agendada, infraestrutura pronta.
+  - **(3) Amortização:** mesma mecânica mental ("poupar para objetivo Y"), empréstimos jovens e dívida de cartão são casos gigantes em PT; produto "controlo financeiro completo" sem amortização é incompleto.
+  - **(4) Prioridades + drag-n-drop:** baixo custo, alto valor UX; prioridade cascata em funding rules resolve caso de "onde cai o 10% se tenho 3 goals".
+  - **(5) Prazo com cálculo:** trivial computacionalmente, muito valor ("preciso de 127€/mês para o carro em Dezembro"); badge vermelho previne atraso silencioso.
+  - **(6) Contribuições família:** tracking obrigatório é baseline honesto; meta individual é opcional (adesão de goal de casal vs indicador competitivo — user decide).
+  - **(7) Completion CTA:** único momento de celebração da feature; também corrige onde hoje o dinheiro fica preso sem user perceber.
+  - **(8) Limpeza:** já implícita em Units 1/2/3; migração mecânica porque volume é trivial (2 rows em `goal_allocations`, 20 em `goals`, 13 txs a migrar).
+- **Depende de / Afeta:** Depende de Unit 1 (scope unificado), Unit 2 (`goal_ledger`, `amount_cents`, kill das tabelas obsoletas), Unit 5 (amortização referencia `credit_cards`), Unit 6 (`operation_id` obrigatório para alocar/desalocar; `reverse_transaction` aplica a alocações também). Afeta Unit 8 (budgets interagem com "reservado"? — decidir em Unit 8), Unit 9 (funding rules partilham cron com recorrentes; lembretes mensais de goals atrasados), Unit 10 (Dashboard mostra progresso agregado + atrasos), Unit 11 (Payroll integra com `income_percent` rules quando ordenado entra).
+- **Implicações — Modelo de dados (DDL):**
+  - **`goal_ledger`** (Unit 2 já criou conceito): `id uuid PK, goal_id FK, account_id? FK, credit_card_id? FK (CHECK XOR), tipo text ('allocate'|'deallocate'|'interest_accrued'|'completion_transfer'), amount_cents bigint, signed smallint, transaction_id? FK (apenas para completion que gera transação real), rule_id? FK goal_funding_rules, data date, created_by uuid FK auth.users, operation_id uuid UNIQUE, reversal_of? FK goal_ledger, created_at`.
+  - **`goals`** (mudanças):
+    - Adicionar `tipo text NOT NULL CHECK (tipo IN ('savings','amortization'))`, `target_account_id? FK accounts`, `target_credit_card_id? FK credit_cards` (CHECK: se `tipo='amortization'` então exatamente um está preenchido).
+    - Adicionar `priority smallint CHECK 1-5 DEFAULT 3`, `order_index int`.
+    - Remover `valor_atual`, `valor_meta` (derivado via view `goals_with_balance`).
+    - Remover `account_id` (Unit 2).
+    - Manter `data_limite`, adicionar `required_monthly_cents` coluna calculada via view.
+  - **`goal_funding_rules`** (renomear e completar, não apagar — Unit 2 revisto por esta unit): `id, goal_id FK, tipo text ('fixed_monthly'|'income_percent'|'roundup_expense'), amount_cents? (fixed), percent numeric? (income), source_account_id? FK accounts (para fixed/income), active boolean, day_of_month smallint? (fixed), priority_cascade_enabled boolean, created_at`. **Supersedes** decisão Unit 2 de apagar esta tabela.
+  - **`goal_contributors`** (nova): `goal_id FK, user_id FK auth.users, target_cents? bigint` (meta individual opcional), PK composta `(goal_id, user_id)`.
+  - **Apagar:** `goal_allocations` (migrar rows para `goal_ledger`), `goal_contributions`, `goal_deallocations`.
+  - **Apagar em `accounts`:** coluna `is_goals`; a conta "Objetivos" oculta existente (se houver dados) tem 13 transações a migrar.
+  - **View `goals_with_balance`:** devolve `valor_atual_cents = SUM(goal_ledger.amount_cents * goal_ledger.signed)`, `progress_percent`, `required_monthly_cents`, `is_behind_schedule`.
+  - **View `account_available_balance`:** `total_cents − SUM(reservado para goals ativos deste account)`; substitui cálculo disperso atual.
+- **Implicações — Serviços/RPCs:**
+  - **Novas RPCs (scope-aware):**
+    - `allocate_to_goal(goal_id, source_account_id? | source_credit_card_id?, amount_cents, operation_id, description?)` — insere em `goal_ledger`, não cria transação em `transactions`.
+    - `deallocate_from_goal(goal_id, target_account_id?, amount_cents, operation_id)` — insere contra-entrada em `goal_ledger`.
+    - `complete_goal(goal_id, action text, target_account_id? | other_goal_id? | category_id?)` — materializa dinheiro reservado conforme escolha do user: `action='transfer'` cria `transfer` real; `action='snowball'` move reserva entre goals; `action='spend'` cria `transaction` + desreserva; `action='keep'` nada.
+    - `pay_amortization_goal(goal_id, from_account_id, amount_cents, operation_id)` — paga dívida diretamente (não passa por `goal_ledger` de reserva — cria `transfer` real para o account/credit_card alvo e regista em `goal_ledger` tipo `allocate` com `transaction_id` preenchido).
+    - `run_funding_rules(as_of date)` — idempotente, chamada por cron diário: executa `fixed_monthly` no `day_of_month`, `income_percent` quando deteta nova entrada de payroll (Unit 11), `roundup_expense` em despesas novas do dia anterior.
+    - `get_goals_with_balance(scope)`, `get_goal_ledger(goal_id)`.
+  - **Remover/depreciar:** `allocate_to_goal_with_transaction`, `deallocate_from_goal_with_transaction`, `ensure_goals_account`, `fn_goal_allocate`, `fn_goal_deallocate`, `fn_goal_delete_with_correct_logic` (substituída por `delete_goal_with_restoration_v2` que apenas limpa `goal_ledger`, não precisa mover dinheiro — já estava reservado).
+  - `delete_goal_with_restoration` é grandemente simplificada: como o dinheiro nunca saiu das contas origem, só é preciso apagar as rows de `goal_ledger` e as reservas desaparecem automaticamente.
+- **Implicações — UI:**
+  - Página única `/app/objetivos` (Unit 1/3), merge de `PersonalGoals` + `FamilyGoals`.
+  - Card de goal mostra: barra de progresso, `valor_atual_cents`/`valor_objetivo`, `required_monthly_cents` se prazo, badge de atraso, top 3 contribuidores (família), botão Alocar/Desalocar.
+  - Modal de alocar: escolhe conta origem (filtro por `saldo_disponivel > 0`), valor, descrição; ao submeter, a conta mostra imediatamente novo `saldo_disponivel` reduzido.
+  - Conta (Unit 5): na vista de conta, secção "Reservado" lista os goals que reservam e por quanto; link clicável; soma total bate com `total − disponível`.
+  - Goal de amortização: em vez de "Alocar", CTA "Pagar dívida" → escolhe account origem → cria transfer real + regista em ledger; barra de progresso é "dívida reduzida".
+  - Funding rules: secção colapsável em cada goal; "Adicionar regra" abre modal (tipo + parâmetros); lista de regras ativas com toggle on/off.
+  - Completion: quando atinge 100%, card ganha "glow" + modal aparece com 4 CTAs (transferir / snowball / gastar / manter).
+  - Drag-n-drop para reordenar; prioridade numérica editable no detalhe.
+  - Contribuições (goals família): secção "Contribuições" com bar chart por user; se `target_cents` definido por contribuidor, mostra progresso individual.
+- **Implicações — Scheduling:**
+  - Criar Edge Function `run-daily-funding-rules` agendada às 03:00 Europa/Lisbon via `pg_cron` ou Supabase Scheduled Edge Functions.
+  - Função lê todas as `goal_funding_rules.active=true`, filtra por tipo, chama `run_funding_rules(current_date)` idempotente.
+  - `operation_id` gerado deterministicamente `hash(rule_id|date)` previne duplicações em retries.
+- **Evidência a preservar:**
+  - Código a refactorizar/substituir: `src/services/goals.ts`, `src/services/goalAllocations.ts`, `src/hooks/useGoals*.ts`, `src/components/GoalForm.tsx`, `src/components/GoalList.tsx`, `src/components/GoalCard*.tsx`, `src/components/GoalAllocationModal.tsx`, `src/components/GoalDeallocationModal.tsx`, `src/components/GoalFundingSection.tsx`, `src/validation/goalSchema.ts`, `src/shared/types/goals.ts`.
+  - Páginas a unificar: `src/features/personal/PersonalGoals.tsx` + `src/features/family/FamilyGoals.tsx` → `/app/objetivos`.
+  - RPCs a apagar/depreciar: `allocate_to_goal_with_transaction`, `deallocate_from_goal_with_transaction`, `ensure_goals_account`, `fn_goal_allocate`, `fn_goal_deallocate`, `fn_goal_delete_with_correct_logic`, `get_user_goal_progress`, `get_user_account_reserved`, `get_personal_goals`/`get_family_goals` (unificar).
+  - Migrações em produção: 2 rows de `goal_allocations` → `goal_ledger`; 13 txs da conta oculta Objetivos a migrar (fazer dry-run e verificar); 20 goals a receber `tipo='savings'` default + migrar `account_id`; apagar conta Objetivos oculta após migração.
+  - Tabelas a apagar: `goal_allocations`, `goal_contributions`, `goal_deallocations`.
+  - Colunas a apagar: `accounts.is_goals`, `goals.account_id`, `goals.valor_atual`, `goals.valor_meta`.
+  - Supersedes: Unit 2 decidiu apagar `goal_funding_rules` — **esta decisão supersedes essa parte**: a tabela fica mas é remodelada. Unit 2 entrada a atualizar com `Superseded by: Unit 7 (2026-04-19) — apenas quanto a goal_funding_rules`.
+  - Runbook a atualizar: `docs/runbooks/*goals*` — novo runbook pós-migração ledger; preservar snapshot antigo em `docs/superpowers/specs/archive/`.
+  - Testes existentes a preservar: `src/validation/__tests__/goalSchema.test.ts`, `src/validation/__tests__/goalAllocationSchema.test.ts`, `tests/unit/services/goals.test.ts`, `tests/integration/goals/goal-canonical-functions.test.ts`, `cypress/e2e/goals.cy.ts`.
+  - Testes novos: reserva não cria transação em `transactions`, `saldo_disponivel` reflete reservas, funding rule `income_percent` dispara em entrada de payroll, `roundup_expense` arredonda corretamente, amortização de cartão cria `transfer` real, completion com cada uma das 4 CTAs, drag-n-drop reorder persiste, contribuição individual vs meta familiar, migração de `goal_allocations` para `goal_ledger` preserva totais.
+- **Estado:** decidido
 
 ---
 
@@ -452,4 +516,4 @@ Nessa altura, Claude invoca a skill `writing-plans` para produzir um **plano de 
 
 - **2026-04-18** — Criação. Processo, mapa e formato acordados. Decision log vazio.
 - **2026-04-18** — Revisão pós-reviewer: adicionados estados `parked-aceite` e `superseded`; protocolos de revisão de decisões anteriores, retoma de `parked`, e retoma de sessão; campos `Depende de / Afeta`, `Evidência a preservar` e `Supersedes / Superseded by` no decision log.
-- **2026-04-19** — Decisões registadas: Unit 1 (scope como estado), Unit 2 (refactor incremental do modelo de dados), Unit 3 (flat sidebar + scope toggle), Unit 4 (cleanup auth + onboarding híbrido + OAuth em breve), Unit 5 (separar `credit_cards` de `accounts`, nível avançado, FK dupla + CHECK, currency/order/soft-delete), Unit 6 (transfers como tabela própria + trigger, splits, anexos, hierarquia 1-nível em categorias, sem datas futuras, idempotência obrigatória + reversão universal).
+- **2026-04-19** — Decisões registadas: Unit 1 (scope como estado), Unit 2 (refactor incremental do modelo de dados), Unit 3 (flat sidebar + scope toggle), Unit 4 (cleanup auth + onboarding híbrido + OAuth em breve), Unit 5 (separar `credit_cards` de `accounts`, nível avançado, FK dupla + CHECK, currency/order/soft-delete), Unit 6 (transfers como tabela própria + trigger, splits, anexos, hierarquia 1-nível em categorias, sem datas futuras, idempotência obrigatória + reversão universal), Unit 7 (alocação como reserva via `goal_ledger`, funding rules completas com cron + 3 tipos, amortização genérica, prioridades + cascata, cálculo de prazo, contribuições multi-user, fluxo de completion; supersedes parcialmente Unit 2 quanto a `goal_funding_rules`).
