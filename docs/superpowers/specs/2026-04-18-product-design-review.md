@@ -398,6 +398,52 @@ Nessa altura, Claude invoca a skill `writing-plans` para produzir um **plano de 
   - Novos testes necessários: ciclo completo (closing_day → statement → pagamento parcial → juros), parcelamento (N parcelas geram N transações mensais), transferência cross-scope que toca cartão, soft-delete + restore, reordenação drag-n-drop.
 - **Estado:** decidido
 
+#### Unit 6: Transactions & Categories
+- **Data:** 2026-04-19
+- **Decisão:** Sete sub-decisões: (1) transferências entre contas como híbrido — tabela `transfers` + 2 rows auto-geradas em `transactions` via trigger (Opção C); (2) split transactions em tabela `transaction_splits` (Opção B); (3) anexos em tabela `transaction_attachments` agora, com OCR adiado para Unit 14 — Importer (Opção B + C na Unit 14); (4) sem tags (Opção A); (5) categorias com hierarquia de 1 nível pai/filho (Opção B); (6) sem datas futuras — transações são factos consumados, planos vivem em Recorrentes/Lembretes, Unit 9 (Opção C); (7) `operation_id` obrigatório + `reversal_of` expandido para todas as ações + UI "Reverter transação" (Opção A). Derivadas: criar UI para `category_customizations`; adicionar trigger de audit para `transactions`; manter paginação fixed 20/página.
+- **Contexto:** Hoje `transactions` tem `tipo`=(receita|despesa|transferencia) mas UI só cria receita/despesa; `transfer_group_id` tem 0 rows em produção (só usado internamente para dupla-entrada de goal allocations); `reversal_of` só usado em `fn_goal_deallocate`; `operation_id`/`event_time` existem na DB mas não têm uso no código TS; categorias seed = `user_id IS NULL AND family_id IS NULL` (Unit 2 troca por `is_system` boolean); `category_customizations` permite overrides sem UI; anexos têm infraestrutura (`attachments.ts`, bucket `receipts`, RPC `ingest_receipt` para OCR) mas zero integração com `transactions`. Filtros e paginação da lista são maduros.
+- **Razão:**
+  - **(1) Híbrido transfers+trigger:** preserves listagens "transação em ambas as contas" sem perder fonte única de verdade; cobre cross-scope e cartões (Unit 5).
+  - **(2) Splits:** valor real para controlo financeiro PT sério (supermercado 120€ = 70€ comida + 30€ higiene + 20€ limpeza); encaixa natural com orçamentos por categoria.
+  - **(3) Anexos:** infraestrutura já existe, só falta FK + UI; OCR pertence conceptualmente ao Importer.
+  - **(4) Sem tags:** categorias + splits + hierarquia cobrem bem; tags sem valor claro e criam confusão de UX.
+  - **(5) Hierarquia 1 nível:** cobre 99% dos casos reais; permite orçamentos granulares ou agregados; evita complexidade de árvore profunda.
+  - **(6) Sem datas futuras:** preserves clareza (transação = facto); recorrentes/lembretes são o sítio certo para planos; simplifica saldos.
+  - **(7) Idempotência + reversão:** table-stakes em produto financeiro sério; previne duplicações em retries; "Reverter" dá controlo sem apagar histórico.
+- **Depende de / Afeta:** Depende de Unit 1 (scope unificado em RPCs/páginas), Unit 2 (`amount_cents`, `categories.is_system`, `goal_ledger` substitui `goal_id` + `goal_allocations`), Unit 5 (transferências podem envolver cartões; reversão tem de lidar com cartão). Afeta Unit 7 (goals usam ledger em vez de `transactions.goal_id`), Unit 8 (budgets beneficiam de hierarquia + splits), Unit 9 (recorrentes criam instâncias `pending` para substituir "datas futuras em transações"), Unit 10 (relatórios têm de lidar com splits), Unit 14 (importer herda tabela `transaction_attachments` + estende com OCR), Unit 15 (Settings tem UI para customizations + "rever onboarding").
+- **Implicações — Modelo de dados (DDL):**
+  - **Nova tabela `transfers`:** `id uuid, user_id, family_id? (scope pattern), from_account_id? + from_credit_card_id? (XOR CHECK), to_account_id? + to_credit_card_id? (XOR CHECK), amount_cents bigint, date date, description text?, operation_id uuid, event_time timestamptz, reversal_of uuid?, created_at, updated_at`. Trigger `trigger_transfer_materialize` cria/atualiza/apaga 2 rows em `transactions` quando `transfers` muda.
+  - **Nova tabela `transaction_splits`:** `id, transaction_id FK, categoria_id FK, amount_cents bigint, description text?`. Transação mãe com splits tem `categoria_id = NULL`. CHECK: `SUM(amount_cents)` dos splits = `transactions.amount_cents` (via trigger ou constraint deferrable).
+  - **Nova tabela `transaction_attachments`:** `id, transaction_id FK ON DELETE CASCADE, file_path text (bucket receipts), mime_type text, size_bytes int, original_filename text?, uploaded_by uuid FK auth.users, uploaded_at timestamptz`. Múltiplos anexos por transação.
+  - **Alterações em `categories`:** adicionar `parent_id uuid? FK categories(id)`, CHECK profundidade máxima 1 (parent não pode ter parent). Unit 2 já adiciona `is_system` e trata `user_id`/`family_id` nullable.
+  - **Alterações em `transactions`:** `operation_id uuid NOT NULL UNIQUE`, `event_time timestamptz NOT NULL DEFAULT now()`, `reversal_of uuid? FK transactions(id)`, `created_by uuid FK auth.users`. Remover `transfer_group_id` (migra para `transfers`), remover `goal_id` (migra para `goal_ledger` em Unit 2). Adicionar CHECK `data <= current_date` (sem datas futuras).
+  - **Nova tabela `audit_logs`:** se não existir popular via trigger `trigger_audit_transactions` (insert/update/delete).
+- **Implicações — Serviços/RPCs:**
+  - Novas RPCs (scope-aware via Unit 1): `create_transfer(...)`, `reverse_transaction(tx_id)` — cria contrária com `reversal_of`, `delete_transaction(tx_id, reason)` — soft-delete se implementado.
+  - Unificar `get_personal_transactions`/`get_family_transactions` em `get_transactions(scope)` (Unit 1), estender para incluir splits expandidos e anexos via JSON.
+  - Criar `get_categories_tree()` que devolve categorias com `children[]` aninhado.
+  - Atualizar `create_transaction` para gerar `operation_id` lado cliente (idempotência em retries).
+  - RPC `reverse_transaction` cuida de: gerar transação contrária em `transactions`, preservar `reversal_of` link, rejeitar se tx já reversada, em cartões recalcular statement do ciclo.
+- **Implicações — UI:**
+  - Página única `/app/transacoes` (Unit 1/3), merge de `PersonalTransactions.tsx` + `FamilyTransactions.tsx`.
+  - Form de transação: campo "Dividir" abre modal para splits; campo "Anexos" drag-n-drop; campo "Categoria" com autocomplete + indent para hierarquia.
+  - Form de transferência: fluxo próprio acessível via CTA "Nova transferência" — escolhe origem (conta ou cartão), destino (conta ou cartão), valor, data, descrição.
+  - Lista: ícone "📎" quando tem anexos; indentação/badge para mostrar categoria pai→filha; expandir linha para ver splits; menu "Reverter" na ação contextual.
+  - Relatórios (Unit 10) fazem drill-down por categoria pai → filhas.
+  - Settings (Unit 15): secção "Categorias personalizadas" para editar cor/ícone/nome de categorias seed (liga a `category_customizations`).
+- **Implicações — Cross-scope transfers:**
+  - Suportado por natureza do modelo (`from_*` e `to_*` podem pertencer a scopes diferentes).
+  - UI pergunta explicitamente: "Transferir entre scopes?" quando origem e destino divergem, com aviso.
+- **Evidência a preservar:**
+  - Código duplicado a fundir: `src/features/personal/PersonalTransactions.tsx` + `src/features/family/FamilyTransactions.tsx` → `/app/transacoes`.
+  - RPCs a depreciar/unificar: `get_personal_transactions`, `get_family_transactions`, `fn_goal_allocate`, `fn_goal_deallocate` (passam a alimentar `goal_ledger` de Unit 2).
+  - Tabelas a apagar: `goal_allocations` (Unit 2 já decidiu). Remover coluna `transactions.transfer_group_id` (substituída por `transfers`). Remover coluna `transactions.goal_id` (substituída por `goal_ledger`).
+  - Tabelas a reutilizar: `category_customizations` (finalmente ganha UI), `attachments` bucket Storage (reutilizado via `transaction_attachments`), RPC `ingest_receipt` (reutilizado em Unit 14).
+  - Ficheiros a refactorizar: `src/services/transactions.ts`, `src/services/categories.ts`, `src/services/attachments.ts`, `src/services/importer.ts`, `src/validation/transactionSchema.ts`, `src/validation/categorySchema.ts`, `src/components/TransactionForm.tsx`, `src/components/TransactionList.tsx`, `src/components/CategoryForm.tsx`, hooks `useTransactions*`, `useCategories*`.
+  - Testes a criar: transferência cross-account, cross-scope, envolvendo cartão (Unit 5); splits — soma valida; anexo — upload, delete, size limit; reversão — tx + cartão statement; hierarquia — eliminar pai com filhos; operation_id — idempotência em retry; seed de categorias PT com hierarquia.
+  - Testes existentes a preservar: `tests/unit/services/transactions.test.ts`, `tests/integration/rls/transactions.spec.ts`, `src/validation/__tests__/transactionSchema.test.ts`.
+- **Estado:** decidido
+
 
 
 ---
@@ -406,4 +452,4 @@ Nessa altura, Claude invoca a skill `writing-plans` para produzir um **plano de 
 
 - **2026-04-18** — Criação. Processo, mapa e formato acordados. Decision log vazio.
 - **2026-04-18** — Revisão pós-reviewer: adicionados estados `parked-aceite` e `superseded`; protocolos de revisão de decisões anteriores, retoma de `parked`, e retoma de sessão; campos `Depende de / Afeta`, `Evidência a preservar` e `Supersedes / Superseded by` no decision log.
-- **2026-04-19** — Decisões registadas: Unit 1 (scope como estado), Unit 2 (refactor incremental do modelo de dados), Unit 3 (flat sidebar + scope toggle), Unit 4 (cleanup auth + onboarding híbrido + OAuth em breve), Unit 5 (separar `credit_cards` de `accounts`, nível avançado, FK dupla + CHECK, currency/order/soft-delete).
+- **2026-04-19** — Decisões registadas: Unit 1 (scope como estado), Unit 2 (refactor incremental do modelo de dados), Unit 3 (flat sidebar + scope toggle), Unit 4 (cleanup auth + onboarding híbrido + OAuth em breve), Unit 5 (separar `credit_cards` de `accounts`, nível avançado, FK dupla + CHECK, currency/order/soft-delete), Unit 6 (transfers como tabela própria + trigger, splits, anexos, hierarquia 1-nível em categorias, sem datas futuras, idempotência obrigatória + reversão universal).
