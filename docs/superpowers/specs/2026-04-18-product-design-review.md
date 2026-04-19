@@ -579,10 +579,100 @@ Nessa altura, Claude invoca a skill `writing-plans` para produzir um **plano de 
   - Testes novos: rollover modes (accumulate soma, reset zera, transfer_to_goal cria ledger entry), template copia para novo mês, hierarquia pai+filho simultâneos, projection linear calcula correto, budget anual agrega 12 meses, família agregado vs meta pessoal, split conta para cada categoria, threshold 80% dispara reminder.
 - **Estado:** decidido
 
+#### Unit 9: Recorrentes & Lembretes
+- **Data:** 2026-04-19
+- **Decisão:** Dez sub-decisões: (1) motor híbrido via `recurring_rules.execution_mode text CHECK IN ('auto','confirm')` — `auto` materializa diretamente em `transactions`, `confirm` cria `recurring_instances` pendente (Opção c); (2) `amount_mode text CHECK IN ('fixed','variable','estimated')` — `variable` força `execution_mode='confirm'`, `estimated` usa último valor como sugestão; (3) padrões custom via `schedule_type text CHECK IN ('daily','weekly','monthly','yearly','custom')` + `interval smallint` + `day_of_month smallint?` + `weekday_of_month smallint?` + `weekday_ordinal smallint?` — sem RRULE completo (Opção b); (4) `reminders` deixa de ser tabela ad-hoc e passa a ser **inbox unificada** `inbox_items(source_type, source_id, user_id, family_id?, due_at, status)` alimentada por instâncias pendentes, thresholds de budget (Unit 8), deadlines de goals (Unit 7) e user reminders manuais (Opção b); (5) novo tipo `recurring_rules.type='credit_card_payment'` com FK `credit_card_id` (pagamento programado do extrato + anuidade anual da Unit 5); (6) consolidar todos os crons existentes num único Edge Function `daily-scheduler` a correr às 03:00 Europe/Lisbon, que orquestra sequencialmente: `run_funding_rules` (Unit 7), `run_recurring_rules` (Unit 9), `run_monthly_budget_rollover` se dia 1 (Unit 8), `generate_threshold_reminders` (Unit 8/9), `send_push_notifications` (Unit 15); (7) fuso horário: mudar agendamento de UTC para Europe/Lisbon; adicionar `profiles.timezone text NOT NULL DEFAULT 'Europe/Lisbon'` para futura internacionalização; (8) nova rota `/app/inbox` como único ponto de ação diária — lista instâncias em `confirm` pendentes, thresholds de budget, deadlines próximas e lembretes manuais, com ações inline (confirmar/editar valor, dismiss, snooze); (9) importador (Unit 14) faz fuzzy match `(amount_cents, date±2d, counterparty, account_id)` entre transação importada e `recurring_instances` pendentes — se match, marca instância como `posted` ligando `transaction_id` em vez de duplicar; (10) limpeza: apagar tabela `fixed_expenses` + `src/services/fixed_expenses.ts` + `src/components/FixedExpensesList.tsx` (substituídos por `recurring_rules` com `type='expense'`), unificar páginas Personal/Family em `/app/recorrentes`, adicionar RLS em `inbox_items.family_id`, apagar crons `reminders-push-cron` e `goal-funding-cron` (absorvidos pelo `daily-scheduler`), apagar código morto que escreve diretamente em `reminders`.
+- **Contexto:** Hoje existe `recurring_rules(user_id, family_id?, type, amount, categoria_id, schedule)` + `recurring_instances(rule_id, due_date, status)` com UNIQUE `(rule_id, due_date)` — **mas não há cron que popule `recurring_instances`**. Existe `reminders(user_id, family_id?, title, due_at, frequency)` onde o campo `frequency` fica perdido na persistência (apenas título). Existe `fixed_expenses` legacy paralelo a `recurring_rules` com sobreposição semântica. Existe tabela `push_subscriptions` e função `reminders-push-cron` que envia pushes uma vez por lembrete mas não há confirmação nem UI de gestão. `goal-funding-cron` (Unit 7) e rollover mensal (Unit 8) são crons separados, cada um UTC, o que confunde em PT (03:00 UTC = 04:00/05:00 Lisboa dependente de DST). Não existe noção de "inbox" — user tem que ir a cada página verificar o seu estado.
+- **Razão:**
+  - **(1) Híbrido auto/confirm:** 80% dos casos (ordenado, renda, Netflix) têm valor fixo previsível — `auto` poupa clicks; restantes (água, luz, mercearia variável) beneficiam de confirmação humana; `confirm` também permite edição antes de materializar. Evita tanto automação cega como fricção universal.
+  - **(2) `amount_mode`:** captura a diferença entre "sei exatamente" vs "mais ou menos" vs "nunca o mesmo"; `variable` força `confirm` porque persistir valor errado é pior que pedir input; `estimated` preenche form com último valor mas deixa o user ajustar.
+  - **(3) Padrões sem RRULE:** interval + day_of_month + weekday_of_month cobre ≥95% de casos reais (quinzenalmente, "primeira sexta do mês", "todos os 25"); RRULE completo é overhead para 5% de casos esquisitos.
+  - **(4) Inbox unificado:** hoje o user não tem um sítio para "o que precisa da minha atenção". Consolida 4 fontes (instâncias, thresholds, deadlines, manuais) num único pattern `inbox_items` com `source_type`, simplificando UI e código. Elimina a tabela `reminders` incoerente.
+  - **(5) `credit_card_payment`:** integra o ciclo de cartão de crédito (Unit 5) — pagamento programado do extrato e anuidade anual — no mesmo motor em vez de código separado.
+  - **(6) Cron único:** reduz superfície operacional de 3 crons separados para 1 Edge Function; sequência ordenada evita race conditions (rollover antes de funding antes de threshold); facilita logging/monitoring unificado.
+  - **(7) Europe/Lisbon:** user é PT, cron faz sentido em PT; `profiles.timezone` dá base para futura expansão (nunca é prematuro preparar).
+  - **(8) Rota `/app/inbox`:** único ponto de entrada para ação diária do user; reduz fricção de "onde é que vou ver o que tenho de fazer hoje?"; engajamento.
+  - **(9) Dedup no importador:** sem isto, user importa extrato bancário e vê tudo duplicado (transação importada + instância materializada). Match fuzzy preserva intenção do recurring rule (categoria, notas) mas reconcilia com realidade bancária.
+  - **(10) Limpeza:** `fixed_expenses` é débito puro — ter dois mecanismos paralelos para a mesma intenção confunde e duplica bugs; RLS em `inbox_items.family_id` é obrigatório por Unit 1.
+- **Depende de / Afeta:** Depende de Unit 1 (scope unificado), Unit 2 (`amount_cents`, `operation_id`), Unit 5 (FK `credit_cards` para `credit_card_payment`), Unit 6 (transações criadas herdam `operation_id` estável da instância — idempotência), Unit 7 (funding rules reutilizam o cron único), Unit 8 (thresholds emitem para `inbox_items`). Afeta Unit 14 (importador precisa implementar fuzzy match contra `recurring_instances` pendentes e marcar `posted`), Unit 15 (Settings tem `timezone` + opt-in de push/email por tipo de inbox item), Unit 16 (observabilidade do `daily-scheduler` — logs, alertas se falhar).
+- **Supersedes:** Unit 2 parcialmente quanto a `fixed_expenses` (apagada) e a estrutura de `reminders` (substituída por `inbox_items`).
+- **Implicações — Modelo de dados (DDL):**
+  - **`recurring_rules` (mudanças):**
+    - Renomear `amount` → `amount_cents bigint` (Unit 2).
+    - Adicionar `execution_mode text NOT NULL CHECK (execution_mode IN ('auto','confirm')) DEFAULT 'confirm'`.
+    - Adicionar `amount_mode text NOT NULL CHECK (amount_mode IN ('fixed','variable','estimated')) DEFAULT 'fixed'`.
+    - Constraint: `amount_mode='variable' => execution_mode='confirm'`.
+    - Adicionar `schedule_type text NOT NULL CHECK (schedule_type IN ('daily','weekly','monthly','yearly','custom'))`.
+    - Adicionar `interval smallint NOT NULL DEFAULT 1` — cada N unidades de `schedule_type`.
+    - Adicionar `day_of_month smallint? CHECK (day_of_month BETWEEN 1 AND 31)`.
+    - Adicionar `weekday smallint? CHECK (weekday BETWEEN 0 AND 6)` — 0=domingo.
+    - Adicionar `weekday_ordinal smallint? CHECK (weekday_ordinal BETWEEN 1 AND 5)` — "primeira sexta" = (weekday=5, weekday_ordinal=1).
+    - Adicionar `type text CHECK (type IN ('income','expense','transfer','credit_card_payment')) NOT NULL`.
+    - Adicionar `credit_card_id uuid? FK credit_cards(id)` — obrigatório se `type='credit_card_payment'`.
+    - Adicionar `next_due_at date NOT NULL` — precomputado para scan rápido do cron.
+    - Adicionar `last_run_at timestamptz?`.
+    - Adicionar `active boolean NOT NULL DEFAULT true`.
+    - Adicionar `end_date date?` — rule expira automaticamente.
+  - **`recurring_instances` (mudanças):**
+    - Manter `(rule_id, due_date)` UNIQUE.
+    - Renomear `amount` → `amount_cents bigint?` (pode ser null até user confirmar em modo `variable`).
+    - Adicionar `status text NOT NULL CHECK (status IN ('pending','confirmed','posted','skipped','failed')) DEFAULT 'pending'`.
+    - Adicionar `transaction_id uuid? FK transactions(id)` — ligada após materialização ou importador dedup.
+    - Adicionar `operation_id text NOT NULL` = `hash(rule_id|due_date)` — idempotência Unit 2.
+    - Adicionar `confirmed_at timestamptz?`, `posted_at timestamptz?`.
+  - **`inbox_items` (nova):**
+    - `id uuid PK`, `user_id uuid NOT NULL FK auth.users`, `family_id uuid? FK families`, `source_type text NOT NULL CHECK (source_type IN ('recurring_instance','budget_threshold','goal_deadline','manual'))`, `source_id uuid NOT NULL`, `title text NOT NULL`, `body text?`, `due_at timestamptz NOT NULL`, `status text NOT NULL CHECK (status IN ('pending','snoozed','done','dismissed')) DEFAULT 'pending'`, `snoozed_until timestamptz?`, `created_at timestamptz NOT NULL DEFAULT now()`, `completed_at timestamptz?`.
+    - Índices: `(user_id, status, due_at)` para listagem; `(source_type, source_id)` para upsert idempotente.
+    - RLS: user vê os seus + os da sua família.
+  - **`profiles` (adição):** `timezone text NOT NULL DEFAULT 'Europe/Lisbon'`.
+  - **Migração de `reminders` → `inbox_items`:** copiar registos existentes com `source_type='manual'`, `source_id = reminders.id`; depois apagar tabela `reminders`.
+  - **Apagar `fixed_expenses`:** migrar linhas ativas para `recurring_rules(type='expense', execution_mode='auto', amount_mode='fixed')`; depois drop.
+- **Implicações — Serviços/RPCs / Edge Functions:**
+  - Nova Edge Function `daily-scheduler` agendada via `pg_cron` em `Europe/Lisbon 03:00` (pg_cron suporta timezone) — sequencial:
+    1. `SELECT run_funding_rules();` (Unit 7)
+    2. `SELECT run_recurring_rules();` (Unit 9)
+    3. `IF EXTRACT(DAY FROM now() AT TIME ZONE 'Europe/Lisbon')=1 THEN SELECT run_monthly_budget_rollover(...); END IF;`
+    4. `SELECT generate_threshold_reminders();`
+    5. `SELECT send_push_notifications();`
+    - Cada step em transação própria; falha em um não aborta os seguintes (log + alerta).
+    - Idempotente por `operation_id` ou por step-date key.
+  - `run_recurring_rules()`:
+    - Para cada `recurring_rules` com `active=true`, `end_date IS NULL OR end_date >= today` e `next_due_at <= today`:
+      - Se `execution_mode='auto'`: chama `create_transaction(...)` (ou `create_transfer(...)` / `create_credit_card_payment(...)`) com `operation_id=hash(rule_id|next_due_at)`; atualiza `last_run_at`, avança `next_due_at` conforme schedule.
+      - Se `execution_mode='confirm'`: upsert em `recurring_instances(rule_id, due_date=next_due_at, status='pending')`; insere em `inbox_items(source_type='recurring_instance', source_id=instance.id, ...)`; avança `next_due_at`.
+    - Função `compute_next_due(rule, from_date)` aplica regras de `schedule_type`/`interval`/`day_of_month`/`weekday`/`weekday_ordinal`.
+  - RPCs novas (scope-aware via Unit 1):
+    - `create_recurring_rule(...)`, `update_recurring_rule(...)`, `pause_recurring_rule(id)`, `delete_recurring_rule(id)`.
+    - `confirm_recurring_instance(instance_id, amount_cents_override?, notes?)` → cria transação, liga `transaction_id`, marca `status='posted'`, marca inbox item `done`.
+    - `skip_recurring_instance(instance_id, reason?)` → `status='skipped'`, inbox item `dismissed`.
+    - `list_inbox(scope, status?, limit?, offset?)`.
+    - `snooze_inbox_item(id, until)`, `complete_inbox_item(id)`, `dismiss_inbox_item(id)`.
+    - `create_manual_reminder(scope, title, body?, due_at)` (Unit 15 é onde user cria).
+  - Apagar:
+    - Edge Function `reminders-push-cron` (absorvida por step 5 do `daily-scheduler`).
+    - Edge Function `goal-funding-cron` se existir separada (absorvida por step 1).
+    - `fixed_expenses` RPCs/service.
+- **Implicações — UI:**
+  - Página única `/app/recorrentes` (Unit 1/3) substitui `PersonalRecurring` + `FamilyRecurring` + `FixedExpensesList`.
+  - Form de criação: wizard compacto — (a) tipo (receita/despesa/transfer/pagamento cartão), (b) montante + `amount_mode`, (c) schedule visual (botões rápidos "Mensal no dia X", "Semanal à sexta", "Primeira sexta do mês", "Custom"), (d) `execution_mode` toggle "Automático | Pedir confirmação" com default baseado em `amount_mode`.
+  - Card de rule: próxima data, badge do modo (⚡ auto / ✋ confirm), histórico das últimas 3 instâncias, ações pause/edit/delete.
+  - Nova rota `/app/inbox`: lista agrupada por secção (Hoje / Esta semana / Atrasados), cada item com ações inline; filtro por `source_type`; badge no sidebar com contagem `status='pending' AND due_at <= now()`.
+  - BottomTabBar/Sidebar: adicionar entrada "Inbox" com badge.
+- **Implicações — Notificações:**
+  - `send_push_notifications()` lê `inbox_items` novos desde última execução; envia via `push_subscriptions` (Web Push) e/ou email (Unit 15 opt-in) conforme preferência por `source_type`.
+  - Digest em vez de push-por-item (reduz ruído): "Tens 3 coisas pendentes na tua inbox".
+- **Evidência a preservar:**
+  - Apagar: tabela `fixed_expenses`; `src/services/fixed_expenses.ts`; `src/components/FixedExpensesList.tsx`; `src/pages/FixedExpenses*`; Edge Functions `reminders-push-cron` e `goal-funding-cron`; tabela `reminders` (depois de migração); radio `frequency` perdido no form de reminders manuais.
+  - Refactor: `src/services/recurring.ts`; `src/hooks/useRecurring*.ts`; `src/components/RecurringForm.tsx`; `src/components/RecurringList.tsx`; validar contra `Zod` com `amount_cents`.
+  - Migrar: linhas de `fixed_expenses` → `recurring_rules`; `reminders` → `inbox_items`; `push_subscriptions` mantém-se mas só consumida pelo `send_push_notifications` do `daily-scheduler`.
+  - RPCs a depreciar: `get_personal_recurring`, `get_family_recurring` → `get_recurring_rules(scope)`; qualquer RPC que escreva em `reminders` direto.
+  - Testes novos: `auto` materializa transação sem input, `confirm` cria instância e inbox item, `variable` força `confirm`, dedup no importador marca instância `posted`, cron único executa todos os steps em ordem, timezone Europe/Lisbon respeita DST, `credit_card_payment` cria transfer Conta→Cartão, `end_date` desativa rule, `skip` não avança próximo due, `snooze` recoloca inbox item à hora certa, RLS família bloqueia user de outra família.
+- **Estado:** decidido
+
 ---
 
 ## 7. Histórico do documento
 
 - **2026-04-18** — Criação. Processo, mapa e formato acordados. Decision log vazio.
 - **2026-04-18** — Revisão pós-reviewer: adicionados estados `parked-aceite` e `superseded`; protocolos de revisão de decisões anteriores, retoma de `parked`, e retoma de sessão; campos `Depende de / Afeta`, `Evidência a preservar` e `Supersedes / Superseded by` no decision log.
-- **2026-04-19** — Decisões registadas: Unit 1 (scope como estado), Unit 2 (refactor incremental do modelo de dados), Unit 3 (flat sidebar + scope toggle), Unit 4 (cleanup auth + onboarding híbrido + OAuth em breve), Unit 5 (separar `credit_cards` de `accounts`, nível avançado, FK dupla + CHECK, currency/order/soft-delete), Unit 6 (transfers como tabela própria + trigger, splits, anexos, hierarquia 1-nível em categorias, sem datas futuras, idempotência obrigatória + reversão universal), Unit 7 (alocação como reserva via `goal_ledger`, funding rules completas com cron + 3 tipos, amortização genérica, prioridades + cascata, cálculo de prazo, contribuições multi-user, fluxo de completion; supersedes parcialmente Unit 2 quanto a `goal_funding_rules`), Unit 8 (budgets mensal+anual, templates recorrentes, rollover por budget, hierarquia pai/filho simultâneos, flexível soft-cap, família agregado + meta pessoal opt-in, projection linear, notificações in-app + email opt-in).
+- **2026-04-19** — Decisões registadas: Unit 1 (scope como estado), Unit 2 (refactor incremental do modelo de dados), Unit 3 (flat sidebar + scope toggle), Unit 4 (cleanup auth + onboarding híbrido + OAuth em breve), Unit 5 (separar `credit_cards` de `accounts`, nível avançado, FK dupla + CHECK, currency/order/soft-delete), Unit 6 (transfers como tabela própria + trigger, splits, anexos, hierarquia 1-nível em categorias, sem datas futuras, idempotência obrigatória + reversão universal), Unit 7 (alocação como reserva via `goal_ledger`, funding rules completas com cron + 3 tipos, amortização genérica, prioridades + cascata, cálculo de prazo, contribuições multi-user, fluxo de completion; supersedes parcialmente Unit 2 quanto a `goal_funding_rules`), Unit 8 (budgets mensal+anual, templates recorrentes, rollover por budget, hierarquia pai/filho simultâneos, flexível soft-cap, família agregado + meta pessoal opt-in, projection linear, notificações in-app + email opt-in), Unit 9 (motor híbrido auto/confirm com `execution_mode`, `amount_mode` variable força confirm, `schedule_type` expandido com day_of_month/weekday_ordinal, `reminders` substituído por `inbox_items` unificado, tipo `credit_card_payment`, cron único `daily-scheduler` Europe/Lisbon, rota `/app/inbox`, dedup fuzzy no importador para Unit 14, apagar `fixed_expenses` + crons antigos).
