@@ -342,7 +342,63 @@ Nessa altura, Claude invoca a skill `writing-plans` para produzir um **plano de 
 
 ### Fase 2 — Features
 
-*(nenhuma decisão ainda)*
+#### Unit 5: Accounts & Cards
+- **Data:** 2026-04-19
+- **Decisão:** Separar conceptualmente contas e cartões (Opção B). Criar tabela `credit_cards` distinta de `accounts`. Transações apontam para `account_id` **ou** `credit_card_id` via duas FKs nullable + CHECK (Opção i). Lógica de cartões entregue no nível **avançado** (limite, ciclo, alertas, juros, parcelamentos, cashback, múltiplos cartões na mesma fatura). Aproveitar o refactor para adicionar em `accounts`: `currency`, `order` (drag-n-drop), `deleted_at` (soft-delete), substituindo cascade hard-delete.
+- **Contexto:** Hoje cartões e contas vivem na mesma tabela `accounts` com `tipo='cartão de crédito'`. Cartões não têm limite (hardcoded 0% utilização em [CreditCardInfo.tsx:37](src/components/CreditCardInfo.tsx)), não usam `billing_cycle_day` (coluna existe, nunca preenchida), sem data de fecho/pagamento, sem juros, sem anuidade. Pagamento de cartão é transação normal. `useAccounts.ts` é dead code vs `useAccountsQuery.ts`. Hard-delete em cascata apaga histórico. Sem `currency`, sem ordem manual, sem soft-delete. Unit 2 decidiu matar `accounts.is_goals` e criar `goal_ledger` — mesma lógica aplica aqui.
+- **Alternativas consideradas (modelo):**
+  - A — Manter `accounts` com colunas nullable para cartões (rejeitada: polui tabela, validação cross-field complexa, mesmo erro conceptual que `is_goals`).
+  - B — Separar em `accounts` + `credit_cards` (escolhida).
+  - C — Polimorfismo `financial_accounts` + filhos 1:1 (rejeitada: overengineering, 3 joins por lista, complica Unit 1).
+- **Alternativas consideradas (FK de transações):**
+  - (i) Duas FKs nullable `account_id`/`credit_card_id` + CHECK exatamente uma (escolhida).
+  - (ii) Coluna genérica `instrument_id` + `instrument_type` (rejeitada: FK sem referential integrity real).
+  - (iii) Manter `account_id` e criar view (rejeitada: não resolve o problema).
+- **Alternativas consideradas (âmbito de cartões):**
+  - Mínimo útil — limite, utilização, badge em atraso.
+  - Médio — + ciclo, alertas, previsão de pagamento.
+  - **Avançado** — + juros, parcelamentos, múltiplos cartões por fatura, cashback (escolhida).
+- **Razão:**
+  - Cartões têm semântica distinta (limite, ciclo, pagamento, juros). Tabela separada alinha com decisão de Unit 2 (cada conceito financeiro distinto tem a sua tabela).
+  - Volume real ≤20 rows → migração trivial; base de testes dá rede de segurança.
+  - FK dupla + CHECK é explícita e a DB valida.
+  - Nível avançado alinha com proposta de valor do produto (controlo financeiro PT completo — cartões bem feitos são diferenciador real vs apps genéricas).
+  - Features em `accounts` (currency, order, soft-delete) são baratas de adicionar no mesmo refactor — separá-las para depois seria custo duplicado.
+- **Depende de / Afeta:** Depende de Unit 1 (scope unificado nas RPCs), Unit 2 (money cents, kill `is_goals`). Afeta Unit 6 (tx aponta para account_id XOR credit_card_id, revalidação de `transfer_group_id`), Unit 8 (budgets têm de lidar com ambos os tipos), Unit 9 (recurrents podem pagar cartão — precisam referenciar o instrumento), Unit 10 (Dashboard e Reports agregam ambos), Unit 14 (importer distribui por ambos). Usa empty states de Unit 4.
+- **Implicações — Modelo de dados:**
+  - Nova tabela `credit_cards(id, user_id, family_id?, nome, credit_limit_cents bigint NOT NULL, current_balance_cents bigint NOT NULL DEFAULT 0, closing_day smallint CHECK 1-28, payment_day smallint CHECK 1-28, apr numeric(5,4), annual_fee_cents bigint DEFAULT 0, currency text NOT NULL DEFAULT 'EUR', order_index int, deleted_at timestamptz?, created_at, updated_at)`.
+  - Alterações em `accounts`: adicionar `currency text NOT NULL DEFAULT 'EUR'`, `order_index int`, `deleted_at timestamptz?`; remover `is_goals` (já Unit 2), remover `billing_cycle_day` (migra para `credit_cards`), remover `tipo='cartão de crédito'` (migrado).
+  - Alterações em `transactions`: adicionar `credit_card_id uuid?` + CHECK `(account_id IS NULL) <> (credit_card_id IS NULL)` (XOR). Migrar linhas existentes onde `account_id` aponta para conta com `tipo='cartão de crédito'`.
+  - Nova tabela `credit_card_installments(id, credit_card_id, transaction_id, total_cents, num_installments, current_installment, monthly_cents, started_at)` para parcelamentos.
+  - Nova tabela `credit_card_statements(id, credit_card_id, closing_date, due_date, total_cents, paid_cents, status)` para fechos mensais (gerada por função DB no closing_day).
+  - RPCs: `get_user_accounts_with_balances` split em `get_user_accounts` + `get_user_credit_cards` (ambas unificando scope); função nova `calculate_credit_card_interest(card_id, month)` para juros se statement não pago em pleno; função `pay_credit_card(card_id, from_account_id, amount_cents)` que cria transação de saída em `accounts` + registo em `credit_cards`/`statements`.
+- **Implicações — UI:**
+  - Lista de contas bancárias e cartões em página `/app/contas` (Unit 3), secções distintas ou tabs.
+  - Cartão mostra: limite, utilização %, saldo utilizado, próximo fecho, próximo pagamento, fatura atual (gastos do ciclo), fatura anterior não paga.
+  - Ação "Pagar cartão" como fluxo dedicado (não transação manual) — escolhe conta de origem, amount total/parcial, cria ambos os lados atomicamente.
+  - Criar transação em cartão pergunta: "Parcelar?" — se sim, N parcelas.
+  - Drag-n-drop para reordenar (library `@dnd-kit/sortable` ou similar).
+  - Archive (soft-delete) em vez de eliminar; secção "Arquivados" nas Settings da conta.
+- **Implicações — Lógica de juros e fechos:**
+  - Cron/trigger DB no closing_day cria `credit_card_statements` com total do ciclo.
+  - Se pagamento até due_date cobre statement em pleno → sem juros.
+  - Caso contrário, `calculate_credit_card_interest` aplica APR pro-rata sobre saldo remanescente e gera transação de juros automática no cartão.
+  - Anuidade (`annual_fee_cents`) agendada via `recurring_rules` (Unit 9) no mês de aniversário.
+- **Implicações — Múltiplos cartões na mesma fatura:**
+  - Conceito suportado via `credit_card_statements.parent_statement_id` (nullable) ou tabela `statement_groups` — decidir em writing-plans; nota: este é o caso raro "fatura consolidada" típico de bancos que emitem family-card sob mesma conta.
+- **Evidência a preservar:**
+  - Ficheiros a apagar: `src/hooks/useAccounts.ts` (legacy confirmado).
+  - Hotfix a remover: `src/services/accounts.ts:482-484` (filtro `family_id == null` — resolve-se com RPC unificada de Unit 1).
+  - Código a refactorizar/substituir: `src/components/AccountForm.tsx`, `src/components/AccountList.tsx`, `src/components/RegularAccountForm.tsx`, `src/components/RegularAccountBalance.tsx`, `src/components/CreditCardForm.tsx`, `src/components/CreditCardBalance.tsx`, `src/components/CreditCardInfo.tsx`, `src/shared/types/accounts.ts`, `src/validation/accountSchema.ts`, `src/features/family/services/accounts.service.ts`.
+  - Páginas a unificar (por Unit 1/3): `src/features/personal/PersonalAccounts.tsx` + `src/features/family/FamilyAccounts.tsx` + `src/pages/accounts.tsx` → uma página única `/app/contas` com `useScope()`.
+  - Features a preservar no merge: `InlineReserveEditor` (percentagem de reserva de FamilyAccounts), `AccountAuditList` (auditoria por conta — generalizar para ambos os scopes), permissões explícitas.
+  - RPCs a substituir: `get_user_accounts_with_balances`, `get_family_accounts_with_balances`, `set_regular_account_balance`, `handle_credit_card_account`, `manage_credit_card_balance`, `getCreditCardSummary`, `delete_account_with_related_data`.
+  - Transações em produção a migrar: todas com `account_id` a apontar para `accounts.tipo='cartão de crédito'` movem-se para `credit_card_id`.
+  - Testes existentes a preservar/adaptar: `tests/unit/services/accounts.test.ts`, `tests/unit/components/AccountForm.test.tsx`, `tests/unit/components/CreditCardForm.test.tsx`, `tests/unit/hooks/useAccountsQuery.test.tsx`, `src/features/family/__tests__/FamilyAccounts.test.tsx`, `src/validation/__tests__/accountSchema.test.ts`, `cypress/e2e/accounts.cy.ts`.
+  - Novos testes necessários: ciclo completo (closing_day → statement → pagamento parcial → juros), parcelamento (N parcelas geram N transações mensais), transferência cross-scope que toca cartão, soft-delete + restore, reordenação drag-n-drop.
+- **Estado:** decidido
+
+
 
 ---
 
@@ -350,4 +406,4 @@ Nessa altura, Claude invoca a skill `writing-plans` para produzir um **plano de 
 
 - **2026-04-18** — Criação. Processo, mapa e formato acordados. Decision log vazio.
 - **2026-04-18** — Revisão pós-reviewer: adicionados estados `parked-aceite` e `superseded`; protocolos de revisão de decisões anteriores, retoma de `parked`, e retoma de sessão; campos `Depende de / Afeta`, `Evidência a preservar` e `Supersedes / Superseded by` no decision log.
-- **2026-04-19** — Decisões registadas: Unit 1 (scope como estado), Unit 2 (refactor incremental do modelo de dados), Unit 3 (flat sidebar + scope toggle), Unit 4 (cleanup auth + onboarding híbrido + OAuth em breve).
+- **2026-04-19** — Decisões registadas: Unit 1 (scope como estado), Unit 2 (refactor incremental do modelo de dados), Unit 3 (flat sidebar + scope toggle), Unit 4 (cleanup auth + onboarding híbrido + OAuth em breve), Unit 5 (separar `credit_cards` de `accounts`, nível avançado, FK dupla + CHECK, currency/order/soft-delete).
