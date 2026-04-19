@@ -270,6 +270,34 @@ Nessa altura, Claude invoca a skill `writing-plans` para produzir um **plano de 
   - Notar: `transactions.transfer_group_id` nunca usado em produção (0 rows com NOT NULL) → a testar seriamente quando chegarmos a Unit 5/6 (pode estar partido e ninguém sabe).
 - **Estado:** decidido
 
+#### Unit 3: Navegação / IA
+- **Data:** 2026-04-19
+- **Decisão:** Flat sidebar única + scope toggle persistente no header (Opção A). Chrome único (`MainLayout` + `NavigationSidebar` + `BottomTabBar`). Eliminar os três universos paralelos (`/app`, `/personal`, `/family`) — tudo sob `/app`.
+- **Contexto:** Hoje existem 3 layouts concorrentes com 3 sidebars/tabbars separados, 11+9+6 items de nav paralelos, Payroll duplicado em dois caminhos, 4 vistas agregadas sobrepostas (Dashboard/Reports/Insights/Cashflow), terminologia inconsistente ("Resumo"/"Dashboard"), sem indicador persistente de scope ativo. A IA atual é mapa do histórico de desenvolvimento, não do mental model do utilizador.
+- **Alternativas consideradas:**
+  - A — Flat sidebar + scope toggle no header (escolhida).
+  - B — Scope como secção na sidebar (rejeitada: duplica items, noise visual).
+  - C — Scope por sub-rota `/app/personal/*` e `/app/family/*` (rejeitada: conflita com "scope = state" de Unit 1).
+- **Razão:** alinha com decisão de Unit 1 (scope = state); mental model simples para SaaS; scope sempre visível via toggle + chip; remove 3x manutenção de nav duplicada.
+- **Depende de / Afeta:** Depende de Unit 1 (scope como state é pré-requisito). Afeta Unit 4 (onboarding aterra em `/app` com scope Pessoal), Unit 5-8 (páginas únicas recebem scope via `useScope()`), Unit 9 (Recorrentes top-level; Lembretes decide-se lá), Unit 10 (reduz âmbito — só decide conteúdo de Dashboard e Reports, não se existem), Unit 11 (Payroll top-level em `/app/payroll/*`, remove `/personal/payroll`), Unit 13 (Members/Invites/Family Settings como items contextuais ao scope família), Unit 15 (separa settings do utilizador dos settings da família).
+- **Implicações:**
+  - **Main nav com 8 items:** Dashboard, Contas, Transações, Orçamentos, Objetivos, Recorrentes, Payroll, Relatórios.
+  - **Items contextuais ao scope família:** Membros, Convites, Definições da Família.
+  - **Items fora do scope (avatar menu):** Perfil, Definições do utilizador.
+  - **Dashboard + Reports unificados:** Dashboard = vista presente; Reports = análise temporal com tabs Cashflow e Insights.
+  - **Importar vira submenu de Transações** (não item top-level).
+  - **Payroll top-level sempre visível** (estado "vazio" se não configurado) — acessível por `/app/payroll/*`.
+  - **Performance dashboard** sai da main nav (devtool em settings ou escondida em prod).
+  - **Mobile tabbar:** 5 items + "Mais" (drawer).
+  - **Scope toggle no header:** dropdown com `Pessoal` + cada família; persist em localStorage; chip de cor em cada página para feedback imediato.
+  - **Terminologia padronizada:** Dashboard, Contas, Transações, Orçamentos, Objetivos, Recorrentes, Payroll, Relatórios; scope `Pessoal` / `Família: X`.
+- **Evidência a preservar:**
+  - Apagar: `src/pages/Personal.tsx`, `src/pages/Family.tsx`, `src/pages/Familia.tsx`, `src/features/family/FamilySidebar.tsx`, `src/features/family/FamilyTabBar.tsx`, `src/features/family/FamilyHeader.tsx`.
+  - Atualizar: `src/components/layout/NavigationSidebar.tsx`, `src/components/layout/BottomTabBar.tsx` — passam a ter os 8 items + scope toggle.
+  - Novo: `src/features/scope/ScopeToggle.tsx`, `src/features/scope/ScopeProvider.tsx`, `src/features/scope/ScopeBadge.tsx`.
+  - Rotas a consolidar: manter `/app/payroll/*`; apagar `/personal/payroll/*`; apagar todas as `/personal/*` e `/family/*`; rota `/app/importar` vira submenu interno de Transações.
+- **Estado:** decidido
+
 ### Fase 2 — Features
 
 *(nenhuma decisão ainda)*
