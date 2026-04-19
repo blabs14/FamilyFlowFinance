@@ -510,10 +510,79 @@ Nessa altura, Claude invoca a skill `writing-plans` para produzir um **plano de 
   - Testes novos: reserva não cria transação em `transactions`, `saldo_disponivel` reflete reservas, funding rule `income_percent` dispara em entrada de payroll, `roundup_expense` arredonda corretamente, amortização de cartão cria `transfer` real, completion com cada uma das 4 CTAs, drag-n-drop reorder persiste, contribuição individual vs meta familiar, migração de `goal_allocations` para `goal_ledger` preserva totais.
 - **Estado:** decidido
 
+#### Unit 8: Budgets
+- **Data:** 2026-04-19
+- **Decisão:** Dez sub-decisões: (1) granularidade mensal + anual (Opção b), `period_type ('monthly'|'yearly')` + `period_key`; (2) template recorrente via flag `is_template` + cron mensal copia templates para novo mês (Opção b); (3) hierarquia de categorias (Unit 6) — budgets independentes em pai e filhos (Opção c), check suave quando soma dos filhos excede pai; (4) rollover escolhido por budget via `rollover_mode ('reset'|'accumulate'|'transfer_to_goal')` (Opção c), default = reset; (5) manter modelo flexível/soft-cap — nunca bloquear transações (Opção a); (6) budget família híbrido — agregado por default + meta pessoal opt-in por contribuidor (Opção c); (7) projection linear (`gasto_até_hoje / dias_decorridos * dias_no_mês`) + badge "projeção a ultrapassar" (Opção b); (8) notificações in-app baseline via Unit 9 + email opt-in via Unit 15, nos thresholds 80%, 100% e "projeção a ultrapassar a meio do mês" (Opção c); (9) goals Unit 7 — reserva **não** conta para budget, spend-no-completion **conta** para budget da categoria escolhida; (10) limpeza: constraints `ON DELETE RESTRICT` em `budgets.categoria_id`, enforcement de coerência scope, apagar radio "anual" morto, unificar páginas Personal+Family em `/app/orcamentos`, criar testes (unit + integration + E2E).
+- **Contexto:** Hoje `budgets(user_id, family_id?, categoria_id, valor, mes)` onde `mes` é string `YYYY-MM`. View `budget_progress` agrega `transactions.tipo='despesa'` por mês+categoria. Só mensal, sem template, sem rollover, sem envelope, sem projection, sem forecast, sem notificações fora do UI. Cores 0-79% verde / 80-99% amarelo / ≥100% vermelho. Budget família é agregado, sem sub-budgets por user. Sem `ON DELETE CASCADE` entre `budgets.categoria_id` e `categories.id` — órfãos possíveis. Radio "anual" existe em BudgetForm mas é dead UI. Testes praticamente inexistentes (1 mock).
+- **Razão:**
+  - **(1) Mensal + anual:** anual cobre subsídios, férias, IRS — contextualmente PT; semanal e custom range são overengineering.
+  - **(2) Template + cron:** 90% dos budgets são iguais mês a mês; criar à mão é fricção; reutiliza infraestrutura de cron da Unit 7.
+  - **(3) Hierarquia com ambos:** dá liberdade ao user decidir nível, sem restrições artificiais; check suave avisa sem bloquear.
+  - **(4) Rollover por budget:** diferentes categorias beneficiam de modos diferentes; `transfer_to_goal` cria um loop virtuoso com Unit 7 (sobrou em Roupa → vai para goal de férias).
+  - **(5) Flexível:** bloquear transações é abrasivo e não reflete finanças reais; alertas + projection são suficientes; YAGNI sobre envelope.
+  - **(6) Família agregado + meta pessoal:** agregado é baseline honesto; meta pessoal dá consciência sem impor competição.
+  - **(7) Projection linear:** trivial, suficientemente informativo; ML é overhead sem valor para caso típico.
+  - **(8) In-app + email opt-in:** in-app é baseline; email opt-in respeita utilizador; SMS/push são futuro.
+  - **(9) Reserva não conta; spend conta:** coerente com Unit 7 (reserva = earmark, não consumo); completion spend gera transação normal que naturalmente conta.
+  - **(10) Limpeza:** baseline para qualidade do produto; apagar UI morta evita confusão; constraints previnem orfãos.
+- **Depende de / Afeta:** Depende de Unit 1 (scope unificado), Unit 2 (`amount_cents`), Unit 6 (splits contam categoricamente, hierarquia pai/filho), Unit 7 (reservas não contam, spend-no-completion sim). Afeta Unit 9 (reutiliza cron para clonar templates e para lembretes de threshold; `run_monthly_budget_rollover` corre no dia 1 de cada mês), Unit 10 (Dashboard e Reports mostram progress + projection agregado), Unit 11 (budgets anuais podem consumir entradas de payroll — subsídios; integração futura), Unit 14 (importer atualiza `budget_progress` via triggers já existentes), Unit 15 (Settings tem opção "Notificações por email — thresholds de budget").
+- **Implicações — Modelo de dados (DDL):**
+  - **`budgets` (mudanças):**
+    - Renomear `valor` → `amount_cents bigint` (Unit 2).
+    - Adicionar `period_type text NOT NULL CHECK (period_type IN ('monthly','yearly')) DEFAULT 'monthly'`.
+    - Renomear `mes` → `period_key text` — formato `YYYY-MM` para monthly, `YYYY` para yearly; CHECK pattern baseado em `period_type`.
+    - Adicionar `is_template boolean NOT NULL DEFAULT false` — template não tem `period_key` específico, é "recipe".
+    - Adicionar `rollover_mode text CHECK (rollover_mode IN ('reset','accumulate','transfer_to_goal')) DEFAULT 'reset'`.
+    - Adicionar `rollover_target_goal_id uuid? FK goals(id)` — só relevante se `rollover_mode='transfer_to_goal'`.
+    - Adicionar `notify_thresholds smallint[] DEFAULT '{80,100}'` — permite user personalizar % de alerta.
+    - Adicionar `currency text NOT NULL DEFAULT 'EUR'`.
+    - Constraint: `ON DELETE RESTRICT` em `categoria_id` — categoria só pode ser apagada se não houver budgets ativos (UI oferece "mover budgets para outra categoria").
+    - Scope check: se `family_id IS NULL`, `categoria_id` deve referenciar categoria pessoal ou sistema; se `family_id IS NOT NULL`, deve referenciar categoria dessa família ou sistema.
+  - **`budget_personal_targets` (nova):** `budget_id FK, user_id FK auth.users, target_cents bigint`, PK `(budget_id, user_id)`. Só usado quando `family_id IS NOT NULL` e user quer meta pessoal dentro do budget família.
+  - **View `budget_progress` (mudanças):**
+    - Derivar `period_start`/`period_end` do `period_key` conforme `period_type`.
+    - Somar splits: agregar `transaction_splits.amount_cents` por `categoria_id` + junta transactions sem splits por `categoria_id` direto.
+    - Incluir hierarquia: opcionalmente expandir `categoria_id` para incluir filhos quando budget é definido no pai e não há budget no filho (comportamento "drill-down").
+    - Excluir `transactions` com `goal_ledger` de reserva pura (nenhum impacto pois reservas não criam transações — mas documentar).
+    - Calcular `projected_end_cents = gasto_atual * (total_days_in_period / days_elapsed)`.
+    - Calcular `is_projected_over = projected_end_cents > amount_cents`.
+  - **Função `run_monthly_budget_rollover(target_month date)` — idempotente:**
+    - Para cada budget `is_template=true`, cria cópia com `period_key` do novo mês (se não existe já).
+    - Para cada budget `is_template=false` do mês anterior com `rollover_mode='accumulate'`, adiciona `(amount_cents - spent_cents)` ao novo mês.
+    - Para `rollover_mode='transfer_to_goal'`, cria entrada em `goal_ledger` para o goal alvo com `amount = amount_cents - spent_cents` (se positivo).
+    - `operation_id = hash(template_id|target_month)` previne duplicação.
+  - **View `budget_family_contribution_by_user`:** agregação per-user de gasto em cada budget família; alimenta UI "quanto cada member contribui".
+- **Implicações — Serviços/RPCs:**
+  - Novas RPCs (scope-aware via Unit 1): `create_budget(...)`, `update_budget(...)`, `delete_budget(...)`, `get_budgets(scope, period_type?, period_key?)`, `get_budget_progress(budget_id)`, `clone_budget_to_next_period(budget_id)` (manual), `set_personal_target(budget_id, target_cents)` (dentro de budget família).
+  - Unificar `get_personal_budgets`/`get_family_budgets` em `get_budgets(scope)`.
+  - RPC `check_budget_before_transaction(amount, categoria_id, date)` devolve `'ok' | 'warn_80' | 'warn_100' | 'projected_over'` para UI mostrar pre-warning ao criar transação (não bloqueia).
+- **Implicações — UI:**
+  - Página única `/app/orcamentos` (Unit 1/3).
+  - Toggle período: Mensal ↓ | Anual ↓; seletor de mês/ano; botão "Ver templates" abre secção de templates.
+  - Card de budget: barra de progresso + projection badge (cinza "no ritmo" / amarelo "projeção 95%" / vermelho "projeção ultrapassar").
+  - Hierarquia: card de categoria pai mostra barra agregada + expandir para ver filhos; se houver budget em pai e filhos, mostra dois progressos (próprio + agregado).
+  - Em família: toggle "Ver contribuições" expande per-user chart; se user definiu meta pessoal, mostra progresso individual.
+  - Rollover: icon no card indica modo (♻️ accumulate, ↺ reset, 🎯 transfer_to_goal); configurável no form.
+  - Template: flag "📋 Template" no card; edição do template não afeta meses passados, só futuros.
+  - Form: remover dead radio "anual"; substituir por select `period_type`; quando `rollover_mode='transfer_to_goal'`, aparece seletor de goal.
+  - BudgetForm pre-warns user quando cria transação e categoria tem budget >80%.
+- **Implicações — Notificações:**
+  - Quando `budget_progress.progress_percent` cruza 80% ou 100%, ou `is_projected_over=true` pela primeira vez no mês, inserir em `reminders` (Unit 9) com tipo `budget_threshold`.
+  - User opt-in (Unit 15) em email: cron noturno lê `reminders` do dia e envia digest.
+- **Evidência a preservar:**
+  - Código a refactorizar/substituir: `src/services/budgets.ts`, `src/hooks/useBudgets*.ts`, `src/components/BudgetCard.tsx`, `src/components/BudgetForm.tsx`, `src/components/BudgetList.tsx`, `src/validation/budgetSchema.ts`, `src/shared/types/budgets.ts`.
+  - Páginas a unificar: `src/features/personal/PersonalBudgets.tsx` + `src/features/family/FamilyBudgets.tsx` + `src/pages/BudgetsPage` → `/app/orcamentos`.
+  - RPCs a depreciar/unificar: `get_personal_budgets`, `get_family_budgets` → `get_budgets(scope, ...)`.
+  - UI morta a apagar: radio "anual" em BudgetForm (substituído por `period_type`).
+  - View `budget_progress` a reescrever: passa a considerar splits (Unit 6), projection, hierarquia, rollover.
+  - Testes existentes a preservar: `budgets.spec.ts` (expandir).
+  - Testes novos: rollover modes (accumulate soma, reset zera, transfer_to_goal cria ledger entry), template copia para novo mês, hierarquia pai+filho simultâneos, projection linear calcula correto, budget anual agrega 12 meses, família agregado vs meta pessoal, split conta para cada categoria, threshold 80% dispara reminder.
+- **Estado:** decidido
+
 ---
 
 ## 7. Histórico do documento
 
 - **2026-04-18** — Criação. Processo, mapa e formato acordados. Decision log vazio.
 - **2026-04-18** — Revisão pós-reviewer: adicionados estados `parked-aceite` e `superseded`; protocolos de revisão de decisões anteriores, retoma de `parked`, e retoma de sessão; campos `Depende de / Afeta`, `Evidência a preservar` e `Supersedes / Superseded by` no decision log.
-- **2026-04-19** — Decisões registadas: Unit 1 (scope como estado), Unit 2 (refactor incremental do modelo de dados), Unit 3 (flat sidebar + scope toggle), Unit 4 (cleanup auth + onboarding híbrido + OAuth em breve), Unit 5 (separar `credit_cards` de `accounts`, nível avançado, FK dupla + CHECK, currency/order/soft-delete), Unit 6 (transfers como tabela própria + trigger, splits, anexos, hierarquia 1-nível em categorias, sem datas futuras, idempotência obrigatória + reversão universal), Unit 7 (alocação como reserva via `goal_ledger`, funding rules completas com cron + 3 tipos, amortização genérica, prioridades + cascata, cálculo de prazo, contribuições multi-user, fluxo de completion; supersedes parcialmente Unit 2 quanto a `goal_funding_rules`).
+- **2026-04-19** — Decisões registadas: Unit 1 (scope como estado), Unit 2 (refactor incremental do modelo de dados), Unit 3 (flat sidebar + scope toggle), Unit 4 (cleanup auth + onboarding híbrido + OAuth em breve), Unit 5 (separar `credit_cards` de `accounts`, nível avançado, FK dupla + CHECK, currency/order/soft-delete), Unit 6 (transfers como tabela própria + trigger, splits, anexos, hierarquia 1-nível em categorias, sem datas futuras, idempotência obrigatória + reversão universal), Unit 7 (alocação como reserva via `goal_ledger`, funding rules completas com cron + 3 tipos, amortização genérica, prioridades + cascata, cálculo de prazo, contribuições multi-user, fluxo de completion; supersedes parcialmente Unit 2 quanto a `goal_funding_rules`), Unit 8 (budgets mensal+anual, templates recorrentes, rollover por budget, hierarquia pai/filho simultâneos, flexível soft-cap, família agregado + meta pessoal opt-in, projection linear, notificações in-app + email opt-in).
