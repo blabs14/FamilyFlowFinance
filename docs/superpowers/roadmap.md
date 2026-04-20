@@ -183,12 +183,13 @@ O **wedge** é o payroll português (IRS tabelado, SS, subsídios, duodécimos, 
 | Plan | Unit | Estado |
 |------|------|--------|
 | [2026-04-20-unit-01-phase-1-scope-infrastructure.md](plans/2026-04-20-unit-01-phase-1-scope-infrastructure.md) | Unit 1 Phase 1 | ✅ Executado e merged em main |
+| [2026-04-20-unit-02-data-model.md](plans/2026-04-20-unit-02-data-model.md) | Unit 2 | 🔄 Em execução (Trae IDE) |
 
 ---
 
 ## Planos a Escrever (por ordem)
 
-1. Unit 2 — Modelo de dados (4 fases)
+1. ~~Unit 2 — Modelo de dados (4 fases)~~ → plano escrito, em execução
 2. Unit 4 — Auth security cleanup (urgente — vulnerabilidade ativa)
 3. Unit 16.6 — Cypress→Playwright migration
 4. Unit 3 — Navegação
