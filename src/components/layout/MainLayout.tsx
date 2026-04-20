@@ -10,6 +10,7 @@ import LogoutButton from '../auth/LogoutButton';
 import { RealTimeNotifications } from '../RealTimeNotifications';
 import { useRouteChange } from '../../hooks/useRouteChange';
 import { ErrorBoundary } from '../ErrorBoundary';
+import { ScopeToggle } from '../../features/scope';
 
 export function MainLayout() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -59,6 +60,7 @@ export function MainLayout() {
           <div className="flex items-center gap-2">
             {user && (
               <>
+                <ScopeToggle />
                 <RealTimeNotifications />
                 <LogoutButton />
               </>

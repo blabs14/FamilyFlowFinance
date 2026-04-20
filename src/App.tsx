@@ -12,6 +12,7 @@ import { Toaster as SonnerToaster } from './components/ui/sonner';
 import { GlobalShortcuts } from './components/GlobalShortcuts';
 import { LocaleProvider } from './contexts/LocaleProvider';
 import { Navigate } from 'react-router-dom';
+import { ScopeProvider } from './features/scope';
 import './test-supabase';
 import { performanceService } from './services/performanceService';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -67,79 +68,81 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <LocaleProvider>
-          <Router>
-            <ErrorBoundary>
-              <GlobalShortcuts />
-            <Routes>
-              {/* Páginas públicas */}
-              <Route path="/" element={<Index />} />
-              <Route path="/test" element={<TestPage />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              {/* Redirecionamento legacy/alias */}
-              <Route path="/cashflow" element={<Navigate to="/app/cashflow" replace />} />
-              
-              {/* Páginas protegidas com lazy loading */}
-              <Route path="/app" element={<RequireAuth><MainLayout /></RequireAuth>}>
-                <Route index element={
-                  <Suspense fallback={<PageLoading />}>
-                    <Dashboard />
-                  </Suspense>
-                } />
-                <Route path="reports" element={
-                  <Suspense fallback={<PageLoading />}>
-                    <ReportsPage />
-                  </Suspense>
-                } />
-                <Route path="cashflow" element={
-                  <Suspense fallback={<PageLoading />}>
-                    <CashflowPage />
-                  </Suspense>
-                } />
-                <Route path="payroll/*" element={
-                  <Suspense fallback={<PageLoading />}>
-                    <PayrollPage />
-                  </Suspense>
-                } />
-                <Route path="performance" element={
-                  <Suspense fallback={<PageLoading />}>
-                    <PerformanceDashboard />
-                  </Suspense>
-                } />
+        <ScopeProvider>
+          <LocaleProvider>
+            <Router>
+              <ErrorBoundary>
+                <GlobalShortcuts />
+              <Routes>
+                {/* Páginas públicas */}
+                <Route path="/" element={<Index />} />
+                <Route path="/test" element={<TestPage />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                {/* Redirecionamento legacy/alias */}
+                <Route path="/cashflow" element={<Navigate to="/app/cashflow" replace />} />
+                
+                {/* Páginas protegidas com lazy loading */}
+                <Route path="/app" element={<RequireAuth><MainLayout /></RequireAuth>}>
+                  <Route index element={
+                    <Suspense fallback={<PageLoading />}>
+                      <Dashboard />
+                    </Suspense>
+                  } />
+                  <Route path="reports" element={
+                    <Suspense fallback={<PageLoading />}>
+                      <ReportsPage />
+                    </Suspense>
+                  } />
+                  <Route path="cashflow" element={
+                    <Suspense fallback={<PageLoading />}>
+                      <CashflowPage />
+                    </Suspense>
+                  } />
+                  <Route path="payroll/*" element={
+                    <Suspense fallback={<PageLoading />}>
+                      <PayrollPage />
+                    </Suspense>
+                  } />
+                  <Route path="performance" element={
+                    <Suspense fallback={<PageLoading />}>
+                      <PerformanceDashboard />
+                    </Suspense>
+                  } />
 
-                <Route path="profile" element={
-                  <Suspense fallback={<PageLoading />}>
-                    <ProfilePage />
-                  </Suspense>
+                  <Route path="profile" element={
+                    <Suspense fallback={<PageLoading />}>
+                      <ProfilePage />
+                    </Suspense>
+                  } />
+                </Route>
+                
+                {/* Área Pessoal */}
+                <Route path="/personal/*" element={
+                  <RequireAuth>
+                    <Suspense fallback={<PageLoading />}>
+                      <PersonalPage />
+                    </Suspense>
+                  </RequireAuth>
                 } />
-              </Route>
-              
-              {/* Área Pessoal */}
-              <Route path="/personal/*" element={
-                <RequireAuth>
-                  <Suspense fallback={<PageLoading />}>
-                    <PersonalPage />
-                  </Suspense>
-                </RequireAuth>
-              } />
-              
-              {/* Finanças Partilhadas */}
-              <Route path="/family/*" element={
-                <RequireAuth>
-                  <Suspense fallback={<PageLoading />}>
-                    <FamilyPage />
-                  </Suspense>
-                </RequireAuth>
-              } />
-              
-              {/* Página 404 */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            </ErrorBoundary>
+                
+                {/* Finanças Partilhadas */}
+                <Route path="/family/*" element={
+                  <RequireAuth>
+                    <Suspense fallback={<PageLoading />}>
+                      <FamilyPage />
+                    </Suspense>
+                  </RequireAuth>
+                } />
+                
+                {/* Página 404 */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              </ErrorBoundary>
             </Router>
-        </LocaleProvider>
+          </LocaleProvider>
+        </ScopeProvider>
       </AuthProvider>
       <Toaster />
       <SonnerToaster />
