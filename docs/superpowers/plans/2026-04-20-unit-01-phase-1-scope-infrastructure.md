@@ -756,51 +756,53 @@ git commit -m "feat(scope): add ScopeBadge and barrel export (Unit 1 Phase 1)"
 
 - [ ] **Step 6.1: Mount ScopeProvider in App.tsx**
 
-Modify `src/App.tsx`. Find the provider stack:
-
-```typescript
-<QueryClientProvider client={queryClient}>
-  <AuthProvider>
-    <LocaleProvider>
-      <Router>
-```
-
-Change to:
-
-```typescript
-<QueryClientProvider client={queryClient}>
-  <AuthProvider>
-    <ScopeProvider>
-      <LocaleProvider>
-        <Router>
-```
-
-Close the new tag symmetrically before `</LocaleProvider>` … actually wrap correctly:
-
-```typescript
-<QueryClientProvider client={queryClient}>
-  <AuthProvider>
-    <ScopeProvider>
-      <LocaleProvider>
-        <Router>
-          { /* existing children */ }
-        </Router>
-      </LocaleProvider>
-    </ScopeProvider>
-  </AuthProvider>
-  { /* existing Toaster etc. */ }
-</QueryClientProvider>
-```
-
-Add the import at the top:
+First, Read the current `src/App.tsx` to see the exact JSX shape (provider stack around lines 67-147). Then add the import at the top of the file:
 
 ```typescript
 import { ScopeProvider } from './features/scope';
 ```
 
+Then wrap `<LocaleProvider>` with `<ScopeProvider>`. The final stack must be:
+
+```tsx
+<QueryClientProvider client={queryClient}>
+  <AuthProvider>
+    <ScopeProvider>
+      <LocaleProvider>
+        <Router>
+          { /* existing Routes, ErrorBoundary, GlobalShortcuts unchanged */ }
+        </Router>
+      </LocaleProvider>
+    </ScopeProvider>
+  </AuthProvider>
+  { /* existing Toaster / SonnerToaster unchanged */ }
+</QueryClientProvider>
+```
+
+Use the `Edit` tool on two distinct edits: (a) add the import; (b) wrap the `<LocaleProvider>…</LocaleProvider>` block with `<ScopeProvider>…</ScopeProvider>`.
+
 - [ ] **Step 6.2: Mount ScopeToggle in MainLayout.tsx**
 
-Modify `src/components/layout/MainLayout.tsx`. In the header `<div className="flex items-center gap-2">` (line 59 region), insert `<ScopeToggle />` before `<RealTimeNotifications />`:
+First, use the `Read` tool on `src/components/layout/MainLayout.tsx` lines 55–70 to confirm the exact JSX shape of the header div before editing.
+
+The expected shape (from audit) is:
+
+```tsx
+<div className="flex items-center gap-2">
+  {user && (
+    <>
+      <RealTimeNotifications />
+      <LogoutButton />
+    </>
+  )}
+</div>
+```
+
+If the actual shape differs, adapt the edit below accordingly.
+
+Use the `Edit` tool on two distinct edits: (a) add the import; (b) insert `<ScopeToggle />` inside the fragment.
+
+The header div should become:
 
 ```tsx
 <div className="flex items-center gap-2">
@@ -852,7 +854,7 @@ git commit -m "feat(scope): mount ScopeProvider and ScopeToggle in shell (Unit 1
 
 - [ ] **Step 7.1: Read the current code to confirm the lines**
 
-Read `src/services/accounts.ts:475-495`. Confirm the 3 lines to remove are lines 482-484 (the comment + `safeData` + `filtered` + the `return { data: filtered, error: null }` final line).
+Read `src/services/accounts.ts:475-495`. Confirm the 4 lines to remove are lines 482-485 (the comment + `safeData` + `filtered` + the `return { data: filtered, error: null }` final line).
 
 - [ ] **Step 7.2: Replace the defensive filter**
 
@@ -908,10 +910,10 @@ Expected: no matches, or matches only within `src/pages/Familia.tsx` itself.
 
 If matches exist: STOP. Report to user. Do not proceed.
 
-- [ ] **Step 8.2: Delete the file**
+- [ ] **Step 8.2: Delete the file (staged)**
 
 ```bash
-rm src/pages/Familia.tsx
+git rm src/pages/Familia.tsx
 ```
 
 - [ ] **Step 8.3: Run typecheck and build**
@@ -922,7 +924,6 @@ Expected: both green.
 - [ ] **Step 8.4: Commit**
 
 ```bash
-git add -A src/pages/Familia.tsx
 git commit -m "chore: delete dead code src/pages/Familia.tsx (Unit 1 Phase 1)"
 ```
 
@@ -940,10 +941,10 @@ Expected: no matches (or matches only inside the file itself).
 
 If matches exist: STOP and report.
 
-- [ ] **Step 9.2: Delete the file**
+- [ ] **Step 9.2: Delete the file (staged)**
 
 ```bash
-rm src/services/family.legacy.ts
+git rm src/services/family.legacy.ts
 ```
 
 - [ ] **Step 9.3: Run typecheck, build, full test suite**
@@ -954,7 +955,6 @@ Expected: all green.
 - [ ] **Step 9.4: Commit**
 
 ```bash
-git add -A src/services/family.legacy.ts
 git commit -m "chore: delete dead code src/services/family.legacy.ts (Unit 1 Phase 1)"
 ```
 
