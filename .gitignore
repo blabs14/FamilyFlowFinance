@@ -29,6 +29,7 @@ dist-ssr
 
 # Test/build artifacts
 coverage/
+.worktrees/
 
 # Lint/analysis dumps
 lint-*.json
