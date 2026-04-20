@@ -336,7 +336,7 @@ describe('Accounts Service', () => {
 
 // Novos testes de regressão: separação Personal vs Family + mapeamento familyId
 describe('Accounts Service - Family vs Personal (Regressão)', () => {
-  it('getAccountsWithBalances deve excluir contas com family_id (área pessoal)', async () => {
+  it('getAccountsWithBalances devolve todas as contas do utilizador sem filtrar family_id', async () => {
     const personal = {
       account_id: 'a1', user_id: 'u1', family_id: null,
       nome: 'Conta Pessoal', tipo: 'conta', saldo_atual: 100, total_reservado: 0, saldo_disponivel: 100,
@@ -353,8 +353,11 @@ describe('Accounts Service - Family vs Personal (Regressão)', () => {
 
     expect(supabase.rpc).toHaveBeenCalledWith('get_user_accounts_with_balances', { p_user_id: 'u1' });
     expect(result.error).toBeNull();
-    expect(result.data).toHaveLength(1);
-    expect(result.data?.[0]).toMatchObject({ account_id: 'a1', family_id: null });
+    expect(result.data).toHaveLength(2);
+    expect(result.data).toEqual([
+      expect.objectContaining({ account_id: 'a1', family_id: null }),
+      expect.objectContaining({ account_id: 'a2', family_id: 'fam-1' }),
+    ]);
   });
 
   it('getFamilyAccountsWithBalances deve devolver apenas contas com family_id', async () => {

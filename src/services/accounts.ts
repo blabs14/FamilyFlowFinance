@@ -479,11 +479,7 @@ export const getAccountsWithBalances = async (userId?: string): Promise<{ data: 
       return { data: null, error };
     }
 
-    // Hotfix defensivo: garantir que a área pessoal apenas apresenta contas pessoais (sem family_id)
-    const safeData = (data || []) as AccountWithBalances[];
-    const filtered = safeData.filter((a) => a.family_id == null);
-
-    return { data: filtered, error: null };
+    return { data: (data || []) as AccountWithBalances[], error: null };
   } catch (error) {
     return { data: null, error };
   }
