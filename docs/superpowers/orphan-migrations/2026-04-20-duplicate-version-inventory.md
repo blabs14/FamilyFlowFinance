@@ -46,3 +46,17 @@
 | 20250127000001 | `20250127000001_fix_deallocate_logic_no_money_return.sql` | `20250127000001_seed_legal_tables.sql` | Keep the first filename in sort order and archive the seed file sharing the same version. |
 | 20250202000014 | `20250202000014_fix_deallocate_logic_correct.sql` | `20250202000014_update_goal_progress_view.sql` | Keep the first filename in sort order and archive the view refresh file. |
 | 20250202000015 | `20250202000015_fix_deallocate_rls_user_id.sql` | `20250202000015_fix_goal_deletion_logic.sql` | Keep the first filename in sort order and archive the paired deletion logic file. |
+
+## Remote Tracking Patch
+- Querying missing canonical versions after Task 2 returned only `20250115000100`.
+- Applied minimal idempotent patch:
+
+```sql
+insert into supabase_migrations.schema_migrations (version, name)
+values ('20250115000100', null)
+on conflict (version) do nothing;
+```
+
+- Post-patch verification:
+  - `select version, name from supabase_migrations.schema_migrations where version = '20250115000100';` returns one row with `name = null`
+  - `npx supabase migration list` no longer shows orphan rows for any duplicate-version group
