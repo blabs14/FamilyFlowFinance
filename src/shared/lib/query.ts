@@ -37,8 +37,6 @@ export const queryKeys = {
   familyMembersByFamily: (familyId: string) => ['family-members', 'family', familyId] as const,
   familyInvites: ['family-invites'] as const,
   familyInvitesByFamily: (familyId: string) => ['family-invites', 'family', familyId] as const,
-  fixedExpenses: ['fixed-expenses'] as const,
-  fixedExpensesByUser: (userId: string) => ['fixed-expenses', 'user', userId] as const,
   profiles: ['profiles'] as const,
   profile: (id: string) => ['profiles', id] as const,
   profileByUser: (userId: string) => ['profiles', 'user', userId] as const,

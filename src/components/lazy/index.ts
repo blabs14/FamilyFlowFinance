@@ -9,7 +9,6 @@ export const ProfilePage = lazy(() => import('../../pages/Profile'));
 // Lazy loading para formulários menos usados
 export const LazyBudgetForm = lazy(() => import('../BudgetForm'));
 export const LazyFamilyInviteForm = lazy(() => import('../FamilyInviteForm'));
-export const LazyFixedExpensesForm = lazy(() => import('../FixedExpensesForm'));
 export const LazyNotificationForm = lazy(() => import('../NotificationForm'));
 export const LazyProfileForm = lazy(() => import('../ProfileForm'));
 export const LazyReminderForm = lazy(() => import('../ReminderForm'));
@@ -24,4 +23,3 @@ export const LazyTransferModal = lazy(() => import('../TransferModal'));
 export const LazyAccountList = lazy(() => import('../AccountList'));
 export const LazyTransactionList = lazy(() => import('../TransactionList'));
 export const LazyBudgetTable = lazy(() => import('../BudgetTable'));
-export const LazyFixedExpensesList = lazy(() => import('../FixedExpensesList')); 

@@ -37,10 +37,6 @@ export type Notification = Database['public']['Tables']['notifications']['Row'];
 export type NotificationInsert = Database['public']['Tables']['notifications']['Insert'];
 export type NotificationUpdate = Database['public']['Tables']['notifications']['Update'];
 
-export type FixedExpense = Database['public']['Tables']['fixed_expenses']['Row'];
-export type FixedExpenseInsert = Database['public']['Tables']['fixed_expenses']['Insert'];
-export type FixedExpenseUpdate = Database['public']['Tables']['fixed_expenses']['Update'];
-
 export type Family = Database['public']['Tables']['families']['Row'];
 export type FamilyInsert = Database['public']['Tables']['families']['Insert'];
 export type FamilyUpdate = Database['public']['Tables']['families']['Update'];
