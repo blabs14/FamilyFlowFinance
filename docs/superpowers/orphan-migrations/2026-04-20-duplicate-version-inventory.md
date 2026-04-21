@@ -28,3 +28,21 @@
 - Every left-only orphan row in `npx supabase migration list` is explained by one of the duplicate-version groups above.
 - The special case is `20250115000100`, where no remote row exists at all, which explains two visible orphan rows instead of one.
 - All other duplicate groups already have a single remote row keyed only by `version`, which explains why the extra local files surface as orphans.
+
+## Archive Actions
+- Active directory invariant after Task 2: `supabase/migrations/` now contains exactly one file per `version` prefix.
+- Remaining visible orphan after archive-only cleanup: `20250115000100` (expected, because the remote tracking row is still missing and will be handled in Task 3).
+
+| Version | Canonical file kept active | Archived files | Rationale |
+| --- | --- | --- | --- |
+| 20250115000100 | `20250115000100_helpers_update_updated_at.sql` | `20250115000100_payroll_module.sql` | Lexicographically first file kept as deterministic canonical representative; remote row still missing, so this version remains the only visible orphan after archive cleanup. |
+| 20250116000000 | `20250116000000_create_payroll_meal_allowance_configs.sql` | `20250116000000_fix_categories_default_access.sql` ; `20250116000000_fix_family_invite_logout.sql` | Keep the first filename in sort order and archive follow-up fixes so the CLI sees only one active file for this version. |
+| 20250118000000 | `20250118000000_create_payroll_deduction_configs.sql` | `20250118000000_make_payroll_family_id_optional.sql` | Keep the first filename in sort order and archive the schema adjustment variant. |
+| 20250122000002 | `20250122000002_add_absence_fields_to_time_entries.sql` | `20250122000002_add_contract_id_to_meal_allowance_configs.sql` | Keep the first filename in sort order and archive the second file sharing the same version. |
+| 20250125000000 | `20250125000000_create_payroll_leaves.sql` | `20250125000000_ensure_goals_account.sql` | Keep the first filename in sort order and archive the later fix file. |
+| 20250126000000 | `20250126000000_add_holiday_type_column.sql` | `20250126000000_fix_family_goals_filter.sql` ; `20250126000000_update_goals_account_names.sql` | Keep the first filename in sort order and archive the two follow-up fixes under the same version. |
+| 20250126000001 | `20250126000001_fix_goal_progress_id_consistency.sql` | `20250126000001_update_search_logic_for_new_goal_account_names.sql` | Keep the first filename in sort order and archive the dependent search update. |
+| 20250126000003 | `20250126000003_fix_category_duplicate_key_error.sql` | `20250126000003_rename_existing_objetivos_categories.sql` | Keep the first filename in sort order and archive the rename variant. |
+| 20250127000001 | `20250127000001_fix_deallocate_logic_no_money_return.sql` | `20250127000001_seed_legal_tables.sql` | Keep the first filename in sort order and archive the seed file sharing the same version. |
+| 20250202000014 | `20250202000014_fix_deallocate_logic_correct.sql` | `20250202000014_update_goal_progress_view.sql` | Keep the first filename in sort order and archive the view refresh file. |
+| 20250202000015 | `20250202000015_fix_deallocate_rls_user_id.sql` | `20250202000015_fix_goal_deletion_logic.sql` | Keep the first filename in sort order and archive the paired deletion logic file. |
