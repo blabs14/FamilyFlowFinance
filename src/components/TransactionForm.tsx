@@ -232,7 +232,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
       const payload = {
         account_id: data.account_id,
         categoria_id: categoriaId,
-        valor: normalizedValor,
+        amount_cents: Math.round(normalizedValor * 100),
         // Para compras no cartão, forçar 'despesa'
         tipo: isSelectedAccountCreditCard ? 'despesa' : data.tipo,
         data: data.data,
@@ -249,7 +249,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
         const updatePayload = {
           account_id: data.account_id,
           categoria_id: categoriaId,
-          valor: normalizedValor,
+          amount_cents: Math.round(normalizedValor * 100),
           // Para compras no cartão, forçar 'despesa'
           tipo: isSelectedAccountCreditCard ? 'despesa' : data.tipo,
           data: data.data,

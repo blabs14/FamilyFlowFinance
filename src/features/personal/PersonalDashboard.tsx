@@ -67,10 +67,10 @@ const PersonalDashboard: React.FC = () => {
     const monthlyTransactions = myTransactions.filter(t => t.data.startsWith(currentMonth));
     const monthlyIncome = monthlyTransactions
       .filter(t => t.tipo === 'receita')
-      .reduce((sum, t) => sum + (t.valor || 0), 0);
+      .reduce((sum, t) => sum + ((t.amount_cents || 0) / 100), 0);
     const monthlyExpenses = monthlyTransactions
       .filter(t => t.tipo === 'despesa')
-      .reduce((sum, t) => sum + (t.valor || 0), 0);
+      .reduce((sum, t) => sum + ((t.amount_cents || 0) / 100), 0);
 
     // Cartões em dívida
     const cardsInDebt = myCards.filter(card => ((card.amount_cents || 0) / 100) < 0);
@@ -419,7 +419,7 @@ const PersonalDashboard: React.FC = () => {
                   <div className={`text-sm font-semibold ${
                     transaction.tipo === 'receita' ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {transaction.tipo === 'receita' ? '+' : '-'}{(transaction.valor || 0).toFixed(2)}€
+                    {transaction.tipo === 'receita' ? '+' : '-'}{((transaction.amount_cents || 0) / 100).toFixed(2)}€
                   </div>
                 </div>
               ))}

@@ -147,14 +147,14 @@ const PersonalTransactions: React.FC = () => {
   const totalIncome = transactions
     .filter(t => t.tipo === 'receita')
     .reduce((sum, t) => {
-      const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+      const valor = (t.amount_cents || 0) / 100;
       return sum + valor;
     }, 0);
 
   const totalExpenses = transactions
     .filter(t => t.tipo === 'despesa')
     .reduce((sum, t) => {
-      const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+      const valor = (t.amount_cents || 0) / 100;
       return sum + valor;
     }, 0);
 
@@ -250,14 +250,14 @@ const PersonalTransactions: React.FC = () => {
     const filteredIncome = filteredTransactions
       .filter(t => t.tipo === 'receita')
       .reduce((sum, t) => {
-        const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+        const valor = (t.amount_cents || 0) / 100;
         return sum + valor;
       }, 0);
 
     const filteredExpenses = filteredTransactions
       .filter(t => t.tipo === 'despesa')
       .reduce((sum, t) => {
-        const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+        const valor = (t.amount_cents || 0) / 100;
         return sum + valor;
       }, 0);
 
@@ -540,7 +540,7 @@ const PersonalTransactions: React.FC = () => {
                             transaction.tipo === 'receita' ? 'text-green-600' : 'text-red-600'
                           }`}>
                             {transaction.tipo === 'receita' ? '+' : '-'}
-                            {(transaction.valor || 0).toFixed(2)}€
+                            {((transaction.amount_cents || 0) / 100).toFixed(2)}€
                           </p>
                           <Badge variant="outline" className="text-xs">
                             Pessoal

@@ -263,7 +263,7 @@ const FamilyBudgets: React.FC = () => {
 
     // Somar todos os valores das transações filtradas
     const totalGasto = budgetTransactions.reduce((sum: number, transaction: any) => {
-      return sum + (Number(transaction.valor) || 0);
+      return sum + (transaction.amount_cents || 0) / 100;
     }, 0);
 
     return totalGasto;

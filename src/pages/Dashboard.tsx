@@ -102,8 +102,8 @@ export default function Dashboard() {
 
   // Análise de transações por tipo
   const transactionsByType = (() => {
-    const receitas = transactions.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + (t.valor || 0), 0);
-    const despesas = transactions.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + (t.valor || 0), 0);
+    const receitas = transactions.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0);
+    const despesas = transactions.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0);
     return [
       { name: 'Receitas', value: receitas },
       { name: 'Despesas', value: despesas }
@@ -315,7 +315,7 @@ export default function Dashboard() {
                     <div className={`text-sm font-semibold ${
                       transaction.tipo === 'receita' ? 'text-green-600' : 'text-red-600'
                     }`}>
-                      {transaction.tipo === 'receita' ? '+' : '-'}{formatCurrency(transaction.valor)}
+                      {transaction.tipo === 'receita' ? '+' : '-'}{formatCurrency((transaction.amount_cents || 0) / 100)}
                     </div>
                   </div>
                 ))}

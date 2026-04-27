@@ -201,14 +201,14 @@ const TransactionList = ({
       const filteredIncome = filteredTransactions
         .filter(t => t.tipo === 'receita')
         .reduce((sum, t) => {
-          const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+          const valor = (t.amount_cents || 0) / 100;
           return sum + valor;
         }, 0);
 
       const filteredExpenses = filteredTransactions
           .filter(t => t.tipo === 'despesa')
           .reduce((sum, t) => {
-            const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+            const valor = (t.amount_cents || 0) / 100;
             return sum + valor;
           }, 0);
 
@@ -625,7 +625,7 @@ const TransactionList = ({
                       }`}>
                         {transaction.tipo === 'transferencia' ? '' :
                           (transaction.tipo === 'receita' ? '+' : '-')
-                        }{formatCurrency(transaction.valor, 'pt-PT', 'EUR')}
+                        }{formatCurrency((transaction.amount_cents || 0) / 100, 'pt-PT', 'EUR')}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">

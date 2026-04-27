@@ -188,11 +188,11 @@ export const exportFamilyToPDF = async (
   // Resumo financeiro
   const totalIncome = data.transactions
     .filter(t => t.tipo === 'receita')
-    .reduce((sum, t) => sum + Number(t.valor), 0);
+    .reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0);
   
   const totalExpenses = data.transactions
     .filter(t => t.tipo === 'despesa')
-    .reduce((sum, t) => sum + Number(t.valor), 0);
+    .reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0);
   
   const balance = totalIncome - totalExpenses;
   
@@ -246,7 +246,7 @@ export const exportFamilyToPDF = async (
       t.profiles?.nome || 'N/A',
       t.descricao || '-',
       t.tipo === 'receita' ? '+' : '-',
-      Number(t.valor).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }),
+      ((t.amount_cents || 0) / 100).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }),
       t.categories?.nome || '-',
       t.accounts?.nome || '-',
     ]);
@@ -350,11 +350,11 @@ export const exportFamilyToCSV = (
   // Resumo financeiro
   const totalIncome = data.transactions
     .filter(t => t.tipo === 'receita')
-    .reduce((sum, t) => sum + Number(t.valor), 0);
+    .reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0);
   
   const totalExpenses = data.transactions
     .filter(t => t.tipo === 'despesa')
-    .reduce((sum, t) => sum + Number(t.valor), 0);
+    .reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0);
   
   const balance = totalIncome - totalExpenses;
   
@@ -379,7 +379,7 @@ export const exportFamilyToCSV = (
     csvData.push('Transações');
     csvData.push('Data,Membro,Descrição,Tipo,Valor,Categoria,Conta');
     data.transactions.forEach(t => {
-      csvData.push(`${new Date(t.data).toLocaleDateString('pt-PT')},${t.profiles?.nome || 'N/A'},"${t.descricao || '-'}",${t.tipo},${Number(t.valor).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })},${t.categories?.nome || '-'},${t.accounts?.nome || '-'}`);
+      csvData.push(`${new Date(t.data).toLocaleDateString('pt-PT')},${t.profiles?.nome || 'N/A'},"${t.descricao || '-'}",${t.tipo},${((t.amount_cents || 0) / 100).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })},${t.categories?.nome || '-'},${t.accounts?.nome || '-'}`);
     });
     csvData.push('');
   }
@@ -424,9 +424,9 @@ export const exportFamilyToExcel = async (
   summarySheet.addRow(['Período', `${new Date(options.dateRange.start).toLocaleDateString('pt-PT')} - ${new Date(options.dateRange.end).toLocaleDateString('pt-PT')}`]);
   summarySheet.addRow(['']);
   summarySheet.addRow(['Resumo Financeiro']);
-  summarySheet.addRow(['Receitas', data.transactions.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + Number(t.valor), 0)]);
-  summarySheet.addRow(['Despesas', data.transactions.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + Number(t.valor), 0)]);
-  summarySheet.addRow(['Saldo', data.transactions.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + Number(t.valor), 0) - data.transactions.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + Number(t.valor), 0)]);
+  summarySheet.addRow(['Receitas', data.transactions.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0)]);
+  summarySheet.addRow(['Despesas', data.transactions.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0)]);
+  summarySheet.addRow(['Saldo', data.transactions.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0) - data.transactions.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0)]);
   
   // Membros
   if (options.includeMembers && data.members.length > 0) {
@@ -453,7 +453,7 @@ export const exportFamilyToExcel = async (
         t.profiles?.nome || 'N/A',
         t.descricao || '-',
         t.tipo,
-        Number(t.valor),
+        (t.amount_cents || 0) / 100,
         t.categories?.nome || '-',
         t.accounts?.nome || '-'
       ]);

@@ -55,11 +55,11 @@ export const exportToPDF = async (data: ExportData, options: ExportOptions): Pro
   // Resumo
   const totalIncome = data.transactions
     .filter(t => t.tipo === 'receita')
-    .reduce((sum, t) => sum + Number(t.valor), 0);
+    .reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0);
   
   const totalExpenses = data.transactions
     .filter(t => t.tipo === 'despesa')
-    .reduce((sum, t) => sum + Number(t.valor), 0);
+    .reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0);
   
   const balance = totalIncome - totalExpenses;
   
@@ -79,7 +79,7 @@ export const exportToPDF = async (data: ExportData, options: ExportOptions): Pro
       new Date(t.data).toLocaleDateString('pt-PT'),
       t.descricao || '-',
       t.tipo === 'receita' ? '+' : '-',
-      Number(t.valor).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }),
+      (t.amount_cents || 0) / 100.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }),
       t.categoria_nome || '-',
       t.account_nome || '-',
     ]);
@@ -107,9 +107,9 @@ export const exportToPDF = async (data: ExportData, options: ExportOptions): Pro
         acc[category] = { receitas: 0, despesas: 0 };
       }
       if (t.tipo === 'receita') {
-        acc[category].receitas += Number(t.valor);
+        acc[category].receitas += (t.amount_cents || 0) / 100;
       } else {
-        acc[category].despesas += Number(t.valor);
+        acc[category].despesas += (t.amount_cents || 0) / 100;
       }
       return acc;
     }, {} as Record<string, CategoryStats>);
@@ -151,7 +151,7 @@ export const exportToCSV = (data: ExportData, options: ExportOptions): Blob => {
     new Date(t.data).toLocaleDateString('pt-PT'),
     t.descricao || '',
     t.tipo,
-    Number(t.valor).toFixed(2),
+    (t.amount_cents || 0) / 100.toFixed(2),
     t.categoria_nome || '',
     t.account_nome || '',
   ]);
@@ -183,7 +183,7 @@ export const exportToExcel = async (data: ExportData, options: ExportOptions): P
       new Date(t.data).toLocaleDateString('pt-PT'),
       t.descricao || '',
       t.tipo,
-      Number(t.valor),
+      (t.amount_cents || 0) / 100,
       t.categoria_nome || '',
       t.account_nome || '',
     ]);
@@ -196,9 +196,9 @@ export const exportToExcel = async (data: ExportData, options: ExportOptions): P
       acc[category] = { receitas: 0, despesas: 0 };
     }
     if (t.tipo === 'receita') {
-      acc[category].receitas += Number(t.valor);
+      acc[category].receitas += (t.amount_cents || 0) / 100;
     } else {
-      acc[category].despesas += Number(t.valor);
+      acc[category].despesas += (t.amount_cents || 0) / 100;
     }
     return acc;
   }, {} as Record<string, CategoryStats>);
@@ -218,11 +218,11 @@ export const exportToExcel = async (data: ExportData, options: ExportOptions): P
   // Planilha de resumo
   const totalIncome = data.transactions
     .filter(t => t.tipo === 'receita')
-    .reduce((sum, t) => sum + Number(t.valor), 0);
+    .reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0);
   
   const totalExpenses = data.transactions
     .filter(t => t.tipo === 'despesa')
-    .reduce((sum, t) => sum + Number(t.valor), 0);
+    .reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0);
   
   const summarySheet = workbook.addWorksheet('Resumo');
   summarySheet.addRow(['Item', 'Valor']);

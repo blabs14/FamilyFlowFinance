@@ -2660,8 +2660,10 @@ export type Database = {
       transactions: {
         Row: {
           account_id: string
+          amount_cents: number
           categoria_id: string
           created_at: string | null
+          currency: string
           data: string
           descricao: string | null
           event_time: string
@@ -2673,12 +2675,13 @@ export type Database = {
           tipo: string
           transfer_group_id: string | null
           user_id: string
-          valor: number
         }
         Insert: {
           account_id: string
+          amount_cents?: number
           categoria_id: string
           created_at?: string | null
+          currency?: string
           data: string
           descricao?: string | null
           event_time?: string
@@ -2690,12 +2693,13 @@ export type Database = {
           tipo: string
           transfer_group_id?: string | null
           user_id: string
-          valor: number
         }
         Update: {
           account_id?: string
+          amount_cents?: number
           categoria_id?: string
           created_at?: string | null
+          currency?: string
           data?: string
           descricao?: string | null
           event_time?: string
@@ -2707,7 +2711,6 @@ export type Database = {
           tipo?: string
           transfer_group_id?: string | null
           user_id?: string
-          valor?: number
         }
         Relationships: [
           {
@@ -3038,6 +3041,7 @@ export type Database = {
           account_id: string | null
           account_nome: string | null
           account_tipo: string | null
+          amount_cents: number | null
           categoria_cor: string | null
           categoria_nome: string | null
           created_at: string | null
@@ -3050,7 +3054,6 @@ export type Database = {
           id: string | null
           tipo: string | null
           user_id: string | null
-          valor: number | null
         }
         Relationships: [
           {
@@ -3518,8 +3521,10 @@ export type Database = {
         Args: never
         Returns: {
           account_id: string
+          amount_cents: number
           categoria_id: string
           created_at: string | null
+          currency: string
           data: string
           descricao: string | null
           event_time: string
@@ -3531,7 +3536,6 @@ export type Database = {
           tipo: string
           transfer_group_id: string | null
           user_id: string
-          valor: number
         }[]
         SetofOptions: {
           from: "*"
@@ -3691,8 +3695,10 @@ export type Database = {
         Args: never
         Returns: {
           account_id: string
+          amount_cents: number
           categoria_id: string
           created_at: string | null
+          currency: string
           data: string
           descricao: string | null
           event_time: string
@@ -3704,7 +3710,6 @@ export type Database = {
           tipo: string
           transfer_group_id: string | null
           user_id: string
-          valor: number
         }[]
         SetofOptions: {
           from: "*"

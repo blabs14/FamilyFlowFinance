@@ -24,7 +24,7 @@ export const getExpensesByCategory = async (
   const rows = (data as Array<{ valor: number | null; categorias?: { nome?: string | null } }> | null) || [];
   rows.forEach((t) => {
     const nome = t.categorias?.nome || 'Sem categoria';
-    agregados[nome] = (agregados[nome] || 0) + (t.valor || 0);
+    agregados[nome] = (agregados[nome] || 0) + (t.amount_cents || 0) / 100;
   });
 
   const resultado = Object.entries(agregados).map(([categoria, total]) => ({ categoria, total }));

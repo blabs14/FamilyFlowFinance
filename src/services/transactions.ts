@@ -40,8 +40,9 @@ export const createTransaction = async (transactionData: TransactionInsert, user
       .single();
     
     if (account?.tipo === 'cartão de crédito') {
-      // Enviar valor sempre positivo; o tipo controla o sentido
-      const valorNorm = Math.abs(Number(transactionData.valor || 0));
+      // p_valor accepts a float; RPC converts to cents internally
+      const amountCents = (transactionData as any).amount_cents ?? Math.round(Math.abs(Number((transactionData as any).valor || 0)) * 100);
+      const valorNorm = amountCents / 100;
       const rpcPayload: {
         p_user_id: string;
         p_account_id: string;
@@ -61,18 +62,18 @@ export const createTransaction = async (transactionData: TransactionInsert, user
         p_descricao: transactionData.descricao || null,
       };
       if (transactionData.goal_id) rpcPayload.p_goal_id = transactionData.goal_id;
-      
+
       const { data, error } = await supabase.rpc('cc_tx_v1', rpcPayload);
-    
+
       if (error) {
-        // Fallback genérico: inserir diretamente e atualizar saldo
+        // Fallback genérico: inserir diretamente
         const { data: inserted, error: insErr } = await supabase
           .from('transactions')
-          .insert([{ 
+          .insert([{
             account_id: transactionData.account_id,
             user_id: userId,
             categoria_id: transactionData.categoria_id || null,
-            valor: valorNorm,
+            amount_cents: amountCents,
             tipo: transactionData.tipo,
             data: transactionData.data,
             descricao: transactionData.descricao || null
@@ -97,9 +98,11 @@ export const createTransaction = async (transactionData: TransactionInsert, user
     
       return { data: createdTransaction || null, error: fetchError };
     } else {
+      const { valor: _valor, ...rest } = transactionData as any;
+      const amount_cents = rest.amount_cents ?? Math.round(Math.abs(Number(_valor || 0)) * 100);
       const { data, error } = await supabase
         .from('transactions')
-        .insert([{ ...transactionData, user_id: userId }])
+        .insert([{ ...rest, amount_cents, user_id: userId }])
         .select()
         .single();
 

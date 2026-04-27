@@ -286,14 +286,14 @@ const QuickKPIs: React.FC = () => {
     const totalIncome = transactions
       .filter(t => t.tipo === 'receita')
       .reduce((sum, t) => {
-        const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+        const valor = (t.amount_cents || 0) / 100;
         return sum + valor;
       }, 0);
 
     const totalExpenses = transactions
       .filter(t => t.tipo === 'despesa')
       .reduce((sum, t) => {
-        const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+        const valor = (t.amount_cents || 0) / 100;
         return sum + valor;
       }, 0);
 

@@ -12,10 +12,10 @@ const PersonalInsights: React.FC = () => {
   const monthlyTransactions = myTransactions.filter(t => t.data.startsWith(currentMonth));
   const monthlyIncome = monthlyTransactions
     .filter(t => t.tipo === 'receita')
-    .reduce((sum, t) => sum + (t.valor || 0), 0);
+    .reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0);
   const monthlyExpenses = monthlyTransactions
     .filter(t => t.tipo === 'despesa')
-    .reduce((sum, t) => sum + (t.valor || 0), 0);
+    .reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0);
   const savingsRate = monthlyIncome > 0 ? ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100 : 0;
 
   // Categorias mais gastas
@@ -23,7 +23,7 @@ const PersonalInsights: React.FC = () => {
     .filter(t => t.tipo === 'despesa')
     .reduce((acc, t) => {
       const category = t.categoria?.nome || 'Sem categoria';
-      acc[category] = (acc[category] || 0) + (t.valor || 0);
+      acc[category] = (acc[category] || 0) + (t.amount_cents || 0) / 100;
       return acc;
     }, {} as Record<string, number>);
 
