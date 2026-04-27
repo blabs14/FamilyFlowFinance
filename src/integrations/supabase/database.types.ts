@@ -16,37 +16,37 @@ export type Database = {
     Tables: {
       accounts: {
         Row: {
+          amount_cents: number
           billing_cycle_day: number | null
           created_at: string | null
+          currency: string
           family_id: string | null
           id: string
-          is_goals: boolean
           nome: string
-          saldo: number | null
           tipo: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          amount_cents?: number
           billing_cycle_day?: number | null
           created_at?: string | null
+          currency?: string
           family_id?: string | null
           id?: string
-          is_goals?: boolean
           nome: string
-          saldo?: number | null
           tipo: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          amount_cents?: number
           billing_cycle_day?: number | null
           created_at?: string | null
+          currency?: string
           family_id?: string | null
           id?: string
-          is_goals?: boolean
           nome?: string
-          saldo?: number | null
           tipo?: string
           updated_at?: string
           user_id?: string

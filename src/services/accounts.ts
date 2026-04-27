@@ -68,8 +68,8 @@ export const createAccount = async (accountData: AccountInsert, userId?: string)
     }
 
     let adjustedData: AccountInsert = { ...accountData };
-    if ((adjustedData.tipo === 'cartão de crédito') && ((adjustedData.saldo || 0) > 0)) {
-      adjustedData = { ...adjustedData, saldo: 0 };
+    if ((adjustedData.tipo === 'cartão de crédito') && ((adjustedData.amount_cents || 0) > 0)) {
+      adjustedData = { ...adjustedData, amount_cents: 0 };
     }
 
     // Garantir que o family_id é propagado quando fornecido
@@ -107,7 +107,7 @@ export const createAccount = async (accountData: AccountInsert, userId?: string)
         }
       } else {
         // Para contas normais: se foi fornecido saldo inicial > 0, criar transação de ajuste até ao alvo
-        const initialBalance = Number(accountData.saldo) || 0;
+        const initialBalance = (Number((accountData as any).amount_cents) || 0) / 100;
         if (initialBalance !== 0) {
           const { error: setErr } = await (supabase as unknown as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> }).rpc('set_regular_account_balance', {
             p_user_id: resolvedUserId,
@@ -256,28 +256,7 @@ export const updateAccount = async (id: string, updates: AccountUpdateExtended, 
       // não propagar ajusteSaldo para o PATCH
     }
 
-    if ((updates as Partial<AccountUpdate>).saldo !== undefined) {
-      const { data: currentBalanceData, error: balanceError } = await supabase
-        .from('account_balances')
-        .select('saldo_atual')
-        .eq('account_id', id)
-        .single();
-
-      if (balanceError) {
-        return { data: null, error: balanceError };
-      }
-
-      const currentBalance = currentBalanceData?.saldo_atual || 0;
-      const newBalance = (updates as Partial<AccountUpdate>).saldo || 0;
-      const difference = newBalance - currentBalance;
-
-      if (difference !== 0) {
-        needsAdjustmentTransaction = true;
-        adjustmentAmount = difference;
-      }
-      // se for necessário atualizar coluna saldo diretamente (raro), faze-lo explicitamente
-      otherUpdates.saldo = newBalance as AccountUpdate['saldo'];
-    }
+    // saldo column was dropped in Phase 3a — balance updates go via saldoAtual/ajusteSaldo above
 
     // Adicionar campos válidos (nome, tipo, family_id) caso tenham sido enviados
     if (typeof updates.nome === 'string') {

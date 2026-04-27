@@ -133,7 +133,7 @@ describe('AccountForm', () => {
       expect(mockCreateMutation.mutateAsync).toHaveBeenCalledWith({
         nome: 'Conta Teste',
         tipo: 'corrente',
-        saldo: 1000,
+        amount_cents: 100000,
       });
     });
 

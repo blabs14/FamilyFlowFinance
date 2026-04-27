@@ -107,7 +107,7 @@ const AccountForm = ({ initialData, onSuccess, onCancel, family_id }: AccountFor
       const createPayload = {
         nome: form.nome.trim(),
         tipo: form.tipo,
-        saldo: Number(form.saldoAtual) || 0,
+        amount_cents: Math.round((Number(form.saldoAtual) || 0) * 100),
         ...(family_id && { family_id }),
       } as const;
       
