@@ -31,19 +31,6 @@ export interface GoalFundingRuleInsert {
 
 export interface GoalFundingRuleUpdate extends Partial<GoalFundingRuleInsert> {}
 
-export interface GoalContribution {
-	id: string;
-	goal_id: string;
-	source_type: 'manual' | 'rule';
-	rule_id?: string | null;
-	transaction_id?: string | null;
-	period_key?: string | null;
-	amount_cents: number;
-	currency: string;
-	description?: string | null;
-	created_at: string;
-}
-
 export async function listFundingRules(goalId: string) {
 	return supabase
 		.from('goal_funding_rules')
@@ -76,9 +63,9 @@ export async function deleteFundingRule(id: string) {
 		.eq('id', id);
 }
 
-export async function listGoalContributions(goalId: string, limit = 20) {
+export async function listGoalLedgerEntries(goalId: string, limit = 20) {
 	return supabase
-		.from('goal_contributions')
+		.from('goal_ledger')
 		.select('*')
 		.eq('goal_id', goalId)
 		.order('created_at', { ascending: false })
