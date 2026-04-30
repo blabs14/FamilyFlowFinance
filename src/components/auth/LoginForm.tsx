@@ -33,46 +33,23 @@ export default function LoginForm() {
   });
 
   const handleLogin = async (data: LoginFormData) => {
-    console.log('[DEBUG] ==================== INÍCIO DO LOGIN ====================');
-    console.log('[DEBUG] handleLogin chamado com email:', data.email);
-    console.log('[DEBUG] Email length:', data.email.length);
-    console.log('[DEBUG] Password:', data.password); // TEMPORÁRIO: mostrar senha para debug
-    console.log('[DEBUG] Password length:', data.password.length);
-    console.log('[DEBUG] Password type:', typeof data.password);
-    console.log('[DEBUG] Email type:', typeof data.email);
-    console.log('[DEBUG] Form data:', { email: data.email, password: data.password });
-    console.log('[DEBUG] Chamando login do AuthContext...');
-    
     setError('');
     clearErrors();
     try {
       const result = await login(data.email, data.password);
-      
-      console.log('[DEBUG] Resultado completo do login:', result);
-      console.log('[DEBUG] Tipo do resultado:', typeof result);
-      console.log('[DEBUG] Erro presente:', !!result?.error);
-      
       if (result?.error) {
-        console.error('[ERROR] Erro no login:', result.error);
-        console.error('[ERROR] Tipo do erro:', typeof result.error);
-        console.error('[ERROR] Mensagem do erro:', result.error.message);
         setError(result.error.message);
         showError('Erro ao iniciar sessão: ' + result.error.message);
         setFocus('email');
       } else {
-        console.log('[SUCCESS] Login bem-sucedido, redirecionando...');
         navigate('/app');
       }
     } catch (err) {
-      console.error('[EXCEPTION] Erro inesperado no handleLogin:', err);
       setError('Erro inesperado durante o login');
     }
-    
-    console.log('[DEBUG] ==================== FIM DO LOGIN ====================');
   };
 
   const handleOAuth = async (provider: 'google' | 'apple' | 'facebook') => {
-    console.log(`🔗 [LoginForm] Iniciando login OAuth com ${provider}...`);
     setError('');
     try {
       if (provider === 'google') await signInWithGoogle();
