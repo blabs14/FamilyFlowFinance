@@ -21,16 +21,22 @@ export function MainLayout() {
   useRouteChange();
 
   const getPageTitle = () => {
-    switch (location.pathname) {
-      case '/app':
-        return 'Dashboard';
-
-
-      case '/app/reports':
-        return 'Relatórios';
-      default:
-        return 'Dashboard';
-    }
+    const path = location.pathname;
+    if (path === '/app' || path === '/app/') return 'Dashboard';
+    if (path.startsWith('/app/contas')) return 'Contas';
+    if (path.startsWith('/app/transacoes')) return 'Transações';
+    if (path.startsWith('/app/objetivos')) return 'Objetivos';
+    if (path.startsWith('/app/orcamentos')) return 'Orçamentos';
+    if (path.startsWith('/app/recorrentes')) return 'Recorrentes';
+    if (path.startsWith('/app/payroll')) return 'Payroll';
+    if (path.startsWith('/app/reports')) return 'Relatórios';
+    if (path.startsWith('/app/cashflow')) return 'Cashflow';
+    if (path.startsWith('/app/membros')) return 'Membros';
+    if (path.startsWith('/app/convites')) return 'Convites';
+    if (path.startsWith('/app/definicoes-familia')) return 'Definições Família';
+    if (path.startsWith('/app/profile')) return 'Perfil';
+    if (path.startsWith('/app/performance')) return 'Performance';
+    return 'Dashboard';
   };
 
   return (
