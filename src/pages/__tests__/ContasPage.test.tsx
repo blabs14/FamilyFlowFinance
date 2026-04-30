@@ -5,7 +5,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 vi.mock('../../features/scope/useScope', () => ({
-  useScope: () => ({ type: 'personal', userId: 'user-1', familyId: null }),
+  useScope: () => ({
+    scope: { kind: 'personal' },
+    setScope: () => {},
+    scopedFilter: { userId: 'user-1', familyId: null },
+  }),
 }));
 
 vi.mock('../../hooks/useAccountsQuery', () => ({

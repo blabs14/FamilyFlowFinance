@@ -17,12 +17,12 @@ import AccountForm from '../components/AccountForm';
 import { useToast } from '../hooks/use-toast';
 
 const ContasPage: React.FC = () => {
-  const scope = useScope();
+  const { scopedFilter } = useScope();
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const userId = user?.id ?? '';
-  const familyId = scope.type === 'family' ? (scope as { familyId?: string | null }).familyId ?? null : null;
+  const userId = scopedFilter?.userId ?? user?.id ?? '';
+  const familyId = scopedFilter?.familyId ?? null;
 
   const { data: accountsResult, isLoading: accountsLoading } = useAccountsScoped({ userId, familyId });
   const { data: cardsResult, isLoading: cardsLoading } = useCreditCards({ userId, familyId });
