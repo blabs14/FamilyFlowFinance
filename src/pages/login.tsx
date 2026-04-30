@@ -1,6 +1,5 @@
 
 import LoginForm from '../components/auth/LoginForm';
-import DirectLoginTest from '../components/auth/DirectLoginTest';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 
@@ -36,21 +35,7 @@ export default function Login() {
             </div>
           </CardContent>
         </Card>
-        
-        {/* Componente de teste direto para debug */}
-        <div className="mt-4">
-          <Card className="shadow-xl border-0 bg-gradient-card">
-            <CardHeader className="text-center">
-              <CardTitle className="text-lg font-bold text-foreground">Teste Direto (Debug)</CardTitle>
-              <CardDescription className="text-muted-foreground">
-                Teste de login sem formulário para análise de logs
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DirectLoginTest />
-            </CardContent>
-          </Card>
-        </div>
+
       </div>
     </div>
   );

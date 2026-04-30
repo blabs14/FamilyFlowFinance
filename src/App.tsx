@@ -13,7 +13,6 @@ import { GlobalShortcuts } from './components/GlobalShortcuts';
 import { LocaleProvider } from './contexts/LocaleProvider';
 import { Navigate } from 'react-router-dom';
 import { ScopeProvider } from './features/scope';
-import './test-supabase';
 import { performanceService } from './services/performanceService';
 import { ErrorBoundary } from './components/ErrorBoundary';
 // Testes removidos - componente RealTimeNotifications melhorado
@@ -49,7 +48,6 @@ import Login from './pages/login';
 import Register from './pages/register';
 import ForgotPassword from './pages/forgot-password';
 import NotFound from './pages/NotFound';
-import TestPage from './pages/TestPage';
 
 // Componente de loading para Suspense
 const PageLoading = () => (
@@ -76,7 +74,6 @@ function App() {
               <Routes>
                 {/* Páginas públicas */}
                 <Route path="/" element={<Index />} />
-                <Route path="/test" element={<TestPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
