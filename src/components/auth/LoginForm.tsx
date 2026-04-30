@@ -136,25 +136,28 @@ export default function LoginForm() {
         </div>
 
         <div className="space-y-2">
-          <Button type="button" onClick={() => handleOAuth('google')} disabled={loading} variant="outline" className="w-full">
+          <Button type="button" disabled variant="outline" className="w-full relative">
             <div className="w-4 h-4 mr-2 bg-[#4285f4] rounded-sm flex items-center justify-center">
               <span className="text-white text-xs font-bold">G</span>
             </div>
             Entrar com Google
+            <span className="ml-2 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Em breve</span>
           </Button>
 
-          <Button type="button" onClick={() => handleOAuth('apple')} disabled={loading} variant="outline" className="w-full">
+          <Button type="button" disabled variant="outline" className="w-full relative">
             <div className="w-4 h-4 mr-2 bg-black rounded-sm flex items-center justify-center">
               <span className="text-white text-xs">🍎</span>
             </div>
             Entrar com Apple
+            <span className="ml-2 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Em breve</span>
           </Button>
 
-          <Button type="button" onClick={() => handleOAuth('facebook')} disabled={loading} variant="outline" className="w-full">
+          <Button type="button" disabled variant="outline" className="w-full relative">
             <div className="w-4 h-4 mr-2 bg-[#1877f2] rounded-sm flex items-center justify-center">
               <span className="text-white text-xs font-bold">f</span>
             </div>
             Entrar com Facebook
+            <span className="ml-2 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Em breve</span>
           </Button>
         </div>
       </div>

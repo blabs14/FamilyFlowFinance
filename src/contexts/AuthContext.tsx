@@ -80,14 +80,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Inicializar autenticação
     initializeAuth();
     
-    // Fallback: garantir que loading seja false após 3 segundos
+    // Fallback: garantir que loading seja false após 8 segundos
+    // (decisão Unit 4: 3s era demasiado curto para rede móvel PT; 8s é razoável para dogfood)
     const fallbackTimer = setTimeout(() => {
       if (mounted && !initializationComplete) {
-        logger.warn('[Auth] Timeout na inicialização - forçando loading = false');
+        logger.warn('[Auth] Timeout na inicialização auth (8s) — possível problema de rede ou Supabase', {
+          timestamp: new Date().toISOString(),
+        });
         setLoading(false);
         initializationComplete = true;
       }
-    }, 3000);
+    }, 8000);
     
     return () => {
       mounted = false;
