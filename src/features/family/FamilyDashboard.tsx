@@ -277,7 +277,7 @@ const FamilyDashboard: React.FC = () => {
 
         {/* KPIs Principais */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card role="button" tabIndex={0} onClick={() => navigate('/family/accounts')} onKeyDown={(e) => e.key === 'Enter' && navigate('/family/accounts')} className="hover:shadow-md transition-shadow focus:outline-none focus:ring-2">
+          <Card role="button" tabIndex={0} onClick={() => navigate('/app/contas')} onKeyDown={(e) => e.key === 'Enter' && navigate('/app/contas')} className="hover:shadow-md transition-shadow focus:outline-none focus:ring-2">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -294,12 +294,12 @@ const FamilyDashboard: React.FC = () => {
                 {formatCurrency(familyKPIs.totalBalance)}
               </div>
               <div className="flex items-center mt-1">
-                <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/family/accounts')} aria-label="Ver todas as contas familiares">Ver contas</Button>
+                <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/app/contas')} aria-label="Ver todas as contas familiares">Ver contas</Button>
               </div>
             </CardContent>
           </Card>
 
-          <Card role="button" tabIndex={0} onClick={() => navigate('/family/accounts')} onKeyDown={(e) => e.key === 'Enter' && navigate('/family/accounts')} className="hover:shadow-md transition-shadow focus:outline-none focus:ring-2">
+          <Card role="button" tabIndex={0} onClick={() => navigate('/app/contas')} onKeyDown={(e) => e.key === 'Enter' && navigate('/app/contas')} className="hover:shadow-md transition-shadow focus:outline-none focus:ring-2">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -316,12 +316,12 @@ const FamilyDashboard: React.FC = () => {
                 {formatCurrency(familyKPIs.creditCardDebt)}
               </div>
               <div className="flex items-center mt-1">
-                <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/family/accounts')} aria-label="Gerir cartões de crédito familiares">Gerir cartões</Button>
+                <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/app/contas')} aria-label="Gerir cartões de crédito familiares">Gerir cartões</Button>
               </div>
             </CardContent>
           </Card>
 
-          <Card role="button" tabIndex={0} onClick={() => navigate('/family/transactions')} onKeyDown={(e) => e.key === 'Enter' && navigate('/family/transactions')} className="hover:shadow-md transition-shadow focus:outline-none focus:ring-2">
+          <Card role="button" tabIndex={0} onClick={() => navigate('/app/transacoes')} onKeyDown={(e) => e.key === 'Enter' && navigate('/app/transacoes')} className="hover:shadow-md transition-shadow focus:outline-none focus:ring-2">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -341,12 +341,12 @@ const FamilyDashboard: React.FC = () => {
                 <span className={((familyKPIs.deltaVsPrev || 0) >= 0) ? 'text-green-600' : 'text-red-600'}>
                   {((familyKPIs.deltaVsPrev || 0) >= 0 ? '+' : '')}{(familyKPIs.deltaVsPrev || 0).toFixed(2)}€ vs mês anterior
                 </span>
-                <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/family/transactions')} aria-label="Ver todas as transações familiares">Ver transações</Button>
+                <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/app/transacoes')} aria-label="Ver todas as transações familiares">Ver transações</Button>
               </div>
             </CardContent>
           </Card>
 
-          <Card role="button" tabIndex={0} onClick={() => navigate('/family/goals')} onKeyDown={(e) => e.key === 'Enter' && navigate('/family/goals')} className="hover:shadow-md transition-shadow focus:outline-none focus:ring-2">
+          <Card role="button" tabIndex={0} onClick={() => navigate('/app/objetivos')} onKeyDown={(e) => e.key === 'Enter' && navigate('/app/objetivos')} className="hover:shadow-md transition-shadow focus:outline-none focus:ring-2">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -363,7 +363,7 @@ const FamilyDashboard: React.FC = () => {
                 {familyKPIs.topGoalProgress.toFixed(1)}%
               </div>
               <div className="flex items-center mt-1">
-                <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/family/goals')} aria-label="Ver objetivos financeiros familiares">Ver objetivos</Button>
+                <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/app/objetivos')} aria-label="Ver objetivos financeiros familiares">Ver objetivos</Button>
               </div>
             </CardContent>
           </Card>
@@ -371,7 +371,7 @@ const FamilyDashboard: React.FC = () => {
 
         {/* KPIs adicionais via RPC (percentagens globais) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card role="button" tabIndex={0} onClick={() => navigate('/family/goals')} onKeyDown={(e) => e.key === 'Enter' && navigate('/family/goals')} className="hover:shadow-md transition-shadow focus:outline-none focus:ring-2">
+          <Card role="button" tabIndex={0} onClick={() => navigate('/app/objetivos')} onKeyDown={(e) => e.key === 'Enter' && navigate('/app/objetivos')} className="hover:shadow-md transition-shadow focus:outline-none focus:ring-2">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -386,12 +386,12 @@ const FamilyDashboard: React.FC = () => {
             <CardContent>
               <div className="text-2xl font-bold">{familyKPIs.goalsProgressPercentage.toFixed(1)}%</div>
               <div className="flex items-center mt-1">
-                <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/family/goals')} aria-label="Ver detalhes dos objetivos">Detalhar</Button>
+                <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/app/objetivos')} aria-label="Ver detalhes dos objetivos">Detalhar</Button>
               </div>
             </CardContent>
           </Card>
 
-          <Card role="button" tabIndex={0} onClick={() => navigate('/family/budgets')} onKeyDown={(e) => e.key === 'Enter' && navigate('/family/budgets')} className="hover:shadow-md transition-shadow focus:outline-none focus:ring-2">
+          <Card role="button" tabIndex={0} onClick={() => navigate('/app/orcamentos')} onKeyDown={(e) => e.key === 'Enter' && navigate('/app/orcamentos')} className="hover:shadow-md transition-shadow focus:outline-none focus:ring-2">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -411,7 +411,7 @@ const FamilyDashboard: React.FC = () => {
                 )}
               </div>
               <div className="flex items-center mt-1">
-                <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/family/budgets')} aria-label="Ver orçamentos familiares">Ver orçamentos</Button>
+                <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/app/orcamentos')} aria-label="Ver orçamentos familiares">Ver orçamentos</Button>
               </div>
             </CardContent>
           </Card>
@@ -461,7 +461,7 @@ const FamilyDashboard: React.FC = () => {
                   </p>
                 )}
                 <div className="flex justify-end">
-                  <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/family/accounts')} aria-label="Gerir contas bancárias familiares">Gerir contas</Button>
+                  <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/app/contas')} aria-label="Gerir contas bancárias familiares">Gerir contas</Button>
                 </div>
               </div>
             )}
@@ -516,7 +516,7 @@ const FamilyDashboard: React.FC = () => {
                   </p>
                 )}
                 <div className="flex justify-end">
-                  <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/family/goals')} aria-label="Gerir objetivos financeiros">Gerir objetivos</Button>
+                  <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/app/objetivos')} aria-label="Gerir objetivos financeiros">Gerir objetivos</Button>
                 </div>
               </div>
             )}
@@ -566,7 +566,7 @@ const FamilyDashboard: React.FC = () => {
                     </p>
                   )}
                   <div className="flex justify-end">
-                    <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/family/members')} aria-label="Gerir membros da família">Gerir membros</Button>
+                    <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/app/membros')} aria-label="Gerir membros da família">Gerir membros</Button>
                   </div>
                 </div>
               )}
@@ -607,7 +607,7 @@ const FamilyDashboard: React.FC = () => {
                       </div>
                     ))}
                   <div className="flex justify-end">
-                    <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/family/members')} aria-label="Gerir convites pendentes">Gerir convites</Button>
+                    <Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate('/app/membros')} aria-label="Gerir convites pendentes">Gerir convites</Button>
                   </div>
                 </div>
               )}

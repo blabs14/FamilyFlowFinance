@@ -115,6 +115,7 @@ function App() {
                   <Route path="/personal/budgets" element={<Navigate to="/app/orcamentos" replace />} />
                   <Route path="/personal/recorrentes" element={<Navigate to="/app/recorrentes" replace />} />
                   <Route path="/personal/payroll" element={<Navigate to="/app/payroll" replace />} />
+                  <Route path="/personal/payroll/*" element={<Navigate to="/app/payroll" replace />} />
                   <Route path="/personal/insights" element={<Navigate to="/app/reports" replace />} />
                   <Route path="/personal/reminders" element={<Navigate to="/app" replace />} />
                   <Route path="/personal/settings" element={<Navigate to="/app/profile" replace />} />
