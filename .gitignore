@@ -31,6 +31,11 @@ dist-ssr
 coverage/
 .worktrees/
 
+# Playwright auth state (session storage — never commit)
+tests/e2e/playwright/.auth/
+playwright-report/
+test-results/
+
 # Lint/analysis dumps
 lint-*.json
 *-lint.json

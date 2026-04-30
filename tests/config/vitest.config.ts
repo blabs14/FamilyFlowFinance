@@ -49,7 +49,7 @@ export default defineConfig({
         'node_modules/',
         'tests/',
         'dist/',
-        'cypress/',
+
         '**/*.d.ts',
         '**/*.config.{js,ts}',
         '**/vite.config.ts',
