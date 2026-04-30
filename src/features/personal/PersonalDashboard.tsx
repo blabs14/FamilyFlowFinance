@@ -67,14 +67,14 @@ const PersonalDashboard: React.FC = () => {
     const monthlyTransactions = myTransactions.filter(t => t.data.startsWith(currentMonth));
     const monthlyIncome = monthlyTransactions
       .filter(t => t.tipo === 'receita')
-      .reduce((sum, t) => sum + (t.valor || 0), 0);
+      .reduce((sum, t) => sum + ((t.amount_cents || 0) / 100), 0);
     const monthlyExpenses = monthlyTransactions
       .filter(t => t.tipo === 'despesa')
-      .reduce((sum, t) => sum + (t.valor || 0), 0);
+      .reduce((sum, t) => sum + ((t.amount_cents || 0) / 100), 0);
 
     // Cartões em dívida
-    const cardsInDebt = myCards.filter(card => (card.saldo || 0) < 0);
-    const totalDebt = cardsInDebt.reduce((sum, card) => sum + Math.abs(card.saldo || 0), 0);
+    const cardsInDebt = myCards.filter(card => ((card.amount_cents || 0) / 100) < 0);
+    const totalDebt = cardsInDebt.reduce((sum, card) => sum + Math.abs((card.amount_cents || 0) / 100), 0);
     
     return { activeGoals, completedGoals, monthlyIncome, monthlyExpenses, cardsInDebt, totalDebt };
   }, [myGoals, myTransactions, myCards]);
@@ -232,8 +232,8 @@ const PersonalDashboard: React.FC = () => {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className={`font-bold ${(account.saldo || 0) >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                      {(account.saldo || 0).toFixed(2)}€
+                    <p className={`font-bold ${((account.amount_cents || 0) / 100) >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                      {((account.amount_cents || 0) / 100).toFixed(2)}€
                     </p>
                   </div>
                 </div>
@@ -273,7 +273,7 @@ const PersonalDashboard: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 {myCards.map((card) => {
-                  const balance = card.saldo || 0;
+                  const balance = (card.amount_cents || 0) / 100;
                   const isInDebt = balance < 0;
                   
                   return (
@@ -419,7 +419,7 @@ const PersonalDashboard: React.FC = () => {
                   <div className={`text-sm font-semibold ${
                     transaction.tipo === 'receita' ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {transaction.tipo === 'receita' ? '+' : '-'}{(transaction.valor || 0).toFixed(2)}€
+                    {transaction.tipo === 'receita' ? '+' : '-'}{((transaction.amount_cents || 0) / 100).toFixed(2)}€
                   </div>
                 </div>
               ))}

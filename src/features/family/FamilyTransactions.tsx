@@ -217,14 +217,14 @@ const FamilyTransactions: React.FC = () => {
   const totalIncome = (familyTransactions as TransactionItem[])
     ?.filter(t => t.tipo === 'receita')
     .reduce((sum, t) => {
-      const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+      const valor = (t.amount_cents || 0) / 100;
       return sum + valor;
     }, 0) || 0;
 
   const totalExpenses = (familyTransactions as TransactionItem[])
       ?.filter(t => t.tipo === 'despesa')
       .reduce((sum, t) => {
-        const valor = typeof t.valor === 'number' ? t.valor : parseFloat(t.valor) || 0;
+        const valor = (t.amount_cents || 0) / 100;
         return sum + valor;
       }, 0) || 0;
 
@@ -318,11 +318,11 @@ const FamilyTransactions: React.FC = () => {
   React.useEffect(() => {
     const filteredIncome = filteredTransactions
       .filter(t => t.tipo === 'receita')
-      .reduce((sum, t) => sum + t.valor, 0);
+      .reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0);
 
     const filteredExpenses = filteredTransactions
       .filter(t => t.tipo === 'despesa')
-      .reduce((sum, t) => sum + t.valor, 0);
+      .reduce((sum, t) => sum + (t.amount_cents || 0) / 100, 0);
 
     const filteredNetBalance = filteredIncome - filteredExpenses;
     const filteredCount = filteredTransactions.length;
@@ -629,7 +629,7 @@ const FamilyTransactions: React.FC = () => {
                             transaction.tipo === 'receita' ? 'text-green-600' : 'text-red-600'
                           }`}>
                             {transaction.tipo === 'receita' ? '+' : '-'}
-                            {(transaction.valor || 0).toFixed(2)}€
+                            {((transaction.amount_cents || 0) / 100).toFixed(2)}€
                           </p>
                           <Badge variant="outline" className="text-xs">
                             Familiar

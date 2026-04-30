@@ -50,7 +50,11 @@ const GoalForm = ({ initialData, onSuccess, onCancel, familyId }: GoalFormProps)
     console.log('GoalForm useEffect - initialData:', initialData);
     if (initialData) {
       console.log('Setting form with initialData:', initialData);
-      setForm(initialData);
+      // Handle both old (valor_objetivo numeric) and new (target_cents bigint) schemas
+      const valorObjetivo = (initialData as any).target_cents != null
+        ? (initialData as any).target_cents / 100
+        : (initialData.valor_objetivo ?? 0);
+      setForm({ ...initialData, valor_objetivo: valorObjetivo });
     }
   }, [initialData]);
 
@@ -97,7 +101,7 @@ const GoalForm = ({ initialData, onSuccess, onCancel, familyId }: GoalFormProps)
     try {
       const payload = {
         nome: form.nome,
-        valor_objetivo: form.valor_objetivo,
+        target_cents: Math.round(form.valor_objetivo * 100),
         prazo: form.prazo || null, // Opcional
         valor_atual: 0, // Inicializar com 0
         user_id: user?.id || '',
@@ -109,7 +113,7 @@ const GoalForm = ({ initialData, onSuccess, onCancel, familyId }: GoalFormProps)
       if (initialData && initialData.id) {
         const updatePayload = {
           nome: form.nome,
-          valor_objetivo: form.valor_objetivo,
+          target_cents: Math.round(form.valor_objetivo * 100),
           prazo: form.prazo || null
         };
         console.log('🔄 GoalForm handleSubmit - Atualizando objetivo com ID:', initialData.id);

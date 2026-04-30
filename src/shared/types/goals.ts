@@ -18,7 +18,9 @@ export function mapGoalRowToDomain(row: Goal): GoalDomain {
   return {
     id: row.id,
     nome: row.nome,
-    valorObjetivo: Number(row.valor_objetivo ?? row.valor_meta ?? 0),
+    valorObjetivo: (row as any).target_cents != null
+      ? (row as any).target_cents / 100
+      : Number(row.valor_objetivo ?? row.valor_meta ?? 0),
     valorAtual: Number(row.valor_atual ?? 0),
     prazo: row.prazo ?? null,
     ativa: Boolean(row.ativa),

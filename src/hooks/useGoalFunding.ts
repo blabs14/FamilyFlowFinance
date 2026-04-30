@@ -5,7 +5,7 @@ import {
   createFundingRule,
   updateFundingRule,
   deleteFundingRule,
-  listGoalContributions,
+  listGoalLedgerEntries,
   GoalFundingRuleInsert,
   GoalFundingRuleUpdate
 } from '../services/goalFunding';
@@ -34,16 +34,16 @@ export const useGoalFunding = (goalId: string | null | undefined) => {
   });
 
   const contributions = useQuery({
-    queryKey: ['goalContributions', user?.id, goalId || 'none'],
+    queryKey: ['goalLedgerEntries', user?.id, goalId || 'none'],
     queryFn: async () => {
       try {
         if (!goalId) return [] as any[];
-        const { data, error } = await listGoalContributions(goalId, 20);
+        const { data, error } = await listGoalLedgerEntries(goalId, 20);
         if (error) throw error;
         return data || [];
       } catch (err: any) {
-        logger.error('Failed to fetch goal contributions', err);
-        showError(err?.message || 'Falha ao obter contribuições');
+        logger.error('Failed to fetch goal ledger entries', err);
+        showError(err?.message || 'Falha ao obter entradas do ledger');
         return [] as any[];
       }
     },

@@ -133,7 +133,7 @@ describe('Transactions Service', () => {
     it('should create transaction successfully', async () => {
       const newTransaction = {
         descricao: 'Nova transação',
-        valor: -100.00,
+        amount_cents: 10000,
         data: '2024-01-20',
         tipo: 'despesa' as const,
         categoria: 'Transporte',

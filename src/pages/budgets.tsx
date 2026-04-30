@@ -57,7 +57,7 @@ const BudgetsPage = () => {
     setEditBudget(budget);
     setForm({
       categoria_id: budget.categoria_id || '',
-      valor: budget.valor?.toString() || '',
+      valor: ((budget.amount_cents || 0) / 100).toString() || '',
       mes: budget.mes || '',
     });
     setValidationErrors({});
@@ -119,7 +119,7 @@ const BudgetsPage = () => {
     try {
       const payload = {
         categoria_id: form.categoria_id,
-        valor: parseFloat(form.valor),
+        amount_cents: Math.round(parseFloat(form.valor) * 100),
         mes: form.mes,
       };
 
@@ -303,9 +303,10 @@ const BudgetsPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-auto">
                 {budgets.map((budget) => {
                   const gasto = getGastoForBudget(budget);
-                  const percentage = getProgressPercentage(gasto, budget.valor);
+                  const budgetValor = ((budget as any).amount_cents || 0) / 100;
+                  const percentage = getProgressPercentage(gasto, budgetValor);
                   const progressColor = getProgressColor(percentage);
-                  
+
                   return (
                     <Card key={budget.id} className="hover:shadow-md transition-shadow h-fit">
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -329,13 +330,13 @@ const BudgetsPage = () => {
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-muted-foreground">Orçamento</span>
-                            <span className="font-medium">{formatCurrency(budget.valor)}</span>
+                            <span className="font-medium">{formatCurrency(budgetValor)}</span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-muted-foreground">Gasto</span>
                             <span className={`font-medium ${
-                              gasto === 0 ? 'text-gray-600' : 
-                              gasto > budget.valor ? 'text-red-600' : 'text-green-600'
+                              gasto === 0 ? 'text-gray-600' :
+                              gasto > budgetValor ? 'text-red-600' : 'text-green-600'
                             }`}>
                               {formatCurrency(gasto)}
                             </span>

@@ -65,7 +65,7 @@ const PersonalBudgets: React.FC = () => {
     setEditBudget(budget);
     setForm({
       categoria_id: budget.categoria_id || '',
-      valor: budget.valor?.toString() || '',
+      valor: ((budget.amount_cents || 0) / 100).toString() || '',
       mes: budget.mes || '',
     });
     setValidationErrors({});
@@ -126,7 +126,7 @@ const PersonalBudgets: React.FC = () => {
       const monthStr = (form.mes || '').slice(0, 7); // garantir YYYY-MM
       const payload = {
         categoria_id: form.categoria_id,
-        valor: parseFloat(form.valor),
+        amount_cents: Math.round(parseFloat(form.valor) * 100),
         mes: monthStr,
       } as const;
 
@@ -270,7 +270,7 @@ const PersonalBudgets: React.FC = () => {
 
     // Somar todos os valores das transações filtradas
     const totalGasto = budgetTransactions.reduce((sum: number, transaction: any) => {
-      return sum + (Number(transaction.valor) || 0);
+      return sum + (transaction.amount_cents || 0) / 100;
     }, 0);
 
     return totalGasto;
@@ -347,7 +347,8 @@ const PersonalBudgets: React.FC = () => {
             .filter((b) => !filterMonth || b.mes === filterMonth)
             .filter((b) => {
               const gasto = getGastoForBudget(b);
-              const pct = getProgressPercentage(gasto, b.valor);
+              const bVal = (b.amount_cents || 0) / 100;
+              const pct = getProgressPercentage(gasto, bVal);
               if (filterStatus === 'ok') return pct < 80;
               if (filterStatus === 'warn') return pct >= 80 && pct < 100;
               if (filterStatus === 'over') return pct >= 100;
@@ -355,16 +356,17 @@ const PersonalBudgets: React.FC = () => {
             })
             .map((budget) => {
               const gasto = getGastoForBudget(budget);
-              const percentage = getProgressPercentage(gasto, budget.valor);
+              const budgetValor = (budget.amount_cents || 0) / 100;
+              const percentage = getProgressPercentage(gasto, budgetValor);
               const progressColor = getProgressColor(percentage);
-              
+
               return (
                 <Card key={budget.id} className="hover:shadow-md transition-shadow h-fit">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium truncate flex-1 mr-2">
                       {getCategoryName(budget.categoria_id)}
                     </CardTitle>
-                    {gasto > budget.valor && (
+                    {gasto > budgetValor && (
                       <Badge variant="destructive" className="mr-2">Over</Badge>
                     )}
                     {(() => {
@@ -384,13 +386,13 @@ const PersonalBudgets: React.FC = () => {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground">Orçamento</span>
-                        <span className="font-medium">{formatCurrency(budget.valor)}</span>
+                        <span className="font-medium">{formatCurrency(budgetValor)}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground">Gasto</span>
                         <span className={`font-medium ${
-                          gasto === 0 ? 'text-gray-600' : 
-                          gasto > budget.valor ? 'text-red-600' : 'text-green-600'
+                          gasto === 0 ? 'text-gray-600' :
+                          gasto > budgetValor ? 'text-red-600' : 'text-green-600'
                         }`}>
                           {formatCurrency(gasto)}
                         </span>

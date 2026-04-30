@@ -18,7 +18,7 @@ const getSumBy = (budgets: Budget[], key: keyof Budget) => {
   const map = new Map<string, number>();
   budgets.forEach((b) => {
     const k = b[key] as string;
-    map.set(k, (map.get(k) || 0) + (typeof b.valor === 'number' ? b.valor : parseFloat(b.valor) || 0));
+    map.set(k, (map.get(k) || 0) + ((b as any).amount_cents != null ? (b as any).amount_cents / 100 : (typeof b.valor === 'number' ? b.valor : parseFloat(b.valor) || 0)));
   });
   return Array.from(map.entries());
 };
@@ -42,7 +42,7 @@ const BudgetTable = ({ budgets, onEdit, onRemove }: BudgetTableProps) => {
           {budgets.map((b) => (
             <TableRow key={b.id} className="hover:bg-muted/50">
               <TableCell className="px-2 sm:px-4">{b.categoria}</TableCell>
-              <TableCell className="px-2 sm:px-4">€{b.valor.toFixed(2)}</TableCell>
+              <TableCell className="px-2 sm:px-4">€{((b as any).amount_cents != null ? (b as any).amount_cents / 100 : b.valor).toFixed(2)}</TableCell>
               <TableCell className="px-2 sm:px-4">{b.mes}</TableCell>
               <TableCell className="px-2 sm:px-4">
                 <div className="flex gap-2">

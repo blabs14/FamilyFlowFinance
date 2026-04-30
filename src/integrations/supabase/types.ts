@@ -13,9 +13,6 @@ export type Goal = Database['public']['Tables']['goals']['Row'];
 export type GoalInsert = Database['public']['Tables']['goals']['Insert'];
 export type GoalUpdate = Database['public']['Tables']['goals']['Update'];
 
-export type GoalAllocation = Database['public']['Tables']['goal_allocations']['Row'];
-export type GoalAllocationInsert = Database['public']['Tables']['goal_allocations']['Insert'];
-export type GoalAllocationUpdate = Database['public']['Tables']['goal_allocations']['Update'];
 
 export type Category = Database['public']['Tables']['categories']['Row'];
 export type CategoryInsert = Database['public']['Tables']['categories']['Insert'];
@@ -36,10 +33,6 @@ export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 export type Notification = Database['public']['Tables']['notifications']['Row'];
 export type NotificationInsert = Database['public']['Tables']['notifications']['Insert'];
 export type NotificationUpdate = Database['public']['Tables']['notifications']['Update'];
-
-export type FixedExpense = Database['public']['Tables']['fixed_expenses']['Row'];
-export type FixedExpenseInsert = Database['public']['Tables']['fixed_expenses']['Insert'];
-export type FixedExpenseUpdate = Database['public']['Tables']['fixed_expenses']['Update'];
 
 export type Family = Database['public']['Tables']['families']['Row'];
 export type FamilyInsert = Database['public']['Tables']['families']['Insert'];

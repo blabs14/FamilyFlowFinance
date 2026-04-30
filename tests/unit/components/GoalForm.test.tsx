@@ -150,7 +150,7 @@ describe('GoalForm', () => {
     await waitFor(() => {
       expect(mockMutateAsyncCreate).toHaveBeenCalledWith({
         nome: 'Viagem para Europa',
-        valor_objetivo: 8000,
+        target_cents: 800000,
         prazo: '2024-12-31',
         valor_atual: 0,
         user_id: 'test-user-id'
@@ -202,7 +202,7 @@ describe('GoalForm', () => {
         id: 'goal-1',
         data: {
           nome: 'Objetivo Existente',
-          valor_objetivo: 7500,
+          target_cents: 750000,
           prazo: '2024-06-30'
         }
       });
@@ -315,7 +315,7 @@ describe('GoalForm', () => {
     await waitFor(() => {
         expect(mockMutateAsyncCreate).toHaveBeenCalledWith({
            nome: 'Objetivo Teste',
-           valor_objetivo: 1000,
+           target_cents: 100000,
            prazo: '2025-12-31',
            valor_atual: 0,
            user_id: 'test-user-id'

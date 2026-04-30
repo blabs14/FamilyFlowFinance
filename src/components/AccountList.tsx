@@ -16,7 +16,7 @@ export type Account = {
   id: string;
   nome: string;
   tipo: string;
-  saldo?: number;
+  amount_cents?: number;
   created_at: string;
 };
 
@@ -66,10 +66,7 @@ const AccountList = ({ onEdit }: AccountListProps) => {
 
 
   const getAvailableBalance = (account: Account) => {
-    const balance = account.saldo || 0;
-    // Com dupla-entrada ativa nas alocações para objetivos, o saldo da conta de origem já reflecte a saída
-    // Não subtrair novamente o valor reservado para evitar dupla subtração visual
-    return balance;
+    return (account.amount_cents || 0) / 100;
   };
 
   const uniqueTypes = useMemo(() => {
@@ -152,7 +149,7 @@ const AccountList = ({ onEdit }: AccountListProps) => {
               logger.debug('[AccountList] Conta:', {
                 accountId: acc.id,
                 nome: acc.nome,
-                saldo: acc.saldo || 0,
+                amount_cents: acc.amount_cents || 0,
                 reserved,
                 available
               });
@@ -164,7 +161,7 @@ const AccountList = ({ onEdit }: AccountListProps) => {
                     <Badge variant="outline">{acc.tipo}</Badge>
                   </TableCell>
                   <TableCell className="font-mono">
-                    {formatCurrency(acc.saldo || 0, 'pt-PT', 'EUR')}
+                    {formatCurrency((acc.amount_cents || 0) / 100, 'pt-PT', 'EUR')}
                   </TableCell>
                   <TableCell className="font-mono text-orange-600">
                     {reserved > 0 ? formatCurrency(reserved, 'pt-PT', 'EUR') : '-'}

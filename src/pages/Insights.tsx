@@ -185,7 +185,7 @@ export default function Insights() {
     const activeGoals = goals.filter(goal => goal.ativa);
     const goalsProgress = activeGoals.map(goal => {
       const valorAtual = Number(goal.valor_atual) || 0;
-      const valorObjetivo = Number(goal.valor_objetivo) || 1;
+      const valorObjetivo = (goal as any).target_cents != null ? (goal as any).target_cents / 100 : Number(goal.valor_objetivo) || 1;
       const progress = (valorAtual / valorObjetivo) * 100;
       return { ...goal, progress } as { progress: number } & typeof goal;
     });
@@ -250,7 +250,7 @@ export default function Insights() {
     const nearCompletionGoal = goalsProgress.find(goal => (goal as { progress: number }).progress >= 80 && (goal as { progress: number }).progress < 100);
     if (nearCompletionGoal) {
       const g = nearCompletionGoal as GoalLike & { progress: number };
-      const objetivo = Number(g.valor_objetivo ?? 0);
+      const objetivo = (g as any).target_cents != null ? (g as any).target_cents / 100 : Number(g.valor_objetivo ?? 0);
       const atual = Number(g.valor_atual ?? 0);
       const remaining = objetivo - atual;
       list.push({
@@ -499,7 +499,7 @@ export default function Insights() {
     try {
       const payload = {
         nome: goalForm.nome,
-        valor_objetivo: Number(goalForm.valor_objetivo),
+        target_cents: Math.round(Number(goalForm.valor_objetivo) * 100),
         prazo: goalForm.prazo,
         user_id: user?.id || ''
       };

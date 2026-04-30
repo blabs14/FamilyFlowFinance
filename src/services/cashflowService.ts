@@ -107,7 +107,7 @@ export class CashflowService {
       account_id: account.id,
       account_name: account.nome,
       account_type: account.tipo,
-      current_balance_cents: Math.round((account.saldo || 0) * 100),
+      current_balance_cents: (account as any).amount_cents || 0,
       currency: 'EUR',
       scope: account.family_id ? 'family' : 'personal'
     }));

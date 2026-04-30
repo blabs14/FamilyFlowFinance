@@ -45,7 +45,7 @@ export const useDashboardData = () => {
         const budgetSpentPctFromRPC = rpc.budget_spent_percentage != null ? Number(rpc.budget_spent_percentage) : null;
 
         // Fallbacks locais
-        const totalBalanceLocal = accounts.reduce((sum, account) => sum + (Number(account.saldo) || 0), 0);
+        const totalBalanceLocal = accounts.reduce((sum, account) => sum + ((Number((account as any).amount_cents) || 0) / 100), 0);
         const totalBalance = totalBalanceFromRPC !== 0 ? totalBalanceFromRPC : totalBalanceLocal;
 
         const currentMonth = new Date().getMonth();
