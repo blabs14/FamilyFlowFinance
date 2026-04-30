@@ -112,34 +112,37 @@ export type Database = {
       }
       budgets: {
         Row: {
+          amount_cents: number
           categoria_id: string
           created_at: string | null
+          currency: string
           family_id: string | null
           id: string
           mes: string
           updated_at: string | null
           user_id: string
-          valor: number
         }
         Insert: {
+          amount_cents?: number
           categoria_id: string
           created_at?: string | null
+          currency?: string
           family_id?: string | null
           id?: string
           mes: string
           updated_at?: string | null
           user_id: string
-          valor: number
         }
         Update: {
+          amount_cents?: number
           categoria_id?: string
           created_at?: string | null
+          currency?: string
           family_id?: string | null
           id?: string
           mes?: string
           updated_at?: string | null
           user_id?: string
-          valor?: number
         }
         Relationships: [
           {
@@ -165,6 +168,7 @@ export type Database = {
           family_id: string | null
           icone: string | null
           id: string
+          is_system: boolean
           nome: string
           normalized_nome: string | null
           tipo: string | null
@@ -176,6 +180,7 @@ export type Database = {
           family_id?: string | null
           icone?: string | null
           id?: string
+          is_system?: boolean
           nome: string
           normalized_nome?: string | null
           tipo?: string | null
@@ -187,6 +192,7 @@ export type Database = {
           family_id?: string | null
           icone?: string | null
           id?: string
+          is_system?: boolean
           nome?: string
           normalized_nome?: string | null
           tipo?: string | null
@@ -696,11 +702,11 @@ export type Database = {
           nome: string
           prazo: string | null
           status: string | null
+          target_cents: number
           updated_at: string | null
           user_id: string
           valor_atual: number | null
           valor_meta: number | null
-          valor_objetivo: number
         }
         Insert: {
           account_id?: string | null
@@ -711,11 +717,11 @@ export type Database = {
           nome: string
           prazo?: string | null
           status?: string | null
+          target_cents?: number
           updated_at?: string | null
           user_id: string
           valor_atual?: number | null
           valor_meta?: number | null
-          valor_objetivo?: number
         }
         Update: {
           account_id?: string | null
@@ -726,11 +732,11 @@ export type Database = {
           nome?: string
           prazo?: string | null
           status?: string | null
+          target_cents?: number
           updated_at?: string | null
           user_id?: string
           valor_atual?: number | null
           valor_meta?: number | null
-          valor_objetivo?: number
         }
         Relationships: [
           {
@@ -2984,6 +2990,7 @@ export type Database = {
           status_objetivo: string | null
           total_alocado_historico: number | null
           total_alocado_real: number | null
+          user_id: string | null
           valor_objetivo: number | null
         }
         Relationships: []
@@ -2998,6 +3005,7 @@ export type Database = {
           nome: string | null
           prazo: string | null
           status: string | null
+          target_cents: number | null
           updated_at: string | null
           user_id: string | null
           valor_atual: number | null
@@ -3388,14 +3396,15 @@ export type Database = {
       get_family_budgets: {
         Args: { p_user_id: string }
         Returns: {
+          amount_cents: number
           categoria_id: string
           created_at: string | null
+          currency: string
           family_id: string | null
           id: string
           mes: string
           updated_at: string | null
           user_id: string
-          valor: number
         }[]
         SetofOptions: {
           from: "*"

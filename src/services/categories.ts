@@ -33,6 +33,14 @@ export const getCategories = async (userId?: string, tipo?: string): Promise<{ d
   }
 };
 
+export const getSystemCategories = async () => {
+  return supabase
+    .from('categories')
+    .select('*')
+    .eq('is_system', true)
+    .order('nome');
+};
+
 export const getCategoriesDomain = async (userId?: string, tipo?: string): Promise<{ data: CategoryDomain[]; error: unknown }> => {
   const { data, error } = await getCategories(userId, tipo);
   return { data: (data || []).map(row => mapCategoryRowToDomain(row)), error };
