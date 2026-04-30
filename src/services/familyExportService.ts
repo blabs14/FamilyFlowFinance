@@ -279,9 +279,9 @@ export const exportFamilyToPDF = async (
       b.profiles?.nome || 'N/A',
       b.categories?.nome || 'N/A',
       b.mes,
-      Number(b.valor).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })
+      ((b as any).amount_cents != null ? (b as any).amount_cents / 100 : Number((b as any).valor) || 0).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })
     ]);
-    
+
     autoTable(doc, {
       head: [['Membro', 'Categoria', 'Mês', 'Valor']],
       body: budgetData,
@@ -389,7 +389,7 @@ export const exportFamilyToCSV = (
     csvData.push('Orçamentos');
     csvData.push('Membro,Categoria,Mês,Valor');
     data.budgets.forEach(b => {
-      csvData.push(`${b.profiles?.nome || 'N/A'},${b.categories?.nome || 'N/A'},${b.mes},${Number(b.valor).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}`);
+      csvData.push(`${b.profiles?.nome || 'N/A'},${b.categories?.nome || 'N/A'},${b.mes},${((b as any).amount_cents != null ? (b as any).amount_cents / 100 : Number((b as any).valor) || 0).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}`);
     });
     csvData.push('');
   }
@@ -470,11 +470,11 @@ export const exportFamilyToExcel = async (
         b.profiles?.nome || 'N/A',
         b.categories?.nome || 'N/A',
         b.mes,
-        Number(b.valor)
+        (b as any).amount_cents != null ? (b as any).amount_cents / 100 : Number((b as any).valor) || 0
       ]);
     });
   }
-  
+
   // Objetivos
   if (options.includeGoals && data.goals.length > 0) {
     const goalSheet = workbook.addWorksheet('Objetivos');
