@@ -7,6 +7,7 @@ dotenv.config({ path: '.env' });
 
 export default defineConfig({
   testDir: 'tests/e2e/playwright',
+  globalSetup: './tests/e2e/playwright/setup/global-setup.ts',
   fullyParallel: false,           // flows partilham estado em staging → serializar
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
