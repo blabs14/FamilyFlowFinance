@@ -174,6 +174,7 @@ export type Database = {
           is_system: boolean
           nome: string
           normalized_nome: string | null
+          parent_id: string | null
           tipo: string | null
           user_id: string | null
         }
@@ -186,6 +187,7 @@ export type Database = {
           is_system?: boolean
           nome: string
           normalized_nome?: string | null
+          parent_id?: string | null
           tipo?: string | null
           user_id?: string | null
         }
@@ -198,10 +200,19 @@ export type Database = {
           is_system?: boolean
           nome?: string
           normalized_nome?: string | null
+          parent_id?: string | null
           tipo?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       category_customizations: {
         Row: {
@@ -2840,12 +2851,113 @@ export type Database = {
         }
         Relationships: []
       }
+      transaction_attachments: {
+        Row: {
+          id: string
+          mime_type: string | null
+          original_filename: string | null
+          size_bytes: number | null
+          storage_path: string
+          transaction_id: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          id?: string
+          mime_type?: string | null
+          original_filename?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          transaction_id: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          id?: string
+          mime_type?: string | null
+          original_filename?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          transaction_id?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_attachments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_attachments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions_detailed"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transaction_splits: {
+        Row: {
+          amount_cents: number
+          categoria_id: string
+          created_at: string
+          description: string | null
+          id: string
+          order_index: number
+          transaction_id: string
+        }
+        Insert: {
+          amount_cents: number
+          categoria_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_index?: number
+          transaction_id: string
+        }
+        Update: {
+          amount_cents?: number
+          categoria_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_index?: number
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_splits_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_splits_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_splits_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions_detailed"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           account_id: string
           amount_cents: number
-          categoria_id: string
+          categoria_id: string | null
           created_at: string | null
+          created_by: string | null
           credit_card_id: string | null
           currency: string
           data: string
@@ -2854,17 +2966,18 @@ export type Database = {
           family_id: string | null
           goal_id: string | null
           id: string
-          operation_id: string | null
+          operation_id: string
           reversal_of: string | null
           tipo: string
-          transfer_group_id: string | null
+          transfer_id: string | null
           user_id: string
         }
         Insert: {
           account_id: string
           amount_cents?: number
-          categoria_id: string
+          categoria_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           credit_card_id?: string | null
           currency?: string
           data: string
@@ -2873,17 +2986,18 @@ export type Database = {
           family_id?: string | null
           goal_id?: string | null
           id?: string
-          operation_id?: string | null
+          operation_id?: string
           reversal_of?: string | null
           tipo: string
-          transfer_group_id?: string | null
+          transfer_id?: string | null
           user_id: string
         }
         Update: {
           account_id?: string
           amount_cents?: number
-          categoria_id?: string
+          categoria_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           credit_card_id?: string | null
           currency?: string
           data?: string
@@ -2892,10 +3006,10 @@ export type Database = {
           family_id?: string | null
           goal_id?: string | null
           id?: string
-          operation_id?: string | null
+          operation_id?: string
           reversal_of?: string | null
           tipo?: string
-          transfer_group_id?: string | null
+          transfer_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -2974,6 +3088,141 @@ export type Database = {
             columns: ["reversal_of"]
             isOneToOne: false
             referencedRelation: "transactions_detailed"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_transfer_id_fkey"
+            columns: ["transfer_id"]
+            isOneToOne: false
+            referencedRelation: "transfers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transfers: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          date: string
+          description: string | null
+          event_time: string
+          family_id: string | null
+          from_account_id: string | null
+          from_credit_card_id: string | null
+          id: string
+          operation_id: string
+          reversal_of: string | null
+          to_account_id: string | null
+          to_credit_card_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          date: string
+          description?: string | null
+          event_time?: string
+          family_id?: string | null
+          from_account_id?: string | null
+          from_credit_card_id?: string | null
+          id?: string
+          operation_id?: string
+          reversal_of?: string | null
+          to_account_id?: string | null
+          to_credit_card_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          date?: string
+          description?: string | null
+          event_time?: string
+          family_id?: string | null
+          from_account_id?: string | null
+          from_credit_card_id?: string | null
+          id?: string
+          operation_id?: string
+          reversal_of?: string | null
+          to_account_id?: string | null
+          to_credit_card_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transfers_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfers_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "transfers_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances_v1"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "transfers_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfers_from_credit_card_id_fkey"
+            columns: ["from_credit_card_id"]
+            isOneToOne: false
+            referencedRelation: "credit_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfers_reversal_of_fkey"
+            columns: ["reversal_of"]
+            isOneToOne: false
+            referencedRelation: "transfers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfers_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "transfers_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances_v1"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "transfers_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfers_to_credit_card_id_fkey"
+            columns: ["to_credit_card_id"]
+            isOneToOne: false
+            referencedRelation: "credit_cards"
             referencedColumns: ["id"]
           },
         ]
@@ -3718,8 +3967,9 @@ export type Database = {
         Returns: {
           account_id: string
           amount_cents: number
-          categoria_id: string
+          categoria_id: string | null
           created_at: string | null
+          created_by: string | null
           credit_card_id: string | null
           currency: string
           data: string
@@ -3728,10 +3978,10 @@ export type Database = {
           family_id: string | null
           goal_id: string | null
           id: string
-          operation_id: string | null
+          operation_id: string
           reversal_of: string | null
           tipo: string
-          transfer_group_id: string | null
+          transfer_id: string | null
           user_id: string
         }[]
         SetofOptions: {
@@ -3893,8 +4143,9 @@ export type Database = {
         Returns: {
           account_id: string
           amount_cents: number
-          categoria_id: string
+          categoria_id: string | null
           created_at: string | null
+          created_by: string | null
           credit_card_id: string | null
           currency: string
           data: string
@@ -3903,10 +4154,10 @@ export type Database = {
           family_id: string | null
           goal_id: string | null
           id: string
-          operation_id: string | null
+          operation_id: string
           reversal_of: string | null
           tipo: string
-          transfer_group_id: string | null
+          transfer_id: string | null
           user_id: string
         }[]
         SetofOptions: {
@@ -4240,6 +4491,7 @@ export type Database = {
         Returns: undefined
       }
       restore_family_backup: { Args: { p_backup_id: string }; Returns: Json }
+      reverse_transaction: { Args: { p_tx_id: string }; Returns: Json }
       rr_cancel_at_period_end: { Args: { rule_id: string }; Returns: undefined }
       rr_pause_rule: { Args: { rule_id: string }; Returns: undefined }
       rr_resume_rule: { Args: { rule_id: string }; Returns: undefined }

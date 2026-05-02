@@ -61,6 +61,18 @@ export type GoalProgressRPC = Database['public']['Functions']['get_user_goal_pro
 // Tipo combinado para contas com saldos (usado nos componentes)
 export type AccountWithBalances = AccountWithBalancesRPC;
 
+// Unit 6: novos tipos
+export type Transfer = Database['public']['Tables']['transfers']['Row'];
+export type TransferInsert = Database['public']['Tables']['transfers']['Insert'];
+export type TransferUpdate = Database['public']['Tables']['transfers']['Update'];
+
+export type TransactionSplit = Database['public']['Tables']['transaction_splits']['Row'];
+export type TransactionSplitInsert = Database['public']['Tables']['transaction_splits']['Insert'];
+export type TransactionSplitUpdate = Database['public']['Tables']['transaction_splits']['Update'];
+
+export type TransactionAttachment = Database['public']['Tables']['transaction_attachments']['Row'];
+export type TransactionAttachmentInsert = Database['public']['Tables']['transaction_attachments']['Insert'];
+
 // Tipos estendidos para formulários
 export type AccountUpdateExtended = AccountUpdate & {
   saldoAtual?: number;

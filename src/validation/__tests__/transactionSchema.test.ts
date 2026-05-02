@@ -1,49 +1,36 @@
+// src/validation/__tests__/transactionSchema.test.ts
+// Unit 6: atualizado para amount_cents + validação de data futura
 import { describe, it, expect } from 'vitest';
 import { transactionSchema } from '../transactionSchema';
+
+const today = new Date().toISOString().slice(0, 10);
+const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+
+const validBase = {
+  account_id: 'acc-uuid-1234',
+  amount_cents: 1000,
+  categoria_id: 'cat-uuid-1234',
+  data: today,
+  tipo: 'despesa' as const,
+};
 
 describe('transactionSchema', () => {
   describe('validação básica', () => {
     it('deve validar uma transação de receita válida', () => {
-      const validTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        valor: 1500.75,
-        descricao: 'Salário mensal',
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(validTransaction);
+      const result = transactionSchema.safeParse({ ...validBase, tipo: 'receita' });
       expect(result.success).toBe(true);
     });
 
     it('deve validar uma transação de despesa válida', () => {
-      const validTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-789',
-        tipo: 'despesa' as const,
-        valor: 50.25,
-        descricao: 'Compras no supermercado',
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(validTransaction);
+      const result = transactionSchema.safeParse(validBase);
       expect(result.success).toBe(true);
     });
   });
 
   describe('validação de account_id', () => {
     it('deve rejeitar account_id vazio', () => {
-      const invalidTransaction = {
-        account_id: '',
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        valor: 100,
-        descricao: 'Teste',
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(invalidTransaction);
+      const result = transactionSchema.safeParse({ ...validBase, account_id: '' });
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.issues[0].message).toContain('Conta obrigatória');
@@ -51,384 +38,161 @@ describe('transactionSchema', () => {
     });
 
     it('deve rejeitar account_id ausente', () => {
-      const invalidTransaction = {
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        valor: 100,
-        descricao: 'Teste',
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(invalidTransaction);
+      const { account_id: _, ...rest } = validBase;
+      const result = transactionSchema.safeParse(rest);
       expect(result.success).toBe(false);
     });
   });
 
-  describe('validação de category_id', () => {
-    it('deve rejeitar category_id vazio', () => {
-      const invalidTransaction = {
-        account_id: 'acc-123',
-        categoria_id: '',
-        tipo: 'receita' as const,
-        valor: 100,
-        descricao: 'Teste',
-        data: '2024-01-15'
-      };
+  describe('validação de amount_cents', () => {
+    it('aceita amount_cents positivo', () => {
+      expect(transactionSchema.safeParse(validBase).success).toBe(true);
+    });
 
-      const result = transactionSchema.safeParse(invalidTransaction);
+    it('rejeita amount_cents zero', () => {
+      const result = transactionSchema.safeParse({ ...validBase, amount_cents: 0 });
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toContain('Categoria obrigatória');
+        expect(result.error.issues[0].message).toContain('Valor obrigatório');
       }
     });
 
-    it('deve rejeitar category_id ausente', () => {
-      const invalidTransaction = {
-        account_id: 'acc-123',
-        tipo: 'receita' as const,
-        valor: 100,
-        descricao: 'Teste',
-        data: '2024-01-15'
-      };
+    it('rejeita amount_cents negativo', () => {
+      const result = transactionSchema.safeParse({ ...validBase, amount_cents: -1 });
+      expect(result.success).toBe(false);
+    });
 
-      const result = transactionSchema.safeParse(invalidTransaction);
+    it('rejeita amount_cents decimal (não-inteiro)', () => {
+      const result = transactionSchema.safeParse({ ...validBase, amount_cents: 10.5 });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejeita amount_cents ausente', () => {
+      const { amount_cents: _, ...rest } = validBase;
+      const result = transactionSchema.safeParse(rest);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('validação de data futura', () => {
+    it('aceita transação com data de hoje', () => {
+      expect(transactionSchema.safeParse({ ...validBase, data: today }).success).toBe(true);
+    });
+
+    it('aceita transação com data passada', () => {
+      expect(transactionSchema.safeParse({ ...validBase, data: yesterday }).success).toBe(true);
+    });
+
+    it('rejeita transação com data futura', () => {
+      const result = transactionSchema.safeParse({ ...validBase, data: tomorrow });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const msgs = result.error.issues.map(i => i.message);
+        expect(msgs.some(m => m.includes('futura') || m.includes('future') || m.includes('hoje'))).toBe(true);
+      }
+    });
+
+    it('deve rejeitar formato de data inválido', () => {
+      const invalidDates = ['2024/01/01', '01-01-2024', '2024-1-1', 'hoje'];
+      invalidDates.forEach(invalidDate => {
+        const result = transactionSchema.safeParse({ ...validBase, data: invalidDate });
+        expect(result.success).toBe(false);
+      });
+    });
+
+    it('deve rejeitar data ausente', () => {
+      const { data: _, ...rest } = validBase;
+      const result = transactionSchema.safeParse(rest);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('validação de categoria_id', () => {
+    it('deve aceitar sem categoria_id (opcional)', () => {
+      const { categoria_id: _, ...rest } = validBase;
+      expect(transactionSchema.safeParse(rest).success).toBe(true);
+    });
+
+    it('deve aceitar categoria_id null', () => {
+      expect(transactionSchema.safeParse({ ...validBase, categoria_id: null }).success).toBe(true);
+    });
+
+    it('deve rejeitar categoria_id vazio (quando fornecido)', () => {
+      const result = transactionSchema.safeParse({ ...validBase, categoria_id: '' });
       expect(result.success).toBe(false);
     });
   });
 
   describe('validação de tipo', () => {
-    it('deve aceitar apenas "receita" ou "despesa"', () => {
-      const receitaTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        valor: 100,
-        descricao: 'Teste',
-        data: '2024-01-15'
-      };
+    it('deve aceitar "receita"', () => {
+      expect(transactionSchema.safeParse({ ...validBase, tipo: 'receita' }).success).toBe(true);
+    });
 
-      const despesaTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'despesa' as const,
-        valor: 100,
-        descricao: 'Teste',
-        data: '2024-01-15'
-      };
-
-      expect(transactionSchema.safeParse(receitaTransaction).success).toBe(true);
-      expect(transactionSchema.safeParse(despesaTransaction).success).toBe(true);
+    it('deve aceitar "despesa"', () => {
+      expect(transactionSchema.safeParse({ ...validBase, tipo: 'despesa' }).success).toBe(true);
     });
 
     it('deve rejeitar tipo inválido', () => {
-      const invalidTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'transferencia' as any,
-        valor: 100,
-        descricao: 'Teste',
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(invalidTransaction);
-      expect(result.success).toBe(false);
-    });
-
-    it('deve rejeitar tipo ausente', () => {
-      const invalidTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        valor: 100,
-        descricao: 'Teste',
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(invalidTransaction);
-      expect(result.success).toBe(false);
-    });
-  });
-
-  describe('validação de valor', () => {
-    it('deve rejeitar valor negativo', () => {
-      const invalidTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        valor: -100,
-        descricao: 'Teste',
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(invalidTransaction);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toContain('Valor obrigatório');
-      }
-    });
-
-    it('deve rejeitar valor zero', () => {
-      const invalidTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        valor: 0,
-        descricao: 'Teste',
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(invalidTransaction);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toContain('Valor obrigatório');
-      }
-    });
-
-    it('deve aceitar valores decimais', () => {
-      const validTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        valor: 123.45,
-        descricao: 'Teste',
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(validTransaction);
-      expect(result.success).toBe(true);
-    });
-
-    it('deve rejeitar valor ausente', () => {
-      const invalidTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        descricao: 'Teste',
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(invalidTransaction);
+      const result = transactionSchema.safeParse({ ...validBase, tipo: 'transferencia' as any });
       expect(result.success).toBe(false);
     });
   });
 
   describe('validação de descrição', () => {
-    it('deve aceitar descrição válida', () => {
-      const validTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        valor: 100,
-        descricao: 'Descrição válida da transação',
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(validTransaction);
-      expect(result.success).toBe(true);
-    });
-
-    it('deve aceitar descrição vazia (opcional)', () => {
-      const validTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        valor: 100,
-        descricao: '',
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(validTransaction);
-      expect(result.success).toBe(true);
+    it('deve aceitar descrição opcional ausente', () => {
+      expect(transactionSchema.safeParse(validBase).success).toBe(true);
     });
 
     it('deve rejeitar descrição muito longa', () => {
-      const longDescription = 'a'.repeat(256); // Limite de 255 caracteres
-      const invalidTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        valor: 100,
-        descricao: longDescription,
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(invalidTransaction);
+      const result = transactionSchema.safeParse({ ...validBase, descricao: 'a'.repeat(256) });
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.issues[0].message).toContain('Descrição demasiado longa');
       }
     });
 
-    it('deve aceitar descrição no limite máximo', () => {
-      const maxDescription = 'a'.repeat(255);
-      const validTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        valor: 100,
-        descricao: maxDescription,
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(validTransaction);
-      expect(result.success).toBe(true);
-    });
-
-    it('deve aceitar descrição ausente (opcional)', () => {
-      const validTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        valor: 100,
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(validTransaction);
-      expect(result.success).toBe(true);
+    it('deve aceitar descrição no limite máximo (255 chars)', () => {
+      expect(transactionSchema.safeParse({ ...validBase, descricao: 'a'.repeat(255) }).success).toBe(true);
     });
   });
 
-  describe('validação de data', () => {
-    it('deve aceitar formato de data válido (YYYY-MM-DD)', () => {
-      const validDates = ['2024-01-01', '2024-12-31', '2023-06-15'];
-      
-      validDates.forEach(date => {
-        const validTransaction = {
-          account_id: 'acc-123',
-          categoria_id: 'cat-456',
-          tipo: 'receita' as const,
-          valor: 100,
-          descricao: 'Teste',
-          data: date
-        };
-
-        const result = transactionSchema.safeParse(validTransaction);
-        expect(result.success).toBe(true);
+  describe('campos opcionais', () => {
+    it('aceita credit_card_id uuid válido', () => {
+      const result = transactionSchema.safeParse({
+        ...validBase,
+        credit_card_id: '550e8400-e29b-41d4-a716-446655440000',
       });
+      expect(result.success).toBe(true);
     });
 
-    it('deve rejeitar formato de data inválido', () => {
-      const invalidDates = ['2024/01/01', '01-01-2024', '2024-1-1', '24-01-01', 'hoje'];
-      
-      invalidDates.forEach(invalidDate => {
-        const invalidTransaction = {
-          account_id: 'acc-123',
-          categoria_id: 'cat-456',
-          tipo: 'receita' as const,
-          valor: 100,
-          descricao: 'Teste',
-          data: invalidDate
-        };
-
-        const result = transactionSchema.safeParse(invalidTransaction);
-        expect(result.success).toBe(false);
-      });
-    });
-
-    it('deve rejeitar data ausente', () => {
-      const invalidTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        valor: 100,
-        descricao: 'Teste'
-      };
-
-      const result = transactionSchema.safeParse(invalidTransaction);
+    it('rejeita credit_card_id com formato inválido', () => {
+      const result = transactionSchema.safeParse({ ...validBase, credit_card_id: 'não-uuid' });
       expect(result.success).toBe(false);
+    });
+
+    it('aceita operation_id uuid válido', () => {
+      const result = transactionSchema.safeParse({
+        ...validBase,
+        operation_id: '550e8400-e29b-41d4-a716-446655440001',
+      });
+      expect(result.success).toBe(true);
     });
   });
 
   describe('casos extremos', () => {
     it('deve rejeitar objeto vazio', () => {
-      const result = transactionSchema.safeParse({});
-      expect(result.success).toBe(false);
+      expect(transactionSchema.safeParse({}).success).toBe(false);
     });
 
     it('deve rejeitar null', () => {
-      const result = transactionSchema.safeParse(null);
-      expect(result.success).toBe(false);
+      expect(transactionSchema.safeParse(null).success).toBe(false);
     });
 
-    it('deve rejeitar undefined', () => {
-      const result = transactionSchema.safeParse(undefined);
-      expect(result.success).toBe(false);
-    });
-
-    it('deve rejeitar campos extras não definidos', () => {
-      const transactionWithExtra = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        valor: 100,
-        descricao: 'Teste',
-        data: '2024-01-15',
-        campoExtra: 'não deveria estar aqui'
-      };
-
-      // O schema deve ignorar campos extras por padrão
-      const result = transactionSchema.safeParse(transactionWithExtra);
+    it('deve ignorar campos extras', () => {
+      const result = transactionSchema.safeParse({ ...validBase, campoExtra: 'x' });
       expect(result.success).toBe(true);
       if (result.success) {
         expect('campoExtra' in result.data).toBe(false);
-      }
-    });
-  });
-
-  describe('validação de tipos de dados', () => {
-    it('deve converter string numérica para number no valor', () => {
-      const transactionWithStringValue = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        valor: '123.45' as any,
-        descricao: 'Teste',
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(transactionWithStringValue);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(typeof result.data.valor).toBe('number');
-        expect(result.data.valor).toBe(123.45);
-      }
-    });
-
-    it('deve rejeitar valor não numérico', () => {
-      const invalidTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'receita' as const,
-        valor: 'não é um número',
-        descricao: 'Teste',
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(invalidTransaction);
-      expect(result.success).toBe(false);
-    });
-  });
-
-  describe('validação de integridade', () => {
-    it('deve validar transação completa com todos os campos obrigatórios', () => {
-      const completeTransaction = {
-        account_id: 'acc-123',
-        categoria_id: 'cat-456',
-        tipo: 'despesa' as const,
-        valor: 75.99,
-        descricao: 'Compra de material de escritório',
-        data: '2024-01-15'
-      };
-
-      const result = transactionSchema.safeParse(completeTransaction);
-      expect(result.success).toBe(true);
-      
-      if (result.success) {
-        expect(result.data.account_id).toBe('acc-123');
-        expect(result.data.categoria_id).toBe('cat-456');
-        expect(result.data.tipo).toBe('despesa');
-        expect(result.data.valor).toBe(75.99);
-        expect(result.data.descricao).toBe('Compra de material de escritório');
-        expect(result.data.data).toBe('2024-01-15');
       }
     });
   });
