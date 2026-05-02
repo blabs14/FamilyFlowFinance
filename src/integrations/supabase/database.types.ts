@@ -113,37 +113,140 @@ export type Database = {
         }
         Relationships: []
       }
+      budget_instances: {
+        Row: {
+          budget_cents: number
+          budget_id: string
+          carried_over_cents: number
+          created_at: string
+          currency: string
+          id: string
+          period_end: string
+          period_key: string
+          period_start: string
+          spent_cents: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          budget_cents: number
+          budget_id: string
+          carried_over_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          period_end: string
+          period_key: string
+          period_start: string
+          spent_cents?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          budget_cents?: number
+          budget_id?: string
+          carried_over_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          period_end?: string
+          period_key?: string
+          period_start?: string
+          spent_cents?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_instances_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_personal_targets: {
+        Row: {
+          budget_id: string
+          created_at: string
+          target_cents: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_id: string
+          created_at?: string
+          target_cents: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_id?: string
+          created_at?: string
+          target_cents?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_personal_targets_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       budgets: {
         Row: {
           amount_cents: number
+          cap_type: string
           categoria_id: string
           created_at: string | null
           currency: string
           family_id: string | null
           id: string
+          is_template: boolean
           mes: string
+          parent_id: string | null
+          period_type: string
+          rollover_mode: string
+          target_goal_id: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           amount_cents?: number
+          cap_type?: string
           categoria_id: string
           created_at?: string | null
           currency?: string
           family_id?: string | null
           id?: string
+          is_template?: boolean
           mes: string
+          parent_id?: string | null
+          period_type?: string
+          rollover_mode?: string
+          target_goal_id?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           amount_cents?: number
+          cap_type?: string
           categoria_id?: string
           created_at?: string | null
           currency?: string
           family_id?: string | null
           id?: string
+          is_template?: boolean
           mes?: string
+          parent_id?: string | null
+          period_type?: string
+          rollover_mode?: string
+          target_goal_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -160,6 +263,34 @@ export type Database = {
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_target_goal_id_fkey"
+            columns: ["target_goal_id"]
+            isOneToOne: false
+            referencedRelation: "goal_progress"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_target_goal_id_fkey"
+            columns: ["target_goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_target_goal_id_fkey"
+            columns: ["target_goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals_with_balance"
             referencedColumns: ["id"]
           },
         ]
@@ -1016,6 +1147,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      inbox_items: {
+        Row: {
+          body: string | null
+          completed_at: string | null
+          created_at: string
+          due_at: string
+          family_id: string | null
+          id: string
+          snoozed_until: string | null
+          source_id: string
+          source_type: string
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_at: string
+          family_id?: string | null
+          id?: string
+          snoozed_until?: string | null
+          source_id: string
+          source_type: string
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string
+          family_id?: string | null
+          id?: string
+          snoozed_until?: string | null
+          source_id?: string
+          source_type?: string
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_items_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ingestion_files: {
         Row: {
@@ -3371,22 +3555,53 @@ export type Database = {
       budget_progress: {
         Row: {
           budget_id: string | null
+          budget_instance_id: string | null
+          cap_type: string | null
           categoria_cor: string | null
           categoria_id: string | null
           categoria_nome: string | null
-          mes: string | null
+          family_id: string | null
+          is_template: boolean | null
+          parent_id: string | null
+          period_end: string | null
+          period_key: string | null
+          period_start: string | null
+          period_type: string | null
           progresso_percentual: number | null
+          rollover_mode: string | null
+          status: string | null
           user_id: string | null
-          valor_gasto: number | null
-          valor_orcamento: number | null
-          valor_restante: number | null
+          valor_gasto_cents: number | null
+          valor_orcamento_cents: number | null
+          valor_restante_cents: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "budget_instances_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "budgets_categoria_id_fkey"
             columns: ["categoria_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
             referencedColumns: ["id"]
           },
         ]
@@ -3619,6 +3834,7 @@ export type Database = {
         }
         Returns: string
       }
+      check_budget_thresholds: { Args: never; Returns: Json }
       cleanup_all_old_transfer_transactions: { Args: never; Returns: Json }
       cleanup_expired_backups: { Args: never; Returns: number }
       cleanup_old_transfer_transactions: { Args: never; Returns: Json }
@@ -3793,6 +4009,43 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_budget_status: {
+        Args: { p_instance_id: string }
+        Returns: {
+          is_projected_over: boolean
+          percent_used: number
+          projected_cents: number
+          remaining_cents: number
+          spent_cents: number
+        }[]
+      }
+      get_budgets: {
+        Args: {
+          p_family_id?: string
+          p_period_key?: string
+          p_period_type?: string
+        }
+        Returns: {
+          budget_cents: number
+          budget_id: string
+          cap_type: string
+          categoria_cor: string
+          categoria_id: string
+          categoria_nome: string
+          instance_id: string
+          is_projected_over: boolean
+          parent_id: string
+          period_end: string
+          period_key: string
+          period_start: string
+          period_type: string
+          progresso_percentual: number
+          remaining_cents: number
+          rollover_mode: string
+          spent_cents: number
+          status: string
+        }[]
+      }
       get_credit_card_summary:
         | {
             Args: { p_account_id: string }
@@ -3833,12 +4086,18 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: {
           amount_cents: number
+          cap_type: string
           categoria_id: string
           created_at: string | null
           currency: string
           family_id: string | null
           id: string
+          is_template: boolean
           mes: string
+          parent_id: string | null
+          period_type: string
+          rollover_mode: string
+          target_goal_id: string | null
           updated_at: string | null
           user_id: string
         }[]
@@ -4477,6 +4736,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      process_period_rollover: {
+        Args: { p_instance_id: string }
+        Returns: Json
+      }
       refresh_staging_dedupe: { Args: { p_job_id: string }; Returns: undefined }
       remove_family_member: {
         Args: { p_family_id: string; p_member_user_id: string }
@@ -4496,6 +4759,10 @@ export type Database = {
       rr_pause_rule: { Args: { rule_id: string }; Returns: undefined }
       rr_resume_rule: { Args: { rule_id: string }; Returns: undefined }
       rr_skip_next: { Args: { rule_id: string }; Returns: undefined }
+      run_monthly_budget_rollover: {
+        Args: { p_target_month?: string }
+        Returns: Json
+      }
       run_recurrents_now: { Args: never; Returns: undefined }
       set_account_balance: {
         Args: { p_account_id: string; p_new_balance: number; p_user_id: string }

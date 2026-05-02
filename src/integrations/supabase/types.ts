@@ -79,5 +79,17 @@ export type AccountUpdateExtended = AccountUpdate & {
   ajusteSaldo?: number;
 };
 
+// Unit 8: novos tipos
+export type BudgetInstance = Database['public']['Tables']['budget_instances']['Row'];
+export type BudgetInstanceInsert = Database['public']['Tables']['budget_instances']['Insert'];
+export type BudgetInstanceUpdate = Database['public']['Tables']['budget_instances']['Update'];
+
+export type BudgetPersonalTarget = Database['public']['Tables']['budget_personal_targets']['Row'];
+export type BudgetPersonalTargetInsert = Database['public']['Tables']['budget_personal_targets']['Insert'];
+
+export type InboxItem = Database['public']['Tables']['inbox_items']['Row'];
+export type InboxItemInsert = Database['public']['Tables']['inbox_items']['Insert'];
+export type InboxItemUpdate = Database['public']['Tables']['inbox_items']['Update'];
+
 // Tipos auxiliares
 export type Json = Database['public']['Tables']['accounts']['Row']['created_at'] extends string ? never : Database['public']['Tables']['accounts']['Row']['created_at'];
