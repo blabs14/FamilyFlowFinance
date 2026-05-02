@@ -28,10 +28,17 @@ import {
   FormLabel,
   FormMessage,
 } from './ui/form';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
 import { useQueryClient } from '@tanstack/react-query';
 import { payCreditCardFromAccount } from '../services/transactions';
 import { useToast } from '../hooks/use-toast';
 import { logger } from '@/shared/lib/logger';
+import { TransferForm } from './TransferForm';
 
 // Esquema estendido para incluir campos específicos do formulário
 const transactionFormSchema = transactionSchema.extend({
@@ -72,6 +79,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
   const { data: categories = [], isLoading: categoriesLoading } = useCategoriesDomain();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [showTransferForm, setShowTransferForm] = useState(false);
   
   // 🔍 Debug temporário - TransactionForm
   console.log('🔍 TransactionForm - Categories:', {
@@ -280,6 +288,29 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
   }
 
   return (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setShowTransferForm(true)}
+        className="mb-4 w-full"
+        data-cy="open-transfer-form-btn"
+      >
+        Nova transferência entre contas
+      </Button>
+
+      <Dialog open={showTransferForm} onOpenChange={setShowTransferForm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nova transferência</DialogTitle>
+          </DialogHeader>
+          <TransferForm
+            onSuccess={() => setShowTransferForm(false)}
+            onCancel={() => setShowTransferForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col gap-4 p-2 sm:p-4">
         
@@ -559,6 +590,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
         </div>
       </form>
     </Form>
+    </>
   );
 };
 
