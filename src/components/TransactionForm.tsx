@@ -40,6 +40,7 @@ import { useToast } from '../hooks/use-toast';
 import { logger } from '@/shared/lib/logger';
 import { TransferForm } from './TransferForm';
 import { TransactionSplitModal } from './TransactionSplitModal';
+import { TransactionAttachments } from './TransactionAttachments';
 
 // Esquema estendido para incluir campos específicos do formulário
 const transactionFormSchema = transactionSchema.extend({
@@ -82,6 +83,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
   const { toast } = useToast();
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [splitModal, setSplitModal] = useState<{ txId: string; totalCents: number } | null>(null);
+  const [createdTxId, setCreatedTxId] = useState<string | null>(null);
   
   // 🔍 Debug temporário - TransactionForm
   console.log('🔍 TransactionForm - Categories:', {
@@ -269,8 +271,11 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
         toast({ title: 'Transação atualizada', description: 'A transação foi atualizada com sucesso.' });
       } else {
         const created = await createTransactionMutation.mutateAsync(payload);
-        if (created?.id && created?.amount_cents) {
-          setSplitModal({ txId: created.id, totalCents: created.amount_cents });
+        if (created?.id) {
+          setCreatedTxId(created.id);
+          if (created?.amount_cents) {
+            setSplitModal({ txId: created.id, totalCents: created.amount_cents });
+          }
         }
         toast({ title: 'Transação criada', description: isSelectedAccountCreditCard ? 'Compra no cartão registada.' : 'Transação criada com sucesso.' });
       }
@@ -603,6 +608,12 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
         transactionId={splitModal.txId}
         totalCents={splitModal.totalCents}
       />
+    )}
+
+    {createdTxId && (
+      <div className="mt-4 border-t pt-4">
+        <TransactionAttachments transactionId={createdTxId} />
+      </div>
     )}
     </>
   );
