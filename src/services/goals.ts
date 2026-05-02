@@ -189,7 +189,22 @@ export const setContributorTarget = async (
 
 // --- Legacy re-exports (backward compat) ---
 
+export const getGoal = async (id: string, userId: string): Promise<{ data: GoalRow | null; error: unknown }> => {
+  try {
+    const { data, error } = await supabase
+      .from('goals')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+    return { data, error };
+  } catch (error) {
+    return { data: null, error };
+  }
+};
+
 export const getGoals = async (userId: string) => {
+  if (!userId || userId.trim() === '') return { data: [], error: null };
   const { data, error } = await supabase
     .from('goals')
     .select('*')
@@ -200,13 +215,22 @@ export const getGoals = async (userId: string) => {
 };
 
 export const getGoalsDomain = async (userId: string) => {
+  if (!userId || userId.trim() === '') return { data: [], error: null };
   const { data, error } = await getGoals(userId);
   return { data: (data ?? []).map(mapGoalRowToDomain), error };
 };
 
 export const getGoalProgress = async (userId: string) => {
+  if (!userId) return { data: null, error: new Error('User ID is required') };
   const { data, error } = await supabase.rpc('get_user_goal_progress', { user_id: userId });
   return { data, error };
+};
+
+export const getUserGoalProgress = async () => {
+  const userId = (await supabase.auth.getUser()).data.user?.id;
+  const { data, error } = await supabase.rpc('get_user_goal_progress', { user_id: userId });
+  if (error) return [];
+  return data || [];
 };
 
 // Legacy no-op kept for hook consumers that import this
@@ -214,11 +238,19 @@ export const allocateFunds = async (_goalId: string, _amount: number) =>
   ({ data: null, error: null });
 
 export const getPersonalGoals = async (userId: string) => {
-  const { data, error } = await supabase.rpc('get_personal_goals', { p_user_id: userId });
-  return { data: data || null, error };
+  try {
+    const { data, error } = await supabase.rpc('get_personal_goals', { p_user_id: userId });
+    return { data: data || null, error };
+  } catch (error) {
+    return { data: null, error };
+  }
 };
 
 export const getFamilyGoals = async (userId: string) => {
-  const { data, error } = await supabase.rpc('get_family_goals', { p_user_id: userId });
-  return { data: data || null, error };
+  try {
+    const { data, error } = await supabase.rpc('get_family_goals', { p_user_id: userId });
+    return { data: data || null, error };
+  } catch (error) {
+    return { data: null, error };
+  }
 };
