@@ -39,6 +39,7 @@ import { payCreditCardFromAccount } from '../services/transactions';
 import { useToast } from '../hooks/use-toast';
 import { logger } from '@/shared/lib/logger';
 import { TransferForm } from './TransferForm';
+import { TransactionSplitModal } from './TransactionSplitModal';
 
 // Esquema estendido para incluir campos específicos do formulário
 const transactionFormSchema = transactionSchema.extend({
@@ -80,6 +81,7 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [showTransferForm, setShowTransferForm] = useState(false);
+  const [splitModal, setSplitModal] = useState<{ txId: string; totalCents: number } | null>(null);
   
   // 🔍 Debug temporário - TransactionForm
   console.log('🔍 TransactionForm - Categories:', {
@@ -266,10 +268,13 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
         await updateTransactionMutation.mutateAsync({ id: initialData.id, data: updatePayload });
         toast({ title: 'Transação atualizada', description: 'A transação foi atualizada com sucesso.' });
       } else {
-        await createTransactionMutation.mutateAsync(payload);
+        const created = await createTransactionMutation.mutateAsync(payload);
+        if (created?.id && created?.amount_cents) {
+          setSplitModal({ txId: created.id, totalCents: created.amount_cents });
+        }
         toast({ title: 'Transação criada', description: isSelectedAccountCreditCard ? 'Compra no cartão registada.' : 'Transação criada com sucesso.' });
       }
-      
+
       onSuccess?.();
     } catch (err) {
       const message = (err as { message?: string })?.message || 'Erro ao salvar transação';
@@ -590,6 +595,15 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
         </div>
       </form>
     </Form>
+
+    {splitModal && (
+      <TransactionSplitModal
+        open={!!splitModal}
+        onOpenChange={(o) => !o && setSplitModal(null)}
+        transactionId={splitModal.txId}
+        totalCents={splitModal.totalCents}
+      />
+    )}
     </>
   );
 };
