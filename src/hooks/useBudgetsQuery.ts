@@ -25,7 +25,7 @@ export const useBudgetInstances = (params?: {
   periodKey?: string;
 }) => {
   const { user } = useAuth();
-  const scope = useScope();
+  const { scope } = useScope();
   const familyId = scope.kind === 'family' ? scope.familyId : null;
 
   return useQuery<GetBudgetsRow[] | null>({
@@ -46,7 +46,7 @@ export const useBudgetInstances = (params?: {
 // Hook: templates (para gestão de orçamentos)
 export const useBudgetTemplates = () => {
   const { user } = useAuth();
-  const scope = useScope();
+  const { scope } = useScope();
   const familyId = scope.kind === 'family' ? scope.familyId : null;
 
   return useQuery({
