@@ -123,7 +123,7 @@ export const getBudgets = async (params: {
   familyId?: string | null;
   periodType?: string;
   periodKey?: string;
-}): Promise<{ data: GetBudgetsRow[] | null; error: unknown }> => {
+} = {}): Promise<{ data: GetBudgetsRow[] | null; error: unknown }> => {
   try {
     const { data, error } = await supabase.rpc('get_budgets', {
       p_family_id: params.familyId ?? null,

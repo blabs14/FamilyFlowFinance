@@ -1,7 +1,8 @@
 // src/validation/budgetSchema.ts
 import { z } from 'zod';
 
-export const budgetTemplateSchema = z.object({
+// Base schema (extendable — no .refine())
+export const budgetTemplateBaseSchema = z.object({
   categoria_id: z.string().trim().min(1, 'Categoria obrigatória'),
   amount_cents: z.number().int().min(1, 'Valor deve ser positivo'),
   period_type: z.enum(['monthly', 'annual']).default('monthly'),
@@ -10,12 +11,15 @@ export const budgetTemplateSchema = z.object({
   parent_id: z.string().uuid().nullable().optional(),
   target_goal_id: z.string().uuid().nullable().optional(),
   family_id: z.string().uuid().nullable().optional(),
-}).refine(
+});
+
+// Refined schema (adds cross-field validation)
+export const budgetTemplateSchema = budgetTemplateBaseSchema.refine(
   (d) => d.rollover_mode !== 'transfer_to_goal' || !!d.target_goal_id,
   { message: 'Objetivo obrigatório para modo transfer_to_goal', path: ['target_goal_id'] }
 );
 
-export type BudgetTemplateFormData = z.infer<typeof budgetTemplateSchema>;
+export type BudgetTemplateFormData = z.infer<typeof budgetTemplateBaseSchema>;
 
 // Backwards compat alias (para código legado que ainda importa budgetSchema)
 export const budgetSchema = z.object({
