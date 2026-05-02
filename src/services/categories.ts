@@ -33,12 +33,49 @@ export const getCategories = async (userId?: string, tipo?: string): Promise<{ d
   }
 };
 
-export const getSystemCategories = async () => {
-  return supabase
-    .from('categories')
-    .select('*')
-    .eq('is_system', true)
-    .order('nome');
+export const getSystemCategories = async (): Promise<{ data: Category[] | null; error: unknown }> => {
+  try {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('is_system', true)
+      .order('nome');
+    return { data: data || null, error };
+  } catch (error) {
+    return { data: null, error };
+  }
+};
+
+export interface CategoryWithChildren extends Category {
+  children: CategoryWithChildren[];
+}
+
+export const getCategoriesTree = async (): Promise<{ data: CategoryWithChildren[] | null; error: unknown }> => {
+  try {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('nome');
+
+    if (error || !data) return { data: null, error };
+
+    // Construir árvore em memória (máx. 1 nível de profundidade)
+    const byId = new Map(data.map((c: Category) => [c.id, { ...c, children: [] as CategoryWithChildren[] }]));
+    const roots: CategoryWithChildren[] = [];
+
+    for (const cat of byId.values()) {
+      const parentId = (cat as any).parent_id;
+      if (parentId && byId.has(parentId)) {
+        byId.get(parentId)!.children.push(cat as CategoryWithChildren);
+      } else {
+        roots.push(cat as CategoryWithChildren);
+      }
+    }
+
+    return { data: roots, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
 };
 
 export const getCategoriesDomain = async (userId?: string, tipo?: string): Promise<{ data: CategoryDomain[]; error: unknown }> => {
@@ -93,6 +130,16 @@ export const createCategory = async (categoryData: CategoryInsert): Promise<{ da
 
 export const updateCategory = async (id: string, updates: CategoryUpdate): Promise<{ data: Category | null; error: unknown }> => {
   try {
+    // Bloquear edição de categorias de sistema
+    const { data: current, error: currentError } = await getCategory(id);
+    if (currentError) return { data: null, error: currentError };
+    if ((current as any)?.is_system) {
+      return {
+        data: null,
+        error: new Error('Categorias de sistema não podem ser editadas. Use personalizações (category_customizations).'),
+      };
+    }
+
     // Se está a atualizar o nome, validar se já existe uma categoria com o mesmo nome
     if (updates.nome) {
       // Primeiro obter a categoria atual para saber o user_id
