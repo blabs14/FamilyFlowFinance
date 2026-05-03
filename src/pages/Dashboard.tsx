@@ -21,6 +21,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useScope } from '@/features/scope';
+import { ContributionsWidget } from '@/components/dashboard/ContributionsWidget';
 import { useDashboardData } from '../hooks/useDashboardQuery';
 import { useAccountsWithBalances } from '../hooks/useAccountsQuery';
 import { useTransactions } from '../hooks/useTransactionsQuery';
@@ -38,6 +40,7 @@ export default function Dashboard() {
   const { data: goals = [] } = useGoals();
   const { data: reminders = [] } = useReminders();
   const { data: budgets = [] } = useBudgets();
+  const { scope } = useScope();
   const [selectedPeriod, setSelectedPeriod] = useState('month');
 
   if (isLoading) {
@@ -340,6 +343,9 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Contribuições por membro — visível apenas no âmbito familiar */}
+      {scope.kind === 'family' && <ContributionsWidget />}
 
       {/* Ações Rápidas */}
       <Card className="hover:shadow-md transition-shadow">
