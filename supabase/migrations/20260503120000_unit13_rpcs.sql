@@ -27,11 +27,11 @@ BEGIN
     RAISE EXCEPTION 'NEW_OWNER_NOT_MEMBER';
   END IF;
 
-  UPDATE family_members SET role = 'admin'
-    WHERE family_id = p_family_id AND user_id = auth.uid();
-
   UPDATE family_members SET role = 'owner'
     WHERE family_id = p_family_id AND user_id = p_new_owner_id;
+
+  UPDATE family_members SET role = 'admin'
+    WHERE family_id = p_family_id AND user_id = auth.uid();
 
   INSERT INTO family_audit_log (family_id, user_id, action, entity_type, entity_id)
     VALUES (p_family_id, auth.uid(), 'transfer_ownership', 'user', p_new_owner_id);
@@ -90,6 +90,10 @@ DECLARE
   v_sum           bigint;
   v_share         jsonb;
 BEGIN
+  IF jsonb_array_length(p_shares) = 0 THEN
+    RAISE EXCEPTION 'SHARES_EMPTY: cannot split with empty shares array';
+  END IF;
+
   SELECT family_id, amount_cents
     INTO v_family_id, v_amount_cents
     FROM transactions WHERE id = p_transaction_id;
