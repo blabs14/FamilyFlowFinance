@@ -181,3 +181,73 @@ export const makeReminder = (
 export const resetFactoryCounter = () => {
   idCounter = 1;
 };
+
+// --- Unit 09 factories ---
+
+export const makeRecurringRule = (overrides: Record<string, unknown> = {}) => ({
+  id: uuid(),
+  user_id: uuid(),
+  scope: 'personal',
+  family_id: null,
+  payee: null,
+  description: `Regra Recorrente ${nextId()}`,
+  category_id: null,
+  amount_cents: 5000,
+  currency: 'EUR',
+  interval_unit: 'month',
+  interval_count: 1,
+  start_date: '2026-01-01',
+  end_date: null,
+  next_run_date: '2026-05-01',
+  last_run_date: null,
+  status: 'active',
+  is_subscription: false,
+  vendor: null,
+  trial_end_date: null,
+  cancel_at_period_end: false,
+  payment_method: null,
+  metadata: null,
+  // Unit 09 columns
+  execution_mode: 'confirm',
+  amount_mode: 'fixed',
+  schedule_type: 'monthly',
+  type: 'expense',
+  day_of_month: null,
+  weekday_of_month: null,
+  weekday_ordinal: null,
+  created_at: now(),
+  updated_at: now(),
+  ...overrides,
+});
+
+export const makeRecurringInstance = (overrides: Record<string, unknown> = {}) => ({
+  id: uuid(),
+  rule_id: uuid(),
+  due_date: '2026-05-01',
+  period_key: '2026-05',
+  status: 'pending',
+  amount_cents: 5000,
+  currency: 'EUR',
+  transaction_id: null,
+  operation_id: null,
+  confirmed_at: null,
+  posted_at: null,
+  created_at: now(),
+  ...overrides,
+});
+
+export const makeInboxItem = (overrides: Record<string, unknown> = {}) => ({
+  id: uuid(),
+  user_id: uuid(),
+  family_id: null,
+  source_type: 'recurring_instance',
+  source_id: uuid(),
+  title: `Confirmar: Regra ${nextId()}`,
+  body: null,
+  due_at: new Date().toISOString(),
+  status: 'pending',
+  snoozed_until: null,
+  completed_at: null,
+  created_at: now(),
+  ...overrides,
+});
