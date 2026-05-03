@@ -251,3 +251,45 @@ export const makeInboxItem = (overrides: Record<string, unknown> = {}) => ({
   created_at: now(),
   ...overrides,
 });
+
+// --- Unit 13 factories ---
+
+export const makeExpenseSplit = (overrides: Partial<{
+  id: string; transaction_id: string; user_id: string;
+  share_cents: number; created_at: string;
+}> = {}) => ({
+  id: uuid(),
+  transaction_id: uuid(),
+  user_id: uuid(),
+  share_cents: 5000,
+  created_at: now(),
+  ...overrides,
+});
+
+export const makeMemberBalance = (overrides: Partial<{
+  family_id: string; user_id: string;
+  paid_cents: number; owed_cents: number; balance_cents: number;
+}> = {}) => ({
+  family_id: uuid(),
+  user_id: uuid(),
+  paid_cents: 10000,
+  owed_cents: 5000,
+  balance_cents: 5000,
+  ...overrides,
+});
+
+export const makeFamilyAuditLog = (overrides: Partial<{
+  id: string; family_id: string; user_id: string;
+  action: string; entity_type: string | null; entity_id: string | null;
+  diff: Record<string, unknown> | null; created_at: string;
+}> = {}) => ({
+  id: uuid(),
+  family_id: uuid(),
+  user_id: uuid(),
+  action: 'transfer_ownership',
+  entity_type: 'user',
+  entity_id: uuid(),
+  diff: null,
+  created_at: now(),
+  ...overrides,
+});
