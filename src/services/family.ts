@@ -251,3 +251,84 @@ export const getFamilyCategoryBreakdown = async (
     error: null,
   };
 };
+
+// --- Unit 13 additions ---
+
+export type MemberBalance = {
+  family_id: string;
+  user_id: string;
+  paid_cents: number;
+  owed_cents: number;
+  balance_cents: number;
+};
+
+export type ExpenseSplit = {
+  user_id: string;
+  share_cents: number;
+};
+
+export const transferOwnership = async (
+  familyId: string,
+  newOwnerUserId: string,
+): Promise<void> => {
+  const { error } = await supabase.rpc('transfer_ownership', {
+    p_family_id: familyId,
+    p_new_owner_id: newOwnerUserId,
+  });
+  if (error) throw error;
+};
+
+export const softRemoveFamilyMember = async (
+  familyId: string,
+  userId: string,
+  reason?: string,
+): Promise<void> => {
+  const { error } = await supabase.rpc('soft_remove_family_member', {
+    p_family_id: familyId,
+    p_user_id: userId,
+    p_reason: reason ?? null,
+  });
+  if (error) throw error;
+};
+
+export const splitTransactionAmongMembers = async (
+  transactionId: string,
+  shares: ExpenseSplit[],
+): Promise<void> => {
+  const { error } = await supabase.rpc('split_transaction_among_members', {
+    p_transaction_id: transactionId,
+    p_shares: shares,
+  });
+  if (error) throw error;
+};
+
+export const getMemberBalances = async (
+  familyId: string,
+): Promise<MemberBalance[]> => {
+  const { data, error } = await supabase
+    .from('member_balances')
+    .select('*')
+    .eq('family_id', familyId);
+  if (error) throw error;
+  return (data ?? []) as MemberBalance[];
+};
+
+export const settleBalance = async (
+  familyId: string,
+  fromUserId: string,
+  toUserId: string,
+  amountCents: number,
+  fromAccountId: string,
+  toAccountId: string,
+): Promise<string> => {
+  const { data, error } = await supabase.rpc('settle_member_balance', {
+    p_family_id: familyId,
+    p_from_user_id: fromUserId,
+    p_to_user_id: toUserId,
+    p_amount_cents: amountCents,
+    p_from_account_id: fromAccountId,
+    p_to_account_id: toAccountId,
+  });
+  if (error) throw error;
+  return data as string;
+};
