@@ -26,7 +26,7 @@ export const recurringRuleSchema = z.object({
   transaction_type: z.enum(['expense', 'income', 'transfer']).default('expense'),
   from_account_id: z.string().uuid().optional().nullable(),
   to_account_id: z.string().uuid().optional().nullable(),
-  metadata: z.record(z.any()).optional()
+  metadata: z.record(z.any()).nullable().optional()
 });
 
 export type RecurringRule = z.infer<typeof recurringRuleSchema> & { id?: string };
@@ -73,3 +73,23 @@ export async function listRecurringInstances(ruleId?: string) {
 export async function deleteRecurringRule(id: string) {
   return sb.from('recurring_rules').delete().eq('id', id);
 }
+
+// --- Unit 09 additions ---
+
+export const confirmRecurringInstance = async (
+  instanceId: string
+): Promise<{ data: { ok: boolean; amount_cents?: number; due_date?: string } | null; error: unknown }> => {
+  const { data, error } = await sb.rpc('confirm_recurring_instance', {
+    p_instance_id: instanceId,
+  });
+  return { data: data as any, error };
+};
+
+export const skipRecurringInstance = async (
+  instanceId: string
+): Promise<{ data: unknown; error: unknown }> => {
+  const { data, error } = await sb.rpc('skip_recurring_instance', {
+    p_instance_id: instanceId,
+  });
+  return { data, error };
+};
