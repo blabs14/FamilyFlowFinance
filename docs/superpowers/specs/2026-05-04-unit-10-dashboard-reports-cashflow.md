@@ -16,13 +16,15 @@ Tornar Dashboard, Reports e Cashflow totalmente scope-aware (personal/família v
 
 | Área | Problema |
 |------|----------|
-| `Dashboard.tsx` | Chama `getPersonalKPIs()` (ignorado scope família). 4 botões "Ação Rápida" apontam para `/personal/...`. Sem widget Inbox, sem DashboardInsights, sem sparkline cashflow. |
+| `Dashboard.tsx` | Chama `getPersonalKPIs()` (ignora scope família). 4 botões "Ação Rápida" apontam para `/personal/...`. Sem widget Inbox, sem DashboardInsights, sem sparkline cashflow. |
 | `useDashboardQuery.ts` | Chama `get_personal_kpis` directamente — não reage ao scope toggle. |
 | `reports.tsx` | Usa `familyId` de `familyData.family.id` em vez de `useScope()`. Chama `get_family_kpis` / `get_family_category_breakdown`. Sem tab "Análise Anual". |
 | `cashflowService.ts` | Forward-only (começa em `new Date()`). Cartão de crédito como placeholder comentado. Cálculo feito no frontend. |
 | `CashflowView.tsx` | Sem linha "agora", sem slider, sem distinção passado/futuro, sem badges `⚠️`. |
-| `src/pages/Insights.tsx` | 970 linhas — dead code (não routed em `App.tsx`). |
+| `src/pages/cashflow.tsx` | Página wrapper de `CashflowView`; precisará de expor o novo slider e janela de datas. |
+| `src/pages/Insights.tsx` | 970 linhas — dead code (não routed em `App.tsx`). `PersonalInsights.tsx` já foi apagado na Unit 13. |
 | RPCs DB | `get_personal_kpis`, `get_family_kpis`, `get_family_kpis_with_user`, `get_family_category_breakdown` — 4 RPCs para o mesmo conceito. Nenhuma scope-aware por parâmetro. |
+| `App.tsx` | Rota `/personal/insights` ainda existe como redirect — deve ser removida nesta unit. |
 
 ---
 
@@ -44,15 +46,15 @@ get_kpis(
   date_end        date DEFAULT now()::date,
   exclude_transfers boolean DEFAULT true
 ) RETURNS TABLE (
-  total_balance_cents    bigint,
-  income_cents           bigint,
-  expense_cents          bigint,
-  net_cents              bigint,
-  goals_progress_pct     numeric,
-  budget_spent_pct       numeric,
-  budgets_at_risk        integer,
-  reserved_cents         bigint,
-  inbox_pending_count    integer
+  total_balance_cents       bigint,
+  income_cents              bigint,
+  expense_cents             bigint,
+  net_cents                 bigint,
+  goals_progress_percentage numeric,   -- mantém convenção de nomes existente
+  budget_spent_percentage   numeric,   -- mantém convenção de nomes existente
+  budgets_at_risk           integer,
+  reserved_cents            bigint,
+  inbox_pending_count       integer
 )
 ```
 Substitui: `get_personal_kpis`, `get_family_kpis`, `get_family_kpis_with_user`, `get_family_kpis` com parâmetros de range.
@@ -118,7 +120,7 @@ Widgets (em ordem):
 2. **Este Mês** — `income_cents` / `expense_cents` / `net_cents`  
 3. **Inbox Badge** — `inbox_pending_count` → link `/app/inbox`
 4. **Budgets em Risco** — `budgets_at_risk` + top-3 categorias
-5. **Goals** — `goals_progress_pct` + `reserved_cents`
+5. **Goals** — `goals_progress_percentage` + `reserved_cents`
 6. **Próximos 14 dias** — sparkline via `get_cashflow_timeline(today, +14d)`
 7. **Transações Recentes** — 5 entradas (mantido)
 8. **DashboardInsights** — `src/components/dashboard/DashboardInsights.tsx` com 2–3 cards do `get_dashboard_insights`
@@ -151,7 +153,10 @@ URLs corrigidos: todos os `/personal/...` e `/Goals` → `/app/transactions`, `/
 
 ### 7. ExportService — completar unificação
 
-`src/services/exportService.ts` — adicionar `exportCashflow(events)` ao lado de `exportTransactions()` e `exportReport()` já existentes. ReportExport continua lazy-loaded.
+`src/services/exportService.ts` já tem `exportCashflowData()` / `exportCashflowToCsv()` / `exportCashflowToIcs()` com a assinatura frontend antiga (`CashflowEvent[]`). Nesta unit:
+- Renomear / consolidar para `exportCashflow(events: CashflowTimelineEvent[])` onde `CashflowTimelineEvent` é o tipo que vem de `get_cashflow_timeline`
+- Remover duplicação entre as 3 funções existentes
+- ReportExport continua lazy-loaded
 
 ### 8. Dead code — eliminar
 
@@ -160,6 +165,9 @@ URLs corrigidos: todos os `/personal/...` e `/Goals` → `/app/transactions`, `/
 | `src/pages/Insights.tsx` | 970 | Apagar |
 | `getPersonalKPIs()` em `src/services/accounts.ts` | ~15 | Marcar deprecated |
 | `getFamilyKPIs()`, `getFamilyKPIsRange()`, `getFamilyCategoryBreakdown()` em `src/services/family.ts` | ~75 | Marcar deprecated |
+| Rota `/personal/insights` em `src/App.tsx` | 1 | Remover redirect |
+
+Nota: `src/features/personal/PersonalInsights.tsx` foi apagado na Unit 13 — não há acção necessária.
 
 ---
 
@@ -173,12 +181,13 @@ URLs corrigidos: todos os `/personal/...` e `/Goals` → `/app/transactions`, `/
 | `src/hooks/useInsightsQuery.ts` | Novo — `get_dashboard_insights` |
 | `src/components/dashboard/DashboardInsights.tsx` | Novo — 2–3 cards contextuais |
 | `src/pages/Dashboard.tsx` | Refactor — widgets MVP, URLs corrected |
+| `src/pages/cashflow.tsx` | Modificar — expor slider state e janela de datas para CashflowView |
 | `src/components/cashflow/CashflowView.tsx` | Refactor — timeline, slider, linha "agora" |
 | `src/services/cashflowService.ts` | Simplificar — delegar para RPC |
 | `src/pages/reports.tsx` | Refactor — RPCs unificadas, tab Análise Anual |
 | `src/services/exportService.ts` | Adicionar `exportCashflow()` |
 | `src/pages/Insights.tsx` | **Apagar** |
-| `tests/utils/factories.ts` | Adicionar `makeKpiResult`, `makeCashflowEvent`, `makeInsight` |
+| `tests/utils/factories.ts` | Adicionar `makeKpiResult`, `makeCashflowTimelineEvent`, `makeInsight` (ficheiro existente — padrão genérico partilhado por todos os testes) |
 | `src/hooks/__tests__/useDashboardQuery.test.ts` | Novo |
 | `src/hooks/__tests__/useCashflowQuery.test.ts` | Novo |
 | `src/components/dashboard/__tests__/DashboardInsights.test.tsx` | Novo |
