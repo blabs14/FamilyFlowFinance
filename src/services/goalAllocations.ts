@@ -1,6 +1,20 @@
 import { supabase } from '../lib/supabaseClient';
 import { retryWithBackoff, withTimeout } from '../config/rpcConfig';
 
+export const getAccountAllocationsTotal = async (
+  accountId: string,
+  _userId: string
+): Promise<{ data: number | null; error: unknown }> => {
+  const { data, error } = await supabase
+    .from('goal_allocations')
+    .select('valor, transactions!inner(account_id)')
+    .eq('transactions.account_id', accountId);
+
+  if (error) return { data: null, error };
+  const total = (data || []).reduce((sum, row) => sum + (Number(row.valor) || 0), 0);
+  return { data: total, error: null };
+};
+
 export const getGoalBalance = async (goalId: string): Promise<{ data: { valor_atual_cents: number } | null; error: unknown }> => {
   const { data, error } = await supabase
     .from('goals_with_balance')
