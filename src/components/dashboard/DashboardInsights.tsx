@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingDown, AlertTriangle, Wallet } from 'lucide-react';
+import { TrendingDown, TrendingUp, AlertTriangle, Wallet } from 'lucide-react';
 import { useDashboardInsights, DashboardInsight } from '@/hooks/useInsightsQuery';
 
 const icons: Record<string, React.ReactNode> = {
@@ -16,9 +16,15 @@ function InsightCard({ insight }: { insight: DashboardInsight }) {
   const isNegative = insight.type === 'mom_change' && insight.value < 0;
   const isPositive = insight.type === 'mom_change' && insight.value >= 0;
 
+  const icon = insight.type === 'mom_change'
+    ? (isNegative
+        ? <TrendingDown className="h-4 w-4 text-green-500" />
+        : <TrendingUp className="h-4 w-4 text-red-500" />)
+    : icons[insight.type];
+
   return (
     <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/40">
-      <div className="mt-0.5 text-muted-foreground">{icons[insight.type]}</div>
+      <div className="mt-0.5 text-muted-foreground">{icon}</div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium">{insight.title}</p>
         {insight.type === 'mom_change' && (
