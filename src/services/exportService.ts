@@ -507,3 +507,36 @@ export function filterCashflowSummariesByDateRange(
     return summaryDate >= startDate && summaryDate <= endDate;
   });
 }
+
+// ============================================================
+// Unit 10 — Unified cashflow export for CashflowTimelineEvent
+// ============================================================
+
+export interface CashflowTimelineExportEvent {
+  eventDate: string;
+  amountCents: number;
+  direction: 'in' | 'out';
+  sourceType: string;
+  sourceId: string;
+  description: string;
+  isProjected: boolean;
+  needsConfirm: boolean;
+}
+
+/**
+ * Export cashflow timeline events (from get_cashflow_timeline RPC) to CSV.
+ * Replaces exportCashflowData/exportCashflowToCsv for new consumers.
+ */
+export function exportCashflow(events: CashflowTimelineExportEvent[]): string {
+  const header = 'Data,Descrição,Direção,Tipo,Valor (EUR),Projetado,Por Confirmar\n';
+  const rows = events.map(e => [
+    e.eventDate,
+    `"${e.description.replace(/"/g, '""')}"`,
+    e.direction === 'in' ? 'Entrada' : 'Saída',
+    e.sourceType,
+    (e.amountCents / 100).toFixed(2),
+    e.isProjected ? 'Sim' : 'Não',
+    e.needsConfirm ? 'Sim' : 'Não',
+  ].join(',')).join('\n');
+  return header + rows;
+}
