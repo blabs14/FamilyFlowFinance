@@ -293,3 +293,38 @@ export const makeFamilyAuditLog = (overrides: Partial<{
   created_at: now(),
   ...overrides,
 });
+
+// --- Unit 10 factories ---
+
+export const makeKpiResult = (overrides: Record<string, unknown> = {}) => ({
+  total_balance_cents: 100000,
+  income_cents: 50000,
+  expense_cents: 30000,
+  net_cents: 20000,
+  goals_progress_percentage: 45.5,
+  budget_spent_percentage: 62.0,
+  budgets_at_risk: 1,
+  reserved_cents: 20000,
+  inbox_pending_count: 3,
+  ...overrides,
+});
+
+export const makeCashflowTimelineEvent = (overrides: Record<string, unknown> = {}) => ({
+  event_date: '2026-05-10',
+  amount_cents: 5000,
+  direction: 'out' as 'in' | 'out',
+  source_type: 'transaction',
+  source_id: uuid(),
+  description: 'Evento Teste',
+  is_projected: false,
+  needs_confirm: false,
+  ...overrides,
+});
+
+export const makeInsight = (overrides: Record<string, unknown> = {}) => ({
+  type: 'mom_change',
+  title: 'Despesas vs. mês anterior',
+  value: -12.5,
+  detail: { this_month_cents: 30000, prev_month_cents: 34286 },
+  ...overrides,
+});
