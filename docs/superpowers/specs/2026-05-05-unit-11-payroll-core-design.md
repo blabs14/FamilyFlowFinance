@@ -283,7 +283,7 @@ BEGIN
       v_irs_annual := v_irs_annual
         + (LEAST(v_taxable_annual, v_bracket.max_annual_cents) - v_bracket.min_annual_cents)
           * v_bracket.marginal_rate_bp / 10000;
-      v_prev_max := v_bracket.max_annual_cents;
+      -- (v_prev_max removido — dead code)
     END LOOP;
   END IF;
 
@@ -363,7 +363,8 @@ BEGIN
     RAISE EXCEPTION 'PAYSLIP_VOID';
   END IF;
 
-  IF v_payslip.account_id IS NULL AND v_payslip.contract_account_id IS NULL THEN
+  -- Verificar que o contrato tem conta configurada (payroll_payslips não tem account_id)
+  IF v_payslip.contract_account_id IS NULL THEN
     RAISE EXCEPTION 'NO_ACCOUNT_CONFIGURED';
   END IF;
 
@@ -385,7 +386,7 @@ BEGIN
     family_id
   ) VALUES (
     auth.uid(),
-    COALESCE(v_payslip.contract_account_id, v_payslip.account_id),
+    v_payslip.contract_account_id,  -- account_id vem do payroll_contracts, não do payslip
     v_cat_id,
     v_payslip.net_cents,
     'receita',
@@ -433,6 +434,13 @@ AS $$
 DECLARE
   v_new_id uuid;
 BEGIN
+  -- Verificar que a conta pertence ao utilizador
+  PERFORM 1 FROM public.accounts
+    WHERE id = p_account_id AND user_id = auth.uid();
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'ACCOUNT_NOT_FOUND';
+  END IF;
+
   -- Soft-replace: marcar contrato activo como inactivo
   UPDATE public.payroll_contracts
     SET status    = 'inactive',
@@ -651,12 +659,13 @@ export const createPayslipDraft = async (
 
 export const postPayslip = async (
   payslipId: string,
-): Promise<{ transactionId: string; idempotent: boolean }> => {
+): Promise<{ transaction_id: string; idempotent: boolean }> => {
   const { data, error } = await supabase.rpc('post_payslip', {
     p_payslip_id: payslipId,
   });
   if (error) throw error;
-  return data as { transactionId: string; idempotent: boolean };
+  // Nota: RPC devolve snake_case (transaction_id, não transactionId)
+  return data as { transaction_id: string; idempotent: boolean };
 };
 
 export const savePayrollContractCore = async (params: {
@@ -787,6 +796,8 @@ PayrollModule (orquestrador)
 
 ### Unit (Vitest) — `payrollCalculator.test.ts`
 
+**Nota CI:** `formatCents` e `periodLabel` usam `toLocaleString('pt-PT')`. Em Node.js sem `full-icu`, as asserções `.toBe('920,00 €')` e `.toBe('janeiro de 2026')` podem falhar. O ambiente de CI deve usar Node.js com `full-icu` ou as asserções devem usar `.toContain('920')` / `.toContain('janeiro')`.
+
 ```typescript
 describe('formatCents', () => {
   it('formata 92000 → "920,00 €"', () => {
@@ -839,10 +850,11 @@ it('mostra vista read-only para período já posted', ...);
 
 ### Valores de referência IRS 2026 (algoritmo progressivo + mínimo existência)
 
-| Bruto/mês | Bruto anual | IRS anual (calculado) | IRS mensal | SS (11%) | Líquido aprox. |
-|-----------|------------|----------------------|-----------|---------|----------------|
-| €920      | €11 040    | €0 (≤ mín. existência €12 880) | **€0** | €101 | **~€819** |
-| €1 500    | €18 000    | €18 000×0% até €7703 = €0; €(18000-7703)×0% até 11623... | | | |
+| Bruto/mês | IRS mensal (cents) | SS mensal (cents) | Líquido aprox. |
+|-----------|-------------------|------------------|----------------|
+| €920      | **0** (≤ mín. existência) | 10100 | ~€819 |
+| €1 500    | **25808**         | 16500            | ~€1 076 + refeição |
+| €3 000    | **74453**         | 33000            | ~€1 925 + refeição |
 
 **Exemplo completo para €1 500/mês:**
 ```
@@ -859,14 +871,15 @@ Líquido: €1 500 - €258,08 - €165 + subsídio refeição
 **Exemplo para €3 000/mês:**
 ```
 Anual: €36 000
-Escalão 1: €7 703 × 13%    = €1 001,39
-Escalão 2: €3 920 × 16,5%  = €646,80
-Escalão 3: €4 849 × 22%    = €1 066,78
-Escalão 4: €4 849 × 25%    = €1 212,25
-Escalão 5: €36 000 - €21 321) × 32% = €4 697,28
-IRS anual = €8 624,50 → IRS mensal = €718,71 (cents: 71871)
+Escalão 1: €7 703 × 13%                  = €1 001,39
+Escalão 2: (€11 623 - €7 703) × 16,5%   = €646,80
+Escalão 3: (€16 472 - €11 623) × 22%    = €1 066,78
+Escalão 4: (€21 321 - €16 472) × 25%    = €1 212,25
+Escalão 5: (€27 146 - €21 321) × 32%    = €1 864,00
+Escalão 6: (€36 000 - €27 146) × 35,5%  = €3 143,17  ← não termina no escalão 5!
+IRS anual = €8 934,39 → IRS mensal = €744,53 (cents: 74453)
 SS mensal: €3 000 × 11% = €330 (cents: 33000)
-Líquido: €3 000 - €718,71 - €330 + subsídio refeição
+Líquido: €3 000 - €744,53 - €330 + subsídio refeição ≈ €1 925,47
 ```
 
 Os testes de integração SQL devem usar `SELECT calculate_payslip(...)` e verificar os valores exactos em cents acima.
