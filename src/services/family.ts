@@ -175,6 +175,7 @@ export const getFamilyStatistics = async (familyId: string) => {
   return { totalMembers, activeMembers, totalFamilySpent, totalFamilySaved };
 };
 
+/** @deprecated Use supabase.rpc('get_kpis', { scope_family_id }) — Unit 10 */
 export const getFamilyKPIs = async () => {
   const { data, error } = await supabase.rpc('get_family_kpis');
 
@@ -202,6 +203,7 @@ export const getFamilyKPIs = async () => {
   };
 };
 
+/** @deprecated Use supabase.rpc('get_kpis', { scope_family_id }) — Unit 10 */
 export const getFamilyKPIsRange = async (
   familyId: string,
   dateStart: string,
@@ -223,6 +225,7 @@ export const getFamilyKPIsRange = async (
   return { data: row, error: null } as { data: any; error: null };
 };
 
+/** @deprecated Use supabase.rpc('get_category_breakdown', { scope_family_id }) — Unit 10 */
 export const getFamilyCategoryBreakdown = async (
   familyId: string,
   dateStart: string,
