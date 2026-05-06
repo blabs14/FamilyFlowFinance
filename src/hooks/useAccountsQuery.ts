@@ -1,15 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  getAccounts, 
+import {
+  getAccounts,
   getAccountsDomain,
-  createAccount, 
-  updateAccount, 
-  deleteAccount, 
-  getAccountsWithBalances, 
+  createAccount,
+  updateAccount,
+  deleteAccount,
+  getAccountsWithBalances,
   getAccountsWithBalancesDomain,
-  getFamilyAccountsWithBalances
+  getFamilyAccountsWithBalances,
+  getAccountsScoped,
+  softDeleteAccount,
 } from '../services/accounts';
+import {
+  getCreditCardsScoped,
+  softDeleteCreditCard,
+  createCreditCard,
+  updateCreditCard,
+  type CreditCardUpdateData,
+} from '../services/creditCards';
 import { getCreditCardSummary } from '../services/transactions';
 import { AccountInsert, AccountUpdateExtended, AccountWithBalances } from '../integrations/supabase/types';
 import { useCrudMutation } from './useMutationWithFeedback';
@@ -241,7 +250,7 @@ export const useAllAccountsWithBalances = () => {
 
 export const useCreditCardSummary = (accountId: string) => {
   const { user } = useAuth();
-  
+
   return useQuery<{ saldo: number; total_gastos: number; total_pagamentos: number; status: string; ciclo_inicio: string } | null>({
     queryKey: ['creditCardSummary', accountId, user?.id],
     queryFn: async () => {
@@ -256,4 +265,64 @@ export const useCreditCardSummary = (accountId: string) => {
   });
 };
 
- 
+// ── Unit 5: scope-aware hooks ────────────────────────────────────────────────
+
+export const useAccountsScoped = (options: { userId?: string; familyId?: string | null }) => {
+  return useQuery({
+    queryKey: ['accounts_scoped', options.userId, options.familyId ?? null],
+    queryFn: () => getAccountsScoped({ userId: options.userId!, familyId: options.familyId }),
+    enabled: !!options.userId,
+  });
+};
+
+export const useSoftDeleteAccount = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ accountId, userId }: { accountId: string; userId?: string }) =>
+      softDeleteAccount(accountId, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accounts_scoped'] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    },
+  });
+};
+
+export const useCreditCards = (options: { userId?: string; familyId?: string | null }) => {
+  return useQuery({
+    queryKey: ['credit_cards', options.userId, options.familyId ?? null],
+    queryFn: () => getCreditCardsScoped({ userId: options.userId!, familyId: options.familyId }),
+    enabled: !!options.userId,
+  });
+};
+
+export const useSoftDeleteCreditCard = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ cardId, userId }: { cardId: string; userId?: string }) =>
+      softDeleteCreditCard(cardId, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['credit_cards'] });
+    },
+  });
+};
+
+export const useCreateCreditCard = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createCreditCard,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['credit_cards'] });
+    },
+  });
+};
+
+export const useUpdateCreditCard = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ cardId, updates, userId }: { cardId: string; updates: CreditCardUpdateData; userId?: string }) =>
+      updateCreditCard(cardId, updates, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['credit_cards'] });
+    },
+  });
+};
