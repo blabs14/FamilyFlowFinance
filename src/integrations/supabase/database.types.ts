@@ -17,36 +17,39 @@ export type Database = {
       accounts: {
         Row: {
           amount_cents: number
-          billing_cycle_day: number | null
           created_at: string | null
           currency: string
+          deleted_at: string | null
           family_id: string | null
           id: string
           nome: string
+          order_index: number | null
           tipo: string
           updated_at: string
           user_id: string
         }
         Insert: {
           amount_cents?: number
-          billing_cycle_day?: number | null
           created_at?: string | null
           currency?: string
+          deleted_at?: string | null
           family_id?: string | null
           id?: string
           nome: string
+          order_index?: number | null
           tipo: string
           updated_at?: string
           user_id: string
         }
         Update: {
           amount_cents?: number
-          billing_cycle_day?: number | null
           created_at?: string | null
           currency?: string
+          deleted_at?: string | null
           family_id?: string | null
           id?: string
           nome?: string
+          order_index?: number | null
           tipo?: string
           updated_at?: string
           user_id?: string
@@ -237,6 +240,180 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_card_installments: {
+        Row: {
+          created_at: string
+          credit_card_id: string
+          current_installment: number
+          id: string
+          monthly_cents: number
+          num_installments: number
+          started_at: string
+          total_cents: number
+          transaction_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          credit_card_id: string
+          current_installment?: number
+          id?: string
+          monthly_cents: number
+          num_installments: number
+          started_at?: string
+          total_cents: number
+          transaction_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          credit_card_id?: string
+          current_installment?: number
+          id?: string
+          monthly_cents?: number
+          num_installments?: number
+          started_at?: string
+          total_cents?: number
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_card_installments_credit_card_id_fkey"
+            columns: ["credit_card_id"]
+            isOneToOne: false
+            referencedRelation: "credit_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_card_installments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_card_installments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions_detailed"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_card_statements: {
+        Row: {
+          closing_date: string
+          created_at: string
+          credit_card_id: string
+          due_date: string
+          id: string
+          paid_cents: number
+          parent_statement_id: string | null
+          status: string
+          total_cents: number
+          updated_at: string
+        }
+        Insert: {
+          closing_date: string
+          created_at?: string
+          credit_card_id: string
+          due_date: string
+          id?: string
+          paid_cents?: number
+          parent_statement_id?: string | null
+          status?: string
+          total_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          closing_date?: string
+          created_at?: string
+          credit_card_id?: string
+          due_date?: string
+          id?: string
+          paid_cents?: number
+          parent_statement_id?: string | null
+          status?: string
+          total_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_card_statements_credit_card_id_fkey"
+            columns: ["credit_card_id"]
+            isOneToOne: false
+            referencedRelation: "credit_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_card_statements_parent_statement_id_fkey"
+            columns: ["parent_statement_id"]
+            isOneToOne: false
+            referencedRelation: "credit_card_statements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_cards: {
+        Row: {
+          annual_fee_cents: number
+          apr: number | null
+          closing_day: number | null
+          created_at: string
+          credit_limit_cents: number
+          currency: string
+          current_balance_cents: number
+          deleted_at: string | null
+          family_id: string | null
+          id: string
+          nome: string
+          order_index: number | null
+          payment_day: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          annual_fee_cents?: number
+          apr?: number | null
+          closing_day?: number | null
+          created_at?: string
+          credit_limit_cents?: number
+          currency?: string
+          current_balance_cents?: number
+          deleted_at?: string | null
+          family_id?: string | null
+          id?: string
+          nome: string
+          order_index?: number | null
+          payment_day?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          annual_fee_cents?: number
+          apr?: number | null
+          closing_day?: number | null
+          created_at?: string
+          credit_limit_cents?: number
+          currency?: string
+          current_balance_cents?: number
+          deleted_at?: string | null
+          family_id?: string | null
+          id?: string
+          nome?: string
+          order_index?: number | null
+          payment_day?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_cards_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
             referencedColumns: ["id"]
           },
         ]
@@ -2669,6 +2846,7 @@ export type Database = {
           amount_cents: number
           categoria_id: string
           created_at: string | null
+          credit_card_id: string | null
           currency: string
           data: string
           descricao: string | null
@@ -2687,6 +2865,7 @@ export type Database = {
           amount_cents?: number
           categoria_id: string
           created_at?: string | null
+          credit_card_id?: string | null
           currency?: string
           data: string
           descricao?: string | null
@@ -2705,6 +2884,7 @@ export type Database = {
           amount_cents?: number
           categoria_id?: string
           created_at?: string | null
+          credit_card_id?: string | null
           currency?: string
           data?: string
           descricao?: string | null
@@ -2745,6 +2925,13 @@ export type Database = {
             columns: ["categoria_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_credit_card_id_fkey"
+            columns: ["credit_card_id"]
+            isOneToOne: false
+            referencedRelation: "credit_cards"
             referencedColumns: ["id"]
           },
           {
@@ -3533,6 +3720,7 @@ export type Database = {
           amount_cents: number
           categoria_id: string
           created_at: string | null
+          credit_card_id: string | null
           currency: string
           data: string
           descricao: string | null
@@ -3707,6 +3895,7 @@ export type Database = {
           amount_cents: number
           categoria_id: string
           created_at: string | null
+          credit_card_id: string | null
           currency: string
           data: string
           descricao: string | null
@@ -3764,6 +3953,20 @@ export type Database = {
           total_reservado: number
         }[]
       }
+      get_user_accounts: {
+        Args: { p_family_id?: string; p_user_id?: string }
+        Returns: {
+          account_id: string
+          amount_cents: number
+          currency: string
+          family_id: string
+          nome: string
+          order_index: number
+          saldo_atual: number
+          saldo_disponivel: number
+          tipo: string
+        }[]
+      }
       get_user_accounts_with_balances: {
         Args: { p_user_id: string }
         Returns: {
@@ -3818,6 +4021,24 @@ export type Database = {
           valor_gasto: number
           valor_orcamento: number
           valor_restante: number
+        }[]
+      }
+      get_user_credit_cards: {
+        Args: { p_family_id?: string; p_user_id?: string }
+        Returns: {
+          annual_fee_cents: number
+          apr: number
+          available_cents: number
+          card_id: string
+          closing_day: number
+          credit_limit_cents: number
+          currency: string
+          current_balance_cents: number
+          family_id: string
+          nome: string
+          order_index: number
+          payment_day: number
+          utilization_pct: number
         }[]
       }
       get_user_families:
@@ -3982,6 +4203,18 @@ export type Database = {
         Returns: string
       }
       normalize_account_balances: { Args: never; Returns: undefined }
+      pay_credit_card: {
+        Args: {
+          p_amount_cents: number
+          p_card_id: string
+          p_date?: string
+          p_description?: string
+          p_from_account_id: string
+          p_operation_id?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       pay_credit_card_from_account: {
         Args: {
           p_amount: number
@@ -3997,6 +4230,14 @@ export type Database = {
       remove_family_member: {
         Args: { p_family_id: string; p_member_user_id: string }
         Returns: Json
+      }
+      reorder_accounts: {
+        Args: { p_items: Json; p_user_id: string }
+        Returns: undefined
+      }
+      reorder_credit_cards: {
+        Args: { p_items: Json; p_user_id: string }
+        Returns: undefined
       }
       restore_family_backup: { Args: { p_backup_id: string }; Returns: Json }
       rr_cancel_at_period_end: { Args: { rule_id: string }; Returns: undefined }
@@ -4015,6 +4256,14 @@ export type Database = {
       set_regular_account_balance: {
         Args: { p_account_id: string; p_new_balance: number; p_user_id: string }
         Returns: string
+      }
+      soft_delete_account: {
+        Args: { p_account_id: string; p_user_id?: string }
+        Returns: Json
+      }
+      soft_delete_credit_card: {
+        Args: { p_card_id: string; p_user_id?: string }
+        Returns: Json
       }
       test_auth_context: {
         Args: never
