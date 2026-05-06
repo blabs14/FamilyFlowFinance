@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { useCreateCategory, useUpdateCategory } from '../hooks/useCategoriesQuery';
 import { useUpsertCategoryCustomization, useDeleteCategoryCustomization } from '../hooks/useCategoryCustomizationsQuery';
+import { getCategoriesTree } from '../services/categories';
 import { categorySchema } from '../validation/categorySchema';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -27,6 +29,7 @@ interface CategoryFormData {
   icone?: string;
   descricao?: string;
   user_id?: string;
+  parent_id?: string | null;
 }
 
 interface CategoryFormProps {
@@ -37,13 +40,22 @@ interface CategoryFormProps {
 
 const CategoryForm = ({ initialData, onSuccess, onCancel }: CategoryFormProps) => {
   const { user } = useAuth();
-  
+
+  const isSystemCategory = !!(initialData as any)?.is_system;
+
+  const { data: categoriesTree } = useQuery({
+    queryKey: ['categories-tree'],
+    queryFn: () => getCategoriesTree(),
+    select: (result) => result.data ?? [],
+  });
+
   const form = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
     defaultValues: {
       nome: '',
       cor: '#3B82F6',
       icone: '📊',
+      parent_id: (initialData as any)?.parent_id ?? null,
       ...initialData
     }
   });
@@ -130,58 +142,85 @@ const CategoryForm = ({ initialData, onSuccess, onCancel }: CategoryFormProps) =
   return (
     <FormTransition>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div>
-          <label htmlFor="nome">
-            Nome da Categoria
-          </label>
-          <input
-            {...register('nome')}
-            id="nome"
-            type="text"
-            className="w-full p-2 border rounded"
-            placeholder="Nome da categoria"
-          />
-          {errors.nome && <p className="text-red-500 text-sm">{errors.nome.message}</p>}
-        </div>
+        {isSystemCategory && (
+          <div className="rounded bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
+            Esta categoria é de sistema e não pode ser editada diretamente.
+            Para personalizar cor ou ícone, use "Personalizações de categoria".
+          </div>
+        )}
 
-        <div>
-          <label htmlFor="cor">
-            Cor
-          </label>
-          <input
-            {...register('cor')}
-            id="cor"
-            type="color"
-            className="w-full h-10 border rounded cursor-pointer"
-          />
-          {errors.cor && <p className="text-red-500 text-sm">{errors.cor.message}</p>}
-        </div>
+        <fieldset disabled={isSystemCategory} className="space-y-4 disabled:opacity-60">
+          <div>
+            <label htmlFor="nome">
+              Nome da Categoria
+            </label>
+            <input
+              {...register('nome')}
+              id="nome"
+              type="text"
+              className="w-full p-2 border rounded"
+              placeholder="Nome da categoria"
+            />
+            {errors.nome && <p className="text-red-500 text-sm">{errors.nome.message}</p>}
+          </div>
 
-        <div>
-          <label htmlFor="icone">
-            Ícone
-          </label>
-          <input
-            {...register('icone')}
-            id="icone"
-            type="text"
-            className="w-full p-2 border rounded"
-            placeholder="Ícone da categoria"
-          />
-          {errors.icone && <p className="text-red-500 text-sm">{errors.icone.message}</p>}
-        </div>
+          <div>
+            <label htmlFor="cor">
+              Cor
+            </label>
+            <input
+              {...register('cor')}
+              id="cor"
+              type="color"
+              className="w-full h-10 border rounded cursor-pointer"
+            />
+            {errors.cor && <p className="text-red-500 text-sm">{errors.cor.message}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="icone">
+              Ícone
+            </label>
+            <input
+              {...register('icone')}
+              id="icone"
+              type="text"
+              className="w-full p-2 border rounded"
+              placeholder="Ícone da categoria"
+            />
+            {errors.icone && <p className="text-red-500 text-sm">{errors.icone.message}</p>}
+          </div>
+
+          {!isSystemCategory && (
+            <div>
+              <label className="text-sm font-medium">Categoria pai (opcional)</label>
+              <select
+                {...register('parent_id')}
+                className="mt-1 block w-full rounded border border-gray-300 p-2 text-sm"
+              >
+                <option value="">— Nenhuma (categoria raiz) —</option>
+                {(categoriesTree ?? [])
+                  .filter((c: any) => !c.is_system && c.id !== initialData?.id)
+                  .map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.nome}</option>
+                  ))}
+              </select>
+            </div>
+          )}
+        </fieldset>
 
         <div className="flex flex-col sm:flex-row gap-2">
-          <FormSubmitButton 
+          <FormSubmitButton
             isSubmitting={isSubmitting}
             submitText={isEditing && isDefaultCategory ? 'Personalizar' : (initialData?.id ? 'Atualizar' : 'Criar')}
             submittingText={isEditing && isDefaultCategory ? 'A personalizar...' : (initialData?.id ? 'A atualizar...' : 'A criar...')}
             className="w-full"
+            disabled={isSystemCategory}
           />
           {isEditing && isDefaultCategory && (
-            <Button 
-              type="button" 
-              variant="destructive" 
+            <Button
+              type="button"
+              variant="destructive"
               onClick={handleResetCustomization}
               disabled={isSubmitting}
               className="w-full"

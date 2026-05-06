@@ -100,9 +100,10 @@ export const createTransaction = async (transactionData: TransactionInsert, user
     } else {
       const { valor: _valor, ...rest } = transactionData as any;
       const amount_cents = rest.amount_cents ?? Math.round(Math.abs(Number(_valor || 0)) * 100);
+      const operation_id = rest.operation_id ?? (typeof crypto !== 'undefined' ? crypto.randomUUID() : `${Date.now()}`);
       const { data, error } = await supabase
         .from('transactions')
-        .insert([{ ...rest, amount_cents, user_id: userId }])
+        .insert([{ ...rest, amount_cents, user_id: userId, operation_id }])
         .select()
         .single();
 
@@ -235,6 +236,17 @@ export const getCreditCardSummary = async (cardAccountId: string): Promise<{ dat
       ciclo_inicio: String(rowObj.ciclo_inicio ?? '')
     };
     return { data: shaped, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
+};
+
+export const reverseTransaction = async (
+  txId: string
+): Promise<{ data: { reversal_id: string; original_id: string; operation_id: string } | null; error: unknown }> => {
+  try {
+    const { data, error } = await supabase.rpc('reverse_transaction', { p_tx_id: txId });
+    return { data: data || null, error };
   } catch (error) {
     return { data: null, error };
   }
