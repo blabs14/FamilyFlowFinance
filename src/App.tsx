@@ -22,6 +22,7 @@ const TransactionsPage = lazy(() => import('./pages/app/TransactionsPage'));
 const GoalsPage        = lazy(() => import('./pages/app/GoalsPage'));
 const BudgetsPage      = lazy(() => import('./pages/app/BudgetsPage'));
 const RecurrentsAppPage = lazy(() => import('./pages/app/RecurrentsPage'));
+const InboxPage         = lazy(() => import('./pages/app/InboxPage'));
 const MembersPage      = lazy(() => import('./pages/app/MembersPage'));
 const FamilySettingsPage = lazy(() => import('./pages/app/FamilySettingsPage'));
 
@@ -80,6 +81,9 @@ function App() {
                     } />
                     <Route path="recorrentes" element={
                       <Suspense fallback={<PageLoading />}><RecurrentsAppPage /></Suspense>
+                    } />
+                    <Route path="inbox" element={
+                      <Suspense fallback={<PageLoading />}><InboxPage /></Suspense>
                     } />
                     <Route path="payroll/*" element={
                       <Suspense fallback={<PageLoading />}><PayrollPage /></Suspense>

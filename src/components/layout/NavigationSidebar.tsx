@@ -13,6 +13,7 @@ import {
   UserPlus,
   Settings,
   User,
+  Inbox,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProfile } from '../../hooks/useProfilesQuery';
@@ -29,6 +30,7 @@ const mainNavItems = [
   { title: 'Orçamentos',   href: '/app/orcamentos',  icon: PieChart,       description: 'Orçamentos mensais', end: false },
   { title: 'Objetivos',    href: '/app/objetivos',   icon: Target,         description: 'Metas financeiras', end: false },
   { title: 'Recorrentes',  href: '/app/recorrentes', icon: RefreshCw,      description: 'Despesas e subscrições recorrentes', end: false },
+  { title: 'Inbox',        href: '/app/inbox',       icon: Inbox,          description: 'Itens pendentes de ação', end: false },
   { title: 'Payroll',      href: '/app/payroll',     icon: Briefcase,      description: 'Folha de pagamento', end: false },
   { title: 'Relatórios',   href: '/app/reports',     icon: BarChart3,      description: 'Relatórios e análises', end: false },
 ];
