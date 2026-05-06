@@ -41,9 +41,9 @@ describe('calculatePayslip', () => {
     expect(result.net_cents).toBe(117532);
   });
 
-  it('throws when RPC returns error', async () => {
+  it('throws the RPC error object when error is returned', async () => {
     mockRpc.mockResolvedValueOnce({ data: null, error: { message: 'CONTRACT_NOT_FOUND' } });
-    await expect(calculatePayslip('bad-id', '2026-05')).rejects.toBeTruthy();
+    await expect(calculatePayslip('bad-id', '2026-05')).rejects.toMatchObject({ message: 'CONTRACT_NOT_FOUND' });
   });
 });
 
@@ -76,12 +76,38 @@ describe('createPayslipDraft', () => {
   });
 });
 
+describe('savePayrollContractCore', () => {
+  it('maps camelCase params to snake_case RPC params and returns new contract id', async () => {
+    mockRpc.mockResolvedValueOnce({ data: 'new-contract-uuid', error: null });
+
+    const id = await savePayrollContractCore({
+      name: 'Test Worker',
+      baseSalaryCents: 120000,
+      weeklyHours: 40,
+      scheduleJson: { mon: 8 },
+      vacationBonusMode: 'full',
+      christmasBonusMode: 'full',
+      accountId: 'account-uuid',
+    });
+
+    expect(mockRpc).toHaveBeenCalledWith('save_payroll_contract', {
+      p_name:                 'Test Worker',
+      p_base_salary_cents:    120000,
+      p_weekly_hours:         40,
+      p_schedule_json:        { mon: 8 },
+      p_vacation_bonus_mode:  'full',
+      p_christmas_bonus_mode: 'full',
+      p_account_id:           'account-uuid',
+    });
+    expect(id).toBe('new-contract-uuid');
+  });
+});
+
 describe('getPostedPayslips', () => {
-  it('queries payroll_payslips filtered by contract and status=posted', async () => {
+  it('queries payroll_payslips filtered by contract_id and status=posted', async () => {
     const mockChain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      in: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: [], error: null }),
     };
     mockFrom.mockReturnValue(mockChain);
@@ -90,6 +116,7 @@ describe('getPostedPayslips', () => {
 
     expect(mockFrom).toHaveBeenCalledWith('payroll_payslips');
     expect(mockChain.eq).toHaveBeenCalledWith('contract_id', 'contract-123');
+    expect(mockChain.eq).toHaveBeenCalledWith('status', 'posted');
     expect(result).toEqual([]);
   });
 });

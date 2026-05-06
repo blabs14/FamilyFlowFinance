@@ -1694,6 +1694,7 @@ export const createPayslipDraft = async (
     p_period: period,
   });
   if (error) throw error;
+  if (!data) throw new Error('create_payslip_draft returned no ID');
   return data as string;
 };
 
@@ -1737,7 +1738,7 @@ export const getPostedPayslips = async (contractId: string): Promise<PayslipReco
       'id, contract_id, period, status, transaction_id, gross_cents, irs_cents, ss_cents, meal_allowance_cents, net_cents, working_days, components, created_at',
     )
     .eq('contract_id', contractId)
-    .in('status', ['posted'])
+    .eq('status', 'posted')
     .order('period', { ascending: false });
 
   if (error) throw error;
