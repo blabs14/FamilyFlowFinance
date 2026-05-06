@@ -44,7 +44,15 @@ function getMondayOfCurrentWeek(): Date {
 }
 
 function RecibosPage() {
-  const { activeContract } = useActiveContract();
+  const { activeContract, loading } = useActiveContract();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
   if (!activeContract?.id) {
     return (

@@ -91,7 +91,7 @@ export function PayrollNavigation({ className }: PayrollNavigationProps) {
       description: 'Visualizar e gerir contratos'
     },
     {
-      path: '/personal/payroll/recibos',
+      path: '/app/payroll/recibos',
       label: 'Recibos',
       icon: Receipt,
       description: 'Recibos de vencimento',
