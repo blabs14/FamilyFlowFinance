@@ -152,45 +152,31 @@ describe('goals service', () => {
   });
 
   describe('createGoal', () => {
-    it('creates a goal with an explicit user id', async () => {
+    it('creates a goal with user_id in payload', async () => {
       const goal = makeGoal({ user_id: 'user-1' });
       const chain = mockFrom({ singleData: goal });
       fromMock.mockReturnValueOnce(chain);
 
-      const result = await createGoal({ nome: goal.nome, valor_objetivo: 1000 } as any, 'user-1');
+      const result = await createGoal({ nome: goal.nome, user_id: 'user-1' } as any);
 
       expect(fromMock).toHaveBeenCalledWith('goals');
       expect(chain.insert).toHaveBeenCalledWith([
-        expect.objectContaining({ nome: goal.nome, valor_objetivo: 1000, user_id: 'user-1' }),
+        expect.objectContaining({ nome: goal.nome, user_id: 'user-1' }),
       ]);
       expect(result).toEqual({ data: goal, error: null });
-    });
-
-    it('falls back to the authenticated user when user id is missing', async () => {
-      const goal = makeGoal({ user_id: 'auth-user-1' });
-      const chain = mockFrom({ singleData: goal });
-      fromMock.mockReturnValueOnce(chain);
-
-      await createGoal({ nome: goal.nome, valor_objetivo: 1000 } as any);
-
-      expect(getUserMock).toHaveBeenCalled();
-      expect(chain.insert).toHaveBeenCalledWith([
-        expect.objectContaining({ user_id: 'auth-user-1' }),
-      ]);
     });
   });
 
   describe('updateGoal', () => {
-    it('updates a goal in edit mode', async () => {
+    it('updates a goal by id', async () => {
       const updatedGoal = makeGoal({ nome: 'Novo nome' });
       const chain = mockFrom({ singleData: updatedGoal });
       fromMock.mockReturnValueOnce(chain);
 
-      const result = await updateGoal('goal-1', { nome: 'Novo nome' } as any, 'user-1');
+      const result = await updateGoal('goal-1', { nome: 'Novo nome' } as any);
 
       expect(chain.update).toHaveBeenCalledWith({ nome: 'Novo nome' });
-      expect(chain.eq).toHaveBeenNthCalledWith(1, 'id', 'goal-1');
-      expect(chain.eq).toHaveBeenNthCalledWith(2, 'user_id', 'user-1');
+      expect(chain.eq).toHaveBeenCalledWith('id', 'goal-1');
       expect(result).toEqual({ data: updatedGoal, error: null });
     });
 
@@ -205,51 +191,44 @@ describe('goals service', () => {
   });
 
   describe('deleteGoal', () => {
-    it('calls the delete RPC with the deterministic idempotency key', async () => {
-      rpcMock.mockResolvedValueOnce({ data: { success: true, message: 'apagado' }, error: null });
+    it('calls the delete RPC with goal_id and idempotency_key', async () => {
+      rpcMock.mockResolvedValueOnce({ data: true, error: null });
 
-      const result = await deleteGoal('goal-1', 'user-1');
+      const result = await deleteGoal('goal-1');
 
       expect(rpcMock).toHaveBeenCalledWith('delete_goal_with_restoration', {
         goal_id_param: 'goal-1',
-        user_id_param: 'user-1',
-        idempotency_key: 'user-1:goal-1:delete',
+        idempotency_key: 'goal-1:delete',
       });
-      expect(result).toEqual({ data: { success: true, message: 'apagado' }, error: null });
+      expect(result).toEqual({ data: true, error: null });
     });
 
     it('returns the rpc error when deletion fails', async () => {
       const error = { code: 'PGRST', message: 'delete failed' };
       rpcMock.mockResolvedValueOnce({ data: null, error });
 
-      const result = await deleteGoal('goal-1', 'user-1');
+      const result = await deleteGoal('goal-1');
 
       expect(result).toEqual({ data: null, error });
     });
   });
 
   describe('allocateToGoal', () => {
-    it('calls the allocation RPC with the right payload', async () => {
-      rpcMock.mockResolvedValueOnce({ data: { amount_allocated: 100 }, error: null });
+    it('calls the allocation RPC with object params', async () => {
+      rpcMock.mockResolvedValueOnce({ data: { id: 'entry-1', amount_cents: 10000 }, error: null });
 
-      const result = await allocateToGoal('goal-1', 'account-1', 100, 'user-1', 'Reforco');
-
-      expect(rpcMock).toHaveBeenCalledWith('allocate_to_goal_with_transaction', {
-        goal_id_param: 'goal-1',
-        account_id_param: 'account-1',
-        amount_param: 100,
-        user_id_param: 'user-1',
-        description_param: 'Reforco',
+      const result = await allocateToGoal({
+        goalId: 'goal-1',
+        accountId: 'account-1',
+        amountCents: 10000,
       });
-      expect(result).toEqual({ data: { amount_allocated: 100 }, error: null });
-    });
 
-    it('returns an error when the amount is invalid', async () => {
-      const result = await allocateToGoal('goal-1', 'account-1', 0, 'user-1');
-
-      expect(result.data).toBeNull();
-      expect(result.error).toBeInstanceOf(Error);
-      expect((result.error as Error).message).toMatch(/Montante deve ser positivo/);
+      expect(rpcMock).toHaveBeenCalledWith('allocate_to_goal', {
+        p_goal_id: 'goal-1',
+        p_account_id: 'account-1',
+        p_amount: 100, // amountCents / 100
+      });
+      expect(result.error).toBeNull();
     });
   });
 

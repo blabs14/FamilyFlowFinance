@@ -79,7 +79,7 @@ export const exportToPDF = async (data: ExportData, options: ExportOptions): Pro
       new Date(t.data).toLocaleDateString('pt-PT'),
       t.descricao || '-',
       t.tipo === 'receita' ? '+' : '-',
-      (t.amount_cents || 0) / 100.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }),
+      ((t.amount_cents || 0) / 100).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }),
       t.categoria_nome || '-',
       t.account_nome || '-',
     ]);
@@ -151,7 +151,7 @@ export const exportToCSV = (data: ExportData, options: ExportOptions): Blob => {
     new Date(t.data).toLocaleDateString('pt-PT'),
     t.descricao || '',
     t.tipo,
-    (t.amount_cents || 0) / 100.toFixed(2),
+    ((t.amount_cents || 0) / 100).toFixed(2),
     t.categoria_nome || '',
     t.account_nome || '',
   ]);

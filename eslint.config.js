@@ -15,6 +15,8 @@ export default tseslint.config(
       '.git/**',
       '.github/**',
       '.vscode/**',
+      '.worktrees/**',
+      '.claude/**',
       'supabase/**',
       'cypress/**',
       'src/integrations/supabase/database.types.ts'

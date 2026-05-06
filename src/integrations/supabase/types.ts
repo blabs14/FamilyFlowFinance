@@ -79,6 +79,19 @@ export type AccountUpdateExtended = AccountUpdate & {
   ajusteSaldo?: number;
 };
 
+// Unit 07 — Goals extended types
+export type GoalLedgerRow = Database['public']['Tables']['goal_ledger']['Row'];
+export type GoalFundingRule = Database['public']['Tables']['goal_funding_rules']['Row'];
+
+// goal_contributors not yet in generated types (migration applied post-generation)
+export type GoalContributor = {
+  goal_id: string;
+  user_id: string;
+  target_cents: number | null;
+  created_at: string;
+};
+export type GoalContributorInsert = Omit<GoalContributor, 'created_at'>;
+
 // Unit 8: novos tipos
 export type BudgetInstance = Database['public']['Tables']['budget_instances']['Row'];
 export type BudgetInstanceInsert = Database['public']['Tables']['budget_instances']['Insert'];
