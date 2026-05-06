@@ -1,6 +1,14 @@
 import { supabase } from '../lib/supabaseClient';
 import { retryWithBackoff, withTimeout } from '../config/rpcConfig';
 
+/** @deprecated Legacy — AccountList only. Account allocations now live in Unit 07 goals service. */
+export const getAccountAllocationsTotal = async (
+  _accountId: string,
+  _userId: string,
+): Promise<{ data: number | null; error: unknown }> => {
+  return { data: 0, error: null };
+};
+
 export const getGoalBalance = async (goalId: string): Promise<{ data: { valor_atual_cents: number } | null; error: unknown }> => {
   const { data, error } = await supabase
     .from('goals_with_balance')
