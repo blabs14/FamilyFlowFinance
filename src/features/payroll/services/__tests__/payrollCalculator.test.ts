@@ -20,10 +20,16 @@ describe('formatCents', () => {
     expect(result).toContain('€');
   });
 
-  it('formats negative cents (absolute value)', () => {
+  it('formats 150000 cents as 1500.00 EUR', () => {
     const result = formatCents(150000);
     expect(result).toContain('1');
     expect(result).toContain('500');
+  });
+
+  it('passes through negative values without absolute-value guard (caller must use Math.abs)', () => {
+    // formatCents does NOT guard against negatives — callers (e.g. enrichComponents) must pass Math.abs first
+    const result = formatCents(-92000);
+    expect(result).toContain('920');
   });
 });
 
@@ -37,6 +43,11 @@ describe('periodLabel', () => {
   it('handles January', () => {
     const result = periodLabel('2026-01');
     expect(result.toLowerCase()).toContain('janeiro');
+  });
+
+  it('handles December', () => {
+    const result = periodLabel('2026-12');
+    expect(result.toLowerCase()).toContain('dezembro');
   });
 });
 

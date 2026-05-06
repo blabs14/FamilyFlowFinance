@@ -3,6 +3,11 @@
 
 import type { PayslipComponent } from '../types/payroll-core.types';
 
+/**
+ * Formats a cent amount as a Portuguese EUR currency string.
+ * @param cents - Value in cents. Caller is responsible for sign handling;
+ *   pass Math.abs(cents) if absolute value is needed (e.g. inside enrichComponents).
+ */
 export const formatCents = (cents: number): string =>
   (cents / 100).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' });
 
