@@ -13,6 +13,8 @@ export interface PayrollContract {
   vacation_bonus_mode: string;
   christmas_bonus_mode: string;
   is_active: boolean;
+  status?: 'active' | 'inactive';    // Unit 11: replaces is_active pattern
+  account_id?: string | null;         // Unit 11: bank account for net salary
   job_category?: string;
   workplace_location?: string;
   duration?: number; // em meses

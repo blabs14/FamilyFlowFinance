@@ -11,8 +11,7 @@ import {
   PayrollContract,
   ContractFormData
 } from '../types';
-import { payrollService } from '../services/payrollService';
-import { savePayrollContractCore } from '../services/payrollService';
+import { payrollService, savePayrollContractCore } from '../services/payrollService';
 import { contractSyncService } from '../services/contractSyncService';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,8 +55,8 @@ export function PayrollContractForm({ contract, onSave, onCancel }: PayrollContr
   const { notifications, addNotification, removeNotification } = usePayrollNotifications();
 
   // Fetch user's personal accounts for salary destination selector
-  const { data: accounts = [] } = useQuery({
-    queryKey: ['accounts-for-payroll'],
+  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
+    queryKey: ['accounts-for-payroll', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('accounts')
@@ -67,6 +66,7 @@ export function PayrollContractForm({ contract, onSave, onCancel }: PayrollContr
       if (error) throw error;
       return data ?? [];
     },
+    enabled: !!user?.id,
   });
   const queryClient = useQueryClient();
 
@@ -93,7 +93,7 @@ export function PayrollContractForm({ contract, onSave, onCancel }: PayrollContr
   const [baseSalaryInput, setBaseSalaryInput] = useState('');
   const [weeklyHoursInput, setWeeklyHoursInput] = useState('');
   const [currencyOptions, setCurrencyOptions] = useState<{ code: string; name?: string }[]>([]);
-  const [accountId, setAccountId] = useState<string>((contract as any)?.account_id ?? '');
+  const [accountId, setAccountId] = useState<string>(contract?.account_id ?? '');
 
   useEffect(() => {
     if (contract) {
@@ -133,6 +133,8 @@ export function PayrollContractForm({ contract, onSave, onCancel }: PayrollContr
       // Inicializar valores de entrada como strings
       setBaseSalaryInput(contract.base_salary_cents > 0 ? (contract.base_salary_cents / 100).toString().replace('.', ',') : '');
       setWeeklyHoursInput(contract.weekly_hours ? contract.weekly_hours.toString().replace('.', ',') : '40');
+      // Re-hydrate account selector so editing an existing contract preserves the saved account
+      setAccountId(contract.account_id ?? '');
     }
   }, [contract, defaultCurrency]);
 
@@ -624,9 +626,9 @@ export function PayrollContractForm({ contract, onSave, onCancel }: PayrollContr
           {/* Conta para receber o salário líquido */}
           <div className="space-y-2">
             <Label htmlFor="accountId">Conta para receber o salário líquido</Label>
-            <Select value={accountId} onValueChange={setAccountId}>
+            <Select value={accountId} onValueChange={setAccountId} disabled={accountsLoading}>
               <SelectTrigger id="accountId">
-                <SelectValue placeholder="Selecionar conta..." />
+                <SelectValue placeholder={accountsLoading ? 'A carregar contas...' : 'Selecionar conta...'} />
               </SelectTrigger>
               <SelectContent>
                 {accounts.map(acc => (
@@ -636,7 +638,7 @@ export function PayrollContractForm({ contract, onSave, onCancel }: PayrollContr
                 ))}
               </SelectContent>
             </Select>
-            {!accountId && (
+            {!accountsLoading && !accountId && (
               <p className="text-sm text-muted-foreground">
                 Necessário para lançar recibos de vencimento.
               </p>
