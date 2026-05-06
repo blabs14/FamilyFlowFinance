@@ -20,7 +20,7 @@ CREATE OR REPLACE FUNCTION public.save_payroll_contract(
   p_schedule_json        jsonb,
   p_vacation_bonus_mode  text,
   p_christmas_bonus_mode text,
-  p_account_id           uuid
+  p_account_id           uuid  -- required: the account where net salary lands
 )
 RETURNS uuid
 LANGUAGE plpgsql
@@ -31,6 +31,7 @@ DECLARE
   v_new_id uuid;
 BEGIN
   -- Verify account belongs to the calling user
+  -- p_account_id is intentionally required (UI enforces selection before calling)
   PERFORM 1 FROM public.accounts
     WHERE id = p_account_id AND user_id = auth.uid();
   IF NOT FOUND THEN
@@ -45,6 +46,8 @@ BEGIN
     WHERE user_id = auth.uid() AND status = 'active';
 
   -- Insert new active contract
+  -- payroll_contracts_one_active_per_user_idx (unique partial on status='active')
+  -- prevents two concurrent inserts; CONCURRENT_CONTRACT_SAVE is returned on collision.
   INSERT INTO public.payroll_contracts (
     user_id, name, base_salary_cents, weekly_hours,
     schedule_json, vacation_bonus_mode, christmas_bonus_mode,
@@ -57,6 +60,10 @@ BEGIN
   RETURNING id INTO v_new_id;
 
   RETURN v_new_id;
+
+EXCEPTION
+  WHEN unique_violation THEN
+    RAISE EXCEPTION 'CONCURRENT_CONTRACT_SAVE';
 END;
 $$;
 
@@ -85,10 +92,12 @@ BEGIN
     WHERE id = p_contract_id AND user_id = auth.uid();
   IF NOT FOUND THEN RAISE EXCEPTION 'CONTRACT_NOT_FOUND'; END IF;
 
-  -- Idempotency: return existing if already exists
+  -- Idempotency: return existing draft/posted; void payslips are ignored (treated as absent)
+  -- so a replacement draft can be created after a void.
   SELECT id INTO v_slip_id
     FROM public.payroll_payslips
-    WHERE contract_id = p_contract_id AND period = p_period;
+    WHERE contract_id = p_contract_id AND period = p_period
+      AND status != 'void';
   IF FOUND THEN RETURN v_slip_id; END IF;
 
   -- Calculate components
@@ -146,8 +155,7 @@ BEGIN
     ps.transaction_id,
     ps.net_cents,
     ps.period,
-    pc.account_id AS contract_account_id,
-    pc.user_id    AS contract_user_id
+    pc.account_id AS contract_account_id
   INTO v_payslip
     FROM public.payroll_payslips ps
     JOIN public.payroll_contracts pc ON pc.id = ps.contract_id
