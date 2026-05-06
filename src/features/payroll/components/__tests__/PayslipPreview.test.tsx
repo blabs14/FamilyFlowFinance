@@ -81,14 +81,15 @@ describe('PayslipPreview', () => {
       components: [], createdAt: '2026-05-01',
     }]);
     renderComponent();
+    // Both queries must resolve before checking posted state — keep all assertions inside waitFor
     await waitFor(() => {
-      const btn = screen.queryByRole('button', { name: /Lançar Recibo/i });
-      expect(btn).toBeNull(); // button not rendered for already-posted periods
+      expect(screen.queryByRole('button', { name: /Lançar Recibo/i })).toBeNull();
+      expect(screen.getByText(/já lançado/i)).toBeTruthy();
     });
-    expect(screen.getByText(/já lançado/i)).toBeTruthy();
   });
 
-  it('calls createPayslipDraft then postPayslip on Lançar click', async () => {
+  it('calls createPayslipDraft then postPayslip on Lançar click and shows success toast', async () => {
+    mockToast.mockClear();
     mockCalc.mockResolvedValue(mockCalculation);
     mockDraft.mockResolvedValue('payslip-uuid-1');
     mockPost.mockResolvedValue({ transaction_id: 'tx-new', idempotent: false });
@@ -101,6 +102,22 @@ describe('PayslipPreview', () => {
     await waitFor(() => {
       expect(mockDraft).toHaveBeenCalledWith('contract-1', '2026-05');
       expect(mockPost).toHaveBeenCalledWith('payslip-uuid-1');
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Recibo lançado' }));
+    });
+  });
+
+  it('shows "já existia" toast when postPayslip returns idempotent=true', async () => {
+    mockToast.mockClear();
+    mockCalc.mockResolvedValue(mockCalculation);
+    mockDraft.mockResolvedValue('payslip-uuid-existing');
+    mockPost.mockResolvedValue({ transaction_id: 'tx-existing', idempotent: true });
+
+    renderComponent();
+    await waitFor(() => screen.getByText(/Lançar Recibo/i));
+    fireEvent.click(screen.getByText(/Lançar Recibo/i));
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Recibo já existia' }));
     });
   });
 

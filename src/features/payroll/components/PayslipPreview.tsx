@@ -51,16 +51,20 @@ export default function PayslipPreview({ contractId, defaultPeriod }: PayslipPre
   );
 
   const handlePost = async () => {
-    if (!calculation) return;
+    if (!calculation || postingState === 'posting' || postingState === 'done') return;
     setPostingState('posting');
     try {
       const payslipId = await createPayslipDraft(contractId, period);
-      await postPayslip(payslipId);
+      const result = await postPayslip(payslipId);
       queryClient.invalidateQueries({ queryKey: ['payroll-payslips', contractId] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['kpis'] });
       setPostingState('done');
-      toast({ title: 'Recibo lançado', description: `Ordenado líquido de ${periodLabel(period)} registado.` });
+      if (result.idempotent) {
+        toast({ title: 'Recibo já existia', description: `O recibo de ${periodLabel(period)} já estava lançado.` });
+      } else {
+        toast({ title: 'Recibo lançado', description: `Ordenado líquido de ${periodLabel(period)} registado.` });
+      }
     } catch (err: any) {
       setPostingState('error');
       toast({
@@ -138,12 +142,16 @@ export default function PayslipPreview({ contractId, defaultPeriod }: PayslipPre
               </div>
             ) : (
               <Button
+                type="button"
                 onClick={handlePost}
-                disabled={postingState === 'posting'}
+                disabled={postingState === 'posting' || postingState === 'done'}
+                aria-busy={postingState === 'posting'}
                 className="w-full"
               >
                 {postingState === 'posting' ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> A lançar...</>
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> A lançar...</>
+                ) : postingState === 'error' ? (
+                  'Tentar novamente'
                 ) : (
                   'Lançar Recibo'
                 )}
