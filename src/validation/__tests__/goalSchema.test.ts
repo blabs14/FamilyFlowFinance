@@ -1,36 +1,53 @@
-import { describe, expect, it } from 'vitest';
-import { goalSchema } from '../goalSchema';
+// src/validation/__tests__/goalSchema.test.ts
+import { describe, it, expect } from 'vitest';
+import { goalSchema, goalAllocationSchema } from '../goalSchema';
 
 describe('goalSchema', () => {
-  const valid = {
-    nome: 'Fundo de emergencia',
-    valor_objetivo: '1000',
-    valor_atual: '250',
-    prazo: '2026-12-31',
-    status: 'active',
-    ativa: true,
-    account_id: 'account-1',
-  };
-
-  it('accepts a valid payload', () => {
-    const result = goalSchema.parse(valid);
-    expect(result.valor_objetivo).toBe(1000);
-    expect(result.valor_atual).toBe(250);
-  });
-
-  it('rejects a payload missing a required field', () => {
-    const { nome: _nome, ...rest } = valid;
-    const result = goalSchema.safeParse(rest);
+  it('rejects empty nome', () => {
+    const result = goalSchema.safeParse({ nome: '', target_cents: 5000 });
     expect(result.success).toBe(false);
   });
 
-  it('rejects invalid field types', () => {
-    const result = goalSchema.safeParse({ ...valid, valor_objetivo: 'abc' });
+  it('rejects zero target_cents', () => {
+    const result = goalSchema.safeParse({ nome: 'Férias', target_cents: 0 });
     expect(result.success).toBe(false);
   });
 
-  it('rejects negative current amounts', () => {
-    const result = goalSchema.safeParse({ ...valid, valor_atual: -1 });
+  it('accepts valid savings goal', () => {
+    const result = goalSchema.safeParse({ nome: 'Férias', target_cents: 50000 });
+    expect(result.success).toBe(true);
+  });
+
+  it('defaults tipo to savings', () => {
+    const result = goalSchema.safeParse({ nome: 'Férias', target_cents: 50000 });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.tipo).toBe('savings');
+  });
+
+  it('accepts amortization tipo', () => {
+    const result = goalSchema.safeParse({ nome: 'Empréstimo', target_cents: 100000, tipo: 'amortization' });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects unknown tipo', () => {
+    const result = goalSchema.safeParse({ nome: 'X', target_cents: 1000, tipo: 'invalid' });
     expect(result.success).toBe(false);
+  });
+});
+
+describe('goalAllocationSchema', () => {
+  it('rejects zero amount_cents', () => {
+    const result = goalAllocationSchema.safeParse({ goal_id: 'g-1', account_id: 'a-1', amount_cents: 0 });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects negative amount_cents', () => {
+    const result = goalAllocationSchema.safeParse({ goal_id: 'g-1', account_id: 'a-1', amount_cents: -100 });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts valid allocation', () => {
+    const result = goalAllocationSchema.safeParse({ goal_id: 'g-1', account_id: 'a-1', amount_cents: 5000 });
+    expect(result.success).toBe(true);
   });
 });
