@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,12 @@ export default function PayslipHistory({ contractId }: PayslipHistoryProps) {
   const { data: payslips = [], isLoading } = usePayslips(contractId);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+
+  // Reset page and expanded row when contract changes
+  useEffect(() => {
+    setPage(0);
+    setExpanded(null);
+  }, [contractId]);
 
   const paged = payslips.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const totalPages = Math.ceil(payslips.length / PAGE_SIZE);
@@ -56,12 +62,15 @@ export default function PayslipHistory({ contractId }: PayslipHistoryProps) {
           return (
             <div key={slip.id} className="border-b last:border-0">
               <button
+                type="button"
+                aria-expanded={isOpen}
+                aria-controls={`payslip-panel-${slip.id}`}
                 className="flex w-full items-center justify-between px-4 py-3 text-sm hover:bg-muted/50 transition-colors"
                 onClick={() => setExpanded(isOpen ? null : slip.id)}
               >
                 <div className="flex items-center gap-3">
-                  {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  <span className="font-medium">{periodLabel(slip.period)}</span>
+                  {isOpen ? <ChevronUp className="h-4 w-4" aria-hidden="true" /> : <ChevronDown className="h-4 w-4" aria-hidden="true" />}
+                  <span className="font-medium">{slip.period ? periodLabel(slip.period) : '—'}</span>
                   <Badge variant="secondary">{slip.status}</Badge>
                 </div>
                 <span className="font-mono font-semibold text-green-700">
@@ -70,7 +79,12 @@ export default function PayslipHistory({ contractId }: PayslipHistoryProps) {
               </button>
 
               {isOpen && (
-                <div className="px-4 pb-3 pt-1 space-y-1 bg-muted/20">
+                <div
+                  id={`payslip-panel-${slip.id}`}
+                  role="region"
+                  aria-label={slip.period ? periodLabel(slip.period) : 'Detalhe do recibo'}
+                  className="px-4 pb-3 pt-1 space-y-1 bg-muted/20"
+                >
                   {enriched.map((c, i) => (
                     <div key={i} className="flex justify-between text-xs text-muted-foreground">
                       <span>{c.label}</span>
