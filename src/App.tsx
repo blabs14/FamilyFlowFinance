@@ -120,7 +120,7 @@ function App() {
                   <Route path="/personal/recorrentes" element={<Navigate to="/app/recorrentes" replace />} />
                   <Route path="/personal/payroll" element={<Navigate to="/app/payroll" replace />} />
                   <Route path="/personal/payroll/*" element={<Navigate to="/app/payroll" replace />} />
-                  <Route path="/personal/insights" element={<Navigate to="/app/reports" replace />} />
+                  {/* /personal/insights removed — dead route (Unit 10) */}
                   <Route path="/personal/reminders" element={<Navigate to="/app" replace />} />
                   <Route path="/personal/settings" element={<Navigate to="/app/profile" replace />} />
                   <Route path="/personal/*" element={<Navigate to="/app" replace />} />

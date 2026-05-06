@@ -506,6 +506,7 @@ export const setAccountReservePercentage = async (accountId: string, percentBp: 
   }
 };
 
+/** @deprecated Use supabase.rpc('get_kpis', { scope_family_id: null }) — Unit 10 */
 export const getPersonalKPIs = async () => {
   const { data, error } = await supabase.rpc('get_personal_kpis');
   
