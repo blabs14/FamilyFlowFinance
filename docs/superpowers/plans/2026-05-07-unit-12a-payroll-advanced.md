@@ -699,7 +699,11 @@ export function calcOtScaled(
     otPayCents += entryPayCents;
 
     if (entryPayCents > 0) {
-      const label = entry.isRestDay ? `OT Descanso ${entry.date}` : `OT ${entry.date}`;
+      // Prefix label with scale indicator so the UI can detect it without extra state
+      const scale = ytdRunning > 100 ? 'E2' : 'E1';
+      const label = entry.isRestDay
+        ? `OT Descanso ${scale} ${entry.date}`
+        : `OT ${scale} ${entry.date}`;
       components.push({ label, amount_cents: entryPayCents, sign: '+' });
     }
   }
@@ -1243,7 +1247,8 @@ export const calculatePayslip = async (
     : 0;
 
   const otResult   = calcOtScaled(otEntries, baseHourlyCents, otPolicy.ot_hours_ytd ?? 0,
-                       taxRates.otRates, taxRates.otLimits, otPolicy.isMPE ?? true);
+                       taxRates.otRates, taxRates.otLimits,
+                       (otPolicy as any).isMPE ?? true); // TODO(12b): add isMPE column to payroll_ot_policies
   const otIrsCents = calcOtIrsWithholding(otResult.otPayCents, irsRateFraction,
                        taxRates.otIrsWithholding.autonomous_rate_of_base);
   const mileage    = calcMileageCap(
@@ -2021,8 +2026,8 @@ After the existing OT breakdown display, add:
         </thead>
         <tbody>
           {scaledOtResult.components.map((c, i) => {
-            const isScale2 = /* determine from ytd accumulation — use label or entry index */
-              scaledOtResult.newYtdHours > 100;
+            // calcOtScaled encodes 'E2' in labels when ytd crosses 100h
+            const isScale2 = c.label.includes('E2');
             return (
               <tr key={i} className="border-b">
                 <td className="py-2">{c.label}</td>
