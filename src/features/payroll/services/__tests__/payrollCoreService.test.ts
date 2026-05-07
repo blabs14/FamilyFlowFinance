@@ -31,6 +31,14 @@ describe('calculatePayslip', () => {
       error: null,
     });
 
+    // Phase 2: getOTPoliciesByContract returns empty → early-return path (no legal-defaults policy)
+    const mockOtPolicyChain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    mockFrom.mockReturnValue(mockOtPolicyChain);
+
     const result = await calculatePayslip('contract-123', '2026-05');
 
     expect(mockRpc).toHaveBeenCalledWith('calculate_payslip', {

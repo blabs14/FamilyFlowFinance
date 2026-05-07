@@ -1673,16 +1673,110 @@ export async function recalculatePayroll(
 // Unit 11 — Payroll Core: RPC-backed methods
 // ─────────────────────────────────────────────────────────────────
 
+/** Fetches leaves for a contract within a date range — used by the Phase 2 calc engine. */
+export async function getLeavesByContractPeriod(
+  contractId: string,
+  startDate: string,
+  endDate: string,
+): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('payroll_leaves')
+    .select('*')
+    .eq('contract_id', contractId)
+    .gte('start_date', startDate)
+    .lte('end_date', endDate);
+  if (error) throw error;
+  return data ?? [];
+}
+
 export const calculatePayslip = async (
   contractId: string,
   period: string,
 ): Promise<PayslipCalculation> => {
-  const { data, error } = await supabase.rpc('calculate_payslip', {
+  // ── Phase 1: RPC base calculation (IRS brackets, SS, meal) ──────────────────
+  const { data: base, error } = await supabase.rpc('calculate_payslip', {
     p_contract_id: contractId,
     p_period: period,
   });
   if (error) throw error;
-  return data as PayslipCalculation;
+  const baseResult = base as PayslipCalculation;
+
+  // ── Phase 2: fetch fiscal inputs + TypeScript calc engine ────────────────────
+  const {
+    fetchTaxRates: fetchRates,
+    fetchTravelAllowances: fetchAllowances,
+  } = await import('./payrollAdvanced.service');
+  const {
+    buildOtDayEntries,
+    calcOtScaled,
+    calcOtIrsWithholding,
+    calcMileageCap,
+    calcTravelAllowance,
+    calcLeaveImpact,
+    mergeComponents,
+  } = await import('../lib/calc');
+
+  const [year, month] = period.split('-').map(Number);
+
+  // Fetch OT policy to get threshold_hours, ot_hours_ytd, isMPE flag
+  const otPolicies = await getOTPoliciesByContract(contractId);
+  const otPolicy = otPolicies[0] ?? null;
+  if (!otPolicy || !otPolicy.use_legal_defaults) {
+    // No legal-defaults policy: return base calculation unchanged
+    return baseResult;
+  }
+
+  const firstDay = `${period}-01`;
+  const lastDay  = new Date(year, month, 0).toISOString().split('T')[0];
+
+  const [rawTimeEntries, mileageTrips, travelAllowances, leaves, taxRates] = await Promise.all([
+    getTimeEntriesByContract(null as any, contractId),
+    getMileageTrips(null as any, firstDay, lastDay, contractId),
+    fetchAllowances(contractId, period),
+    getLeavesByContractPeriod(contractId, firstDay, lastDay),
+    fetchRates(new Date().getFullYear()),
+  ]);
+
+  const thresholdMins   = (otPolicy.threshold_hours ?? 8) * 60;
+  const otEntries       = buildOtDayEntries(rawTimeEntries ?? [], thresholdMins);
+  const baseMinuteCents = thresholdMins > 0
+    ? Math.round(baseResult.gross_cents / (thresholdMins * 4.33))
+    : 0;
+  const irsRateFraction = baseResult.gross_cents > 0
+    ? baseResult.irs_cents / baseResult.gross_cents
+    : 0;
+
+  const otResult    = calcOtScaled(
+    otEntries, baseMinuteCents, (otPolicy as any).ot_hours_ytd ?? 0,
+    taxRates.otRates, taxRates.otLimits,
+    (otPolicy as any).isMPE ?? true, // TODO(12b): add isMPE column to payroll_ot_policies
+  );
+  const otIrsCents  = calcOtIrsWithholding(
+    otResult.otPayCents, irsRateFraction,
+    taxRates.otIrsWithholding.autonomous_rate_of_base,
+  );
+  const mileage     = calcMileageCap(
+    (mileageTrips ?? []).map((t: any) => ({ km: t.km, rateCentsPerKm: t.rate_cents_per_km ?? 40 })),
+    taxRates.mileageCaps.cents_per_km,
+  );
+  const allowances  = (travelAllowances ?? []).map((a: any) => calcTravelAllowance(
+    { type: a.type, days: a.days ?? 1, km: a.km ?? undefined, role: a.role, declaredCents: a.declared_cents },
+    taxRates.travelCaps, taxRates.mileageCaps.cents_per_km,
+  ));
+  const grossDailyCents = baseResult.working_days > 0
+    ? Math.round(baseResult.gross_cents / baseResult.working_days)
+    : 0;
+  const leaveImpact = calcLeaveImpact(
+    (leaves ?? []).map((l: any) => ({
+      leaveType:      l.leave_type,
+      totalDays:      l.total_days,
+      employerDays:   l.employer_days ?? 3,
+      affectsSubsidy: l.affects_subsidy ?? false,
+    })),
+    grossDailyCents,
+  );
+
+  return mergeComponents(baseResult, otResult, otIrsCents, mileage, allowances, leaveImpact);
 };
 
 export const createPayslipDraft = async (
