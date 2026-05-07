@@ -17,7 +17,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useActiveContract } from '../hooks/useActiveContract';
 import { formatCurrency } from '@/lib/utils';
-import { calculateHours, segmentEntry, calcHourly } from '../lib/calc';
+import { calculateHours, segmentEntry, calcHourly, calcOtScaled, buildOtDayEntries } from '../lib/calc';
+import { fetchTaxRates } from '../services/payrollAdvanced.service';
+import type { OtScaledResult } from '../types/payroll-advanced.types';
 import { formatDateLocal } from '@/lib/dateUtils';
 import { withContext, maskId } from '@/shared/lib/logger';
 import { TimesheetHeader } from './timesheet/TimesheetHeader';
@@ -115,6 +117,9 @@ export function WeeklyTimesheetForm({ initialWeekStart, contractId, onSave }: We
   const [timesheet, setTimesheet] = useState<WeeklyTimesheet>({ entries: [] });
   const [existingEntries, setExistingEntries] = useState<PayrollTimeEntry[]>([]);
   const [otPolicy, setOtPolicy] = useState<PayrollOTPolicy | null>(null);
+  // Unit 12a: OT YTD tracker
+  const [otStats, setOtStats] = useState<OtScaledResult | null>(null);
+  const [otAnnualLimit, setOtAnnualLimit] = useState(150);
 
   // Região aria-live e aviso inline de dias bloqueados
   const [ariaLiveMsg, setAriaLiveMsg] = useState('');
@@ -229,6 +234,32 @@ export function WeeklyTimesheetForm({ initialWeekStart, contractId, onSave }: We
     };
     loadOTPolicy();
   }, [selectedContractId]);
+
+  // Unit 12a: recompute OT tracker whenever entries or policy change
+  useEffect(() => {
+    if (!otPolicy?.use_legal_defaults) {
+      setOtStats(null);
+      return;
+    }
+    const entriesArray = timesheet.entries;
+    if (!entriesArray || entriesArray.length === 0) {
+      setOtStats(null);
+      return;
+    }
+    const thresholdMins = ((otPolicy as any).threshold_hours ?? 8) * 60;
+    fetchTaxRates(new Date().getFullYear()).then(taxRates => {
+      const otEntries = buildOtDayEntries(entriesArray, thresholdMins);
+      const baseMinuteCents = Math.round(
+        ((activeContract as any)?.base_salary_cents ?? 0) / (thresholdMins * 4.33)
+      );
+      const result = calcOtScaled(
+        otEntries, baseMinuteCents, (otPolicy as any).ot_hours_ytd ?? 0,
+        taxRates.otRates, taxRates.otLimits, true,
+      );
+      setOtStats(result);
+      setOtAnnualLimit(taxRates.otLimits.mpe_hours);
+    }).catch(() => {}); // fail silently if tax_tables not yet seeded
+  }, [timesheet.entries, otPolicy]);
 
   // Effect para carregar entradas quando semana ou contrato muda
   useEffect(() => {
@@ -1811,6 +1842,57 @@ export function WeeklyTimesheetForm({ initialWeekStart, contractId, onSave }: We
           </div>
         </CardContent>
       </Card>
+
+      {/* OT YTD Tracker Panel — Unit 12a */}
+      {otStats && (
+        <div className="mt-4 p-4 border rounded-lg space-y-3">
+          <h3 className="font-medium text-sm">OT — Tracker Anual</h3>
+
+          <div>
+            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+              <span>Escala 1→2 (100h)</span>
+              <span>{Math.min(otStats.newYtdHours, 100).toFixed(1)}h / 100h</span>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${otStats.newYtdHours >= 100 ? 'bg-destructive' : 'bg-primary'}`}
+                style={{ width: `${Math.min((otStats.newYtdHours / 100) * 100, 100)}%` }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+              <span>Limite anual ({otAnnualLimit}h)</span>
+              <span>{otStats.newYtdHours.toFixed(1)}h / {otAnnualLimit}h</span>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  otStats.annualLimitExceeded ? 'bg-destructive'
+                  : otStats.annualLimitWarning  ? 'bg-amber-500'
+                  : 'bg-primary'
+                }`}
+                style={{ width: `${Math.min((otStats.newYtdHours / otAnnualLimit) * 100, 100)}%` }}
+              />
+            </div>
+          </div>
+
+          {otStats.dailyLimitWarning && (
+            <p className="text-xs text-amber-600">⚠️ OT diária excede 2h em alguns dias desta semana</p>
+          )}
+          {otStats.annualLimitWarning && !otStats.annualLimitExceeded && (
+            <p className="text-xs text-amber-600">⚠️ A aproximar-se do limite anual</p>
+          )}
+          {otStats.annualLimitExceeded && (
+            <p className="text-xs text-red-600 font-medium">🚨 Limite anual de horas extra excedido</p>
+          )}
+
+          <p className="text-xs text-muted-foreground">
+            Este mês: {otStats.otHoursThisMonth.toFixed(1)}h OT
+          </p>
+        </div>
+      )}
 
       {/* Summary & Actions */}
       <Card>
