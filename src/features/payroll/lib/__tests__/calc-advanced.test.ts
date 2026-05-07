@@ -141,6 +141,15 @@ describe('calcTravelAllowance', () => {
     expect(r.exemptCents).toBe(4000);
     expect(r.taxableExcessCents).toBe(0);
   });
+
+  it('viatura propria with km=0: returns zeros (no division by zero)', () => {
+    const r = calcTravelAllowance(
+      { type: 'deslocacao_viatura_propria', km: 0, role: 'general', declaredCents: 0 },
+      CAPS, MILEAGE_CAP_CENTS,
+    );
+    expect(r.exemptCents).toBe(0);
+    expect(r.taxableExcessCents).toBe(0);
+  });
 });
 
 // ── calcLeaveImpact ───────────────────────────────────────────────────────────
@@ -174,6 +183,13 @@ describe('calcLeaveImpact', () => {
     const leave: LeaveRecord = { leaveType: 'maternity', totalDays: 10, employerDays: 0, affectsSubsidy: false };
     const r = calcLeaveImpact([leave], GROSS_DAILY);
     expect(r.unpaidDeductionCents).toBe(10 * GROSS_DAILY);
+  });
+
+  it('paternity leave: deducts (employer gross reduction, SS pays)', () => {
+    const leave: LeaveRecord = { leaveType: 'paternity', totalDays: 10, employerDays: 0, affectsSubsidy: false };
+    const r = calcLeaveImpact([leave], GROSS_DAILY);
+    expect(r.unpaidDeductionCents).toBe(10 * GROSS_DAILY);
+    expect(r.components.some(c => c.sign === '-')).toBe(true);
   });
 
   it('vacation affecting subsidy: adds to subsidyAdjustmentCents', () => {
