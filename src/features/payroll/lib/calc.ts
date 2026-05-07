@@ -12,7 +12,7 @@ import {
   PlannedSchedule,
   PayrollCalculation
 } from '../types';
-import type { OtDayEntry } from '../types/payroll-advanced.types';
+import type { OtDayEntry, OtRates, OtAnnualLimits, OtScaledResult } from '../types/payroll-advanced.types';
 import { formatDateLocal } from '@/lib/dateUtils';
 import { logger } from '../../../shared/lib/logger';
 
@@ -1059,4 +1059,125 @@ export function buildOtDayEntries(
   }
 
   return result;
+}
+
+// ── Unit 12a: calcOtScaled ────────────────────────────────────────────────────
+
+/**
+ * Calculates scaled OT pay (Lei 13/2023 — duas escalas).
+ *
+ * Scale transition at 100 YTD hours:
+ *   - Escala 1 (E1): hours 0–100 → lower rates
+ *   - Escala 2 (E2): hours above 100 → higher rates
+ *
+ * Component labels encode 'E1' or 'E2' so callers can detect the scale
+ * without extra state (e.g. label.includes('E2')).
+ *
+ * @param entries          OtDayEntry[] for the current payroll period
+ * @param baseHourlyCents  Employee's base rate per MINUTE in cents
+ * @param ytdHoursBefore   YTD OT hours accumulated BEFORE this period
+ * @param rates            OtRates from tax_tables
+ * @param limits           OtAnnualLimits from tax_tables
+ * @param isMPE            True if company is MPE (micro/small) — uses 175h limit
+ */
+export function calcOtScaled(
+  entries: OtDayEntry[],
+  baseHourlyCents: number,   // cents per MINUTE
+  ytdHoursBefore: number,
+  rates: OtRates,
+  limits: OtAnnualLimits,
+  isMPE: boolean,
+): OtScaledResult {
+  const annualLimit = isMPE ? limits.mpe_hours : limits.others_hours;
+  let ytdHours = ytdHoursBefore;
+  let otPayCents = 0;
+  let nightBonusCents = 0;
+  let otHoursThisMonth = 0;
+  let dailyLimitWarning = false;
+
+  const components: OtScaledResult['components'] = [];
+
+  for (const entry of entries) {
+    const otMins = entry.otMinutes;
+    if (otMins <= 0) continue;
+
+    const otHours = otMins / 60;
+    otHoursThisMonth += otHours;
+
+    // Check daily limit (max 2h OT per day)
+    if (otMins > limits.daily_max_hours * 60) {
+      dailyLimitWarning = true;
+    }
+
+    // How many minutes remain in E1 (before 100h threshold)?
+    const scaleBreakMinutes = Math.max(0, (100 - ytdHours) * 60);
+
+    let e1Cents = 0;
+    let e2Cents = 0;
+
+    if (entry.isRestDay) {
+      const e1Mins = Math.min(otMins, scaleBreakMinutes);
+      const e2Mins = otMins - e1Mins;
+      if (e1Mins > 0) {
+        e1Cents = Math.round(e1Mins * baseHourlyCents * (1 + rates.up_to_100h.rest_day_pct));
+      }
+      if (e2Mins > 0) {
+        e2Cents = Math.round(e2Mins * baseHourlyCents * (1 + rates.above_100h.rest_day_pct));
+      }
+    } else {
+      // Regular day: first 60 min at first_hour_pct, remainder at next_hours_pct
+      // E1 portion (up to scaleBreakMinutes minutes)
+      const e1TotalMins = Math.min(otMins, scaleBreakMinutes);
+      if (e1TotalMins > 0) {
+        const e1First = Math.min(e1TotalMins, 60);
+        const e1Next  = e1TotalMins - e1First;
+        e1Cents += Math.round(e1First * baseHourlyCents * (1 + rates.up_to_100h.first_hour_pct));
+        if (e1Next > 0) {
+          e1Cents += Math.round(e1Next * baseHourlyCents * (1 + rates.up_to_100h.next_hours_pct));
+        }
+      }
+      // E2 portion (above 100h YTD)
+      const e2TotalMins = otMins - e1TotalMins;
+      if (e2TotalMins > 0) {
+        const e2First = Math.min(e2TotalMins, 60);
+        const e2Next  = e2TotalMins - e2First;
+        e2Cents += Math.round(e2First * baseHourlyCents * (1 + rates.above_100h.first_hour_pct));
+        if (e2Next > 0) {
+          e2Cents += Math.round(e2Next * baseHourlyCents * (1 + rates.above_100h.next_hours_pct));
+        }
+      }
+    }
+
+    // Night bonus
+    if (entry.nightMinutes > 0) {
+      const nightBonus = Math.round(entry.nightMinutes * baseHourlyCents * rates.night_work_pct);
+      nightBonusCents += nightBonus;
+    }
+
+    otPayCents += e1Cents + e2Cents;
+
+    if (e1Cents > 0) {
+      components.push({ label: `OT E1 ${entry.date}`, amount_cents: e1Cents, sign: '+' });
+    }
+    if (e2Cents > 0) {
+      components.push({ label: `OT E2 ${entry.date}`, amount_cents: e2Cents, sign: '+' });
+    }
+
+    ytdHours += otHours;
+  }
+
+  const newYtdHours = ytdHoursBefore + otHoursThisMonth;
+  const annualLimitExceeded = newYtdHours >= annualLimit;
+  const annualLimitWarning  = !annualLimitExceeded && (newYtdHours >= annualLimit - 10);
+
+  return {
+    otPayCents: otPayCents + nightBonusCents,
+    otHoursThisMonth,
+    newYtdHours,
+    nightBonusCents,
+    dailyLimitWarning,
+    annualLimitWarning,
+    annualLimitExceeded,
+    components,
+  };
 }
