@@ -48,10 +48,13 @@ export function isWorkDuringNightHours(
   if (nightStartMinutes > nightEndMinutes) {
     // Night zone is [nightStart, midnight) ∪ [midnight, nightEnd)
     // Shift overlaps if it starts in the late-night zone OR ends/starts in the early-morning zone OR crosses midnight
-    return workStartMinutes >= nightStartMinutes || // starts after 22:00
-           workEndMinutes <= nightEndMinutes ||      // ends before or at 07:00
-           workStartMinutes < nightEndMinutes ||     // starts before 07:00 (early morning)
-           workEndMinutes < workStartMinutes;        // crosses midnight
+    return (
+      workStartMinutes >= nightStartMinutes ||  // starts at or after 22:00
+      workEndMinutes <= nightEndMinutes ||       // ends before or at 07:00
+      workStartMinutes < nightEndMinutes ||      // starts before 07:00
+      workEndMinutes < workStartMinutes ||       // crosses midnight
+      workEndMinutes > nightStartMinutes         // ends after 22:00 (same-day entry into night)
+    );
   } else {
     // Período noturno não atravessa meia-noite
     return (workStartMinutes >= nightStartMinutes && workStartMinutes < nightEndMinutes) ||
@@ -1040,17 +1043,17 @@ export function buildOtDayEntries(
 
     const isRestDay = dayEntries.some(e => e.is_holiday || e.is_sunday);
 
-    // Estimate night OT minutes: check if any entry overlaps with night hours
+    // Estimate night OT minutes: use proportional OT per entry
     let nightMinutes = 0;
     for (const e of dayEntries) {
       if (!e.start_time || !e.end_time) continue;
       if (isWorkDuringNightHours(e.start_time, e.end_time, '22:00', '07:00')) {
-        // Rough estimate: assume all OT from this entry is during night hours
-        // A more precise calculation would require minute-by-minute overlap
-        nightMinutes += Math.min(otMinutes, e.duration_minutes ?? 0);
+        // Proportion of this entry's duration relative to day total, applied to OT
+        const entryOtFraction = totalMinutes > 0 ? (e.duration_minutes ?? 0) / totalMinutes : 0;
+        nightMinutes += Math.round(otMinutes * entryOtFraction);
       }
     }
-    nightMinutes = Math.min(nightMinutes, otMinutes);
+    nightMinutes = Math.min(nightMinutes, otMinutes); // never exceed total OT
 
     result.push({ date, otMinutes, isRestDay, nightMinutes });
   }

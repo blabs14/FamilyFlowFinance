@@ -28,6 +28,12 @@ describe('isWorkDuringNightHours', () => {
   it('detects early morning work (before 07:00)', () => {
     expect(isWorkDuringNightHours('06:00', '08:00', '22:00', '07:00')).toBe(true);
   });
+  it('detects evening-into-night work (starts before 22:00, ends after 22:00)', () => {
+    expect(isWorkDuringNightHours('20:00', '23:00', '22:00', '07:00')).toBe(true);
+  });
+  it('detects shift starting just before night window', () => {
+    expect(isWorkDuringNightHours('21:59', '22:01', '22:00', '07:00')).toBe(true);
+  });
 });
 
 describe('buildOtDayEntries', () => {
@@ -82,5 +88,8 @@ describe('buildOtDayEntries', () => {
     // Only one OtDayEntry for 2026-01-05
     const dayEntries = result.filter(e => e.date === '2026-01-05');
     expect(dayEntries.length).toBeLessThanOrEqual(1);
+    if (dayEntries.length === 1) {
+      expect(dayEntries[0].otMinutes).toBe(90); // 450+120=570 - 480 threshold = 90
+    }
   });
 });
