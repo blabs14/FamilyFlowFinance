@@ -1074,7 +1074,7 @@ export function buildOtDayEntries(
  * without extra state (e.g. label.includes('E2')).
  *
  * @param entries          OtDayEntry[] for the current payroll period
- * @param baseHourlyCents  Employee's base rate per MINUTE in cents
+ * @param baseMinuteCents  Employee's base rate per MINUTE in cents
  * @param ytdHoursBefore   YTD OT hours accumulated BEFORE this period
  * @param rates            OtRates from tax_tables
  * @param limits           OtAnnualLimits from tax_tables
@@ -1082,7 +1082,7 @@ export function buildOtDayEntries(
  */
 export function calcOtScaled(
   entries: OtDayEntry[],
-  baseHourlyCents: number,   // cents per MINUTE
+  baseMinuteCents: number,   // cents per MINUTE
   ytdHoursBefore: number,
   rates: OtRates,
   limits: OtAnnualLimits,
@@ -1119,10 +1119,10 @@ export function calcOtScaled(
       const e1Mins = Math.min(otMins, scaleBreakMinutes);
       const e2Mins = otMins - e1Mins;
       if (e1Mins > 0) {
-        e1Cents = Math.round(e1Mins * baseHourlyCents * (1 + rates.up_to_100h.rest_day_pct));
+        e1Cents = Math.round(e1Mins * baseMinuteCents * (1 + rates.up_to_100h.rest_day_pct));
       }
       if (e2Mins > 0) {
-        e2Cents = Math.round(e2Mins * baseHourlyCents * (1 + rates.above_100h.rest_day_pct));
+        e2Cents = Math.round(e2Mins * baseMinuteCents * (1 + rates.above_100h.rest_day_pct));
       }
     } else {
       // Regular day: first 60 min at first_hour_pct, remainder at next_hours_pct
@@ -1131,27 +1131,31 @@ export function calcOtScaled(
       if (e1TotalMins > 0) {
         const e1First = Math.min(e1TotalMins, 60);
         const e1Next  = e1TotalMins - e1First;
-        e1Cents += Math.round(e1First * baseHourlyCents * (1 + rates.up_to_100h.first_hour_pct));
+        e1Cents += Math.round(e1First * baseMinuteCents * (1 + rates.up_to_100h.first_hour_pct));
         if (e1Next > 0) {
-          e1Cents += Math.round(e1Next * baseHourlyCents * (1 + rates.up_to_100h.next_hours_pct));
+          e1Cents += Math.round(e1Next * baseMinuteCents * (1 + rates.up_to_100h.next_hours_pct));
         }
       }
-      // E2 portion (above 100h YTD)
+      // E2 portion — continue from where E1 left off in the first-hour budget
+      const firstHourBudgetLeft = Math.max(0, 60 - Math.min(e1TotalMins, 60));
       const e2TotalMins = otMins - e1TotalMins;
       if (e2TotalMins > 0) {
-        const e2First = Math.min(e2TotalMins, 60);
+        const e2First = Math.min(e2TotalMins, firstHourBudgetLeft);
         const e2Next  = e2TotalMins - e2First;
-        e2Cents += Math.round(e2First * baseHourlyCents * (1 + rates.above_100h.first_hour_pct));
+        if (e2First > 0) {
+          e2Cents += Math.round(e2First * baseMinuteCents * (1 + rates.above_100h.first_hour_pct));
+        }
         if (e2Next > 0) {
-          e2Cents += Math.round(e2Next * baseHourlyCents * (1 + rates.above_100h.next_hours_pct));
+          e2Cents += Math.round(e2Next * baseMinuteCents * (1 + rates.above_100h.next_hours_pct));
         }
       }
     }
 
     // Night bonus
     if (entry.nightMinutes > 0) {
-      const nightBonus = Math.round(entry.nightMinutes * baseHourlyCents * rates.night_work_pct);
+      const nightBonus = Math.round(entry.nightMinutes * baseMinuteCents * rates.night_work_pct);
       nightBonusCents += nightBonus;
+      components.push({ label: `Night Bonus ${entry.date}`, amount_cents: nightBonus, sign: '+' });
     }
 
     otPayCents += e1Cents + e2Cents;

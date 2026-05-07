@@ -125,4 +125,29 @@ describe('calcOtScaled', () => {
     const r = calcOtScaled([entry], BASE_CENTS_PER_MIN, 101, RATES, LIMITS, true);
     expect(r.components.every(c => c.label.includes('E2'))).toBe(true);
   });
+
+  it('correctly splits first-hour budget across E1/E2 boundary', () => {
+    // ytdHoursBefore = 99.5h → scaleBreakMinutes = 30
+    // otMinutes = 90: 30 min in E1, 60 min in E2
+    // E1: 30 min at first_hour_pct (30 of 60-min budget used)
+    // E2: 30 min at first_hour_pct (remaining budget), then 30 min at next_hours_pct
+    const entry = makeEntry('2026-06-15', 90);
+    const r = calcOtScaled([entry], BASE_CENTS_PER_MIN, 99.5, RATES, LIMITS, true);
+    const e1Pay = Math.round(30 * BASE_CENTS_PER_MIN * (1 + RATES.up_to_100h.first_hour_pct));
+    const e2First = Math.round(30 * BASE_CENTS_PER_MIN * (1 + RATES.above_100h.first_hour_pct));
+    const e2Next  = Math.round(30 * BASE_CENTS_PER_MIN * (1 + RATES.above_100h.next_hours_pct));
+    expect(r.otPayCents).toBe(e1Pay + e2First + e2Next);
+    expect(r.components.some(c => c.label.includes('E1'))).toBe(true);
+    expect(r.components.some(c => c.label.includes('E2'))).toBe(true);
+  });
+
+  it('includes night bonus in otPayCents and emits Night Bonus component', () => {
+    const entry = makeEntry('2026-01-05', 60, false, 30); // 30 night minutes
+    const r = calcOtScaled([entry], BASE_CENTS_PER_MIN, 0, RATES, LIMITS, true);
+    const expectedOt = Math.round(60 * BASE_CENTS_PER_MIN * (1 + RATES.up_to_100h.first_hour_pct));
+    const expectedNight = Math.round(30 * BASE_CENTS_PER_MIN * RATES.night_work_pct);
+    expect(r.otPayCents).toBe(expectedOt + expectedNight);
+    expect(r.nightBonusCents).toBe(expectedNight);
+    expect(r.components.some(c => c.label.startsWith('Night Bonus'))).toBe(true);
+  });
 });
