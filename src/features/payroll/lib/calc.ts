@@ -12,7 +12,8 @@ import {
   PlannedSchedule,
   PayrollCalculation
 } from '../types';
-import type { OtDayEntry, OtRates, OtAnnualLimits, OtScaledResult } from '../types/payroll-advanced.types';
+import type { OtDayEntry, OtRates, OtAnnualLimits, OtScaledResult, TravelAllowanceCaps, LeaveRecord, LeaveImpact } from '../types/payroll-advanced.types';
+import type { PayslipCalculation } from '../types/payroll-core.types';
 import { formatDateLocal } from '@/lib/dateUtils';
 import { logger } from '../../../shared/lib/logger';
 
@@ -1184,4 +1185,140 @@ export function calcOtScaled(
     annualLimitExceeded,
     components,
   };
+}
+
+// ── Unit 12a Task 5: Motor Fiscal PT — Pure Functions ─────────────────────────
+
+/**
+ * Calculates IRS withholding on overtime pay.
+ * Portuguese law: OT withholding = otPay × baseIrsRate × withholdingRateOfBase (typically 50%).
+ */
+export function calcOtIrsWithholding(
+  otPayCents: number,
+  baseIrsRateFraction: number,
+  withholdingRateOfBase: number,
+): number {
+  return Math.round(otPayCents * baseIrsRateFraction * withholdingRateOfBase);
+}
+
+/**
+ * Splits mileage reimbursement into AT-exempt and taxable portions.
+ * Amounts above the official cap per km are taxable.
+ */
+export function calcMileageCap(
+  trips: { km: number; rateCentsPerKm: number }[],
+  capCentsPerKm: number,
+): { exemptCents: number; taxableCents: number; totalCents: number } {
+  let exemptCents = 0;
+  let taxableCents = 0;
+  for (const trip of trips) {
+    exemptCents  += Math.round(trip.km * Math.min(trip.rateCentsPerKm, capCentsPerKm));
+    taxableCents += Math.round(trip.km * Math.max(0, trip.rateCentsPerKm - capCentsPerKm));
+  }
+  return { exemptCents, taxableCents, totalCents: exemptCents + taxableCents };
+}
+
+/**
+ * Calculates exempt vs. taxable portions of a travel allowance (ajudas de custo).
+ * Delegates viatura própria to calcMileageCap; uses cap table for all other types.
+ */
+export function calcTravelAllowance(
+  allowance: {
+    type: 'alojamento' | 'deslocacao_nacional' | 'deslocacao_estrangeiro' | 'deslocacao_viatura_propria';
+    days?: number;
+    km?: number;
+    role: 'general' | 'admin';
+    declaredCents: number;
+  },
+  caps: TravelAllowanceCaps,
+  mileageCapCentsPerKm: number,
+): { exemptCents: number; taxableExcessCents: number } {
+  if (allowance.type === 'deslocacao_viatura_propria') {
+    const km = allowance.km ?? 0;
+    const ratePerKm = km > 0 ? allowance.declaredCents / km : 0;
+    const r = calcMileageCap([{ km, rateCentsPerKm: ratePerKm }], mileageCapCentsPerKm);
+    return { exemptCents: r.exemptCents, taxableExcessCents: r.taxableCents };
+  }
+
+  const capMap: Record<string, number> = {
+    deslocacao_nacional_general:    caps.national_general_cents,
+    deslocacao_nacional_admin:      caps.national_admin_cents,
+    deslocacao_estrangeiro_general: caps.foreign_general_cents,
+    deslocacao_estrangeiro_admin:   caps.foreign_admin_cents,
+    alojamento_general: Math.round(caps.national_general_cents * caps.breakdown.sleep),
+    alojamento_admin:   Math.round(caps.national_admin_cents   * caps.breakdown.sleep),
+  };
+
+  const capDaily = capMap[`${allowance.type}_${allowance.role}`] ?? 0;
+  const maxExempt = (allowance.days ?? 1) * capDaily;
+  const exemptCents = Math.min(allowance.declaredCents, maxExempt);
+  return { exemptCents, taxableExcessCents: Math.max(0, allowance.declaredCents - exemptCents) };
+}
+
+/**
+ * Computes the payroll impact of leave records (sick, unpaid, maternity, vacation subsidy).
+ */
+export function calcLeaveImpact(
+  leaves: LeaveRecord[],
+  grossDailyCents: number,
+): LeaveImpact {
+  let unpaidDeductionCents = 0;
+  let subsidyAdjustmentCents = 0;
+  const components: { label: string; amount_cents: number; sign: '+' | '-' }[] = [];
+
+  for (const leave of leaves) {
+    if (leave.leaveType === 'sick') {
+      const employerDays = Math.min(leave.totalDays, leave.employerDays);
+      if (employerDays > 0) {
+        components.push({ label: `Baixa (empregador, ${employerDays}d)`, amount_cents: 0, sign: '+' });
+      }
+      if (leave.totalDays > leave.employerDays) {
+        components.push({ label: `Baixa (SS, ${leave.totalDays - leave.employerDays}d)`, amount_cents: 0, sign: '+' });
+      }
+    } else if (leave.leaveType === 'unpaid') {
+      const d = leave.totalDays * grossDailyCents;
+      unpaidDeductionCents += d;
+      components.push({ label: `Licença não remunerada (${leave.totalDays}d)`, amount_cents: d, sign: '-' });
+    } else if (leave.leaveType === 'maternity' || leave.leaveType === 'paternity') {
+      const d = leave.totalDays * grossDailyCents;
+      unpaidDeductionCents += d;
+      components.push({ label: `Licença parental (SS, ${leave.totalDays}d)`, amount_cents: d, sign: '-' });
+    } else if (leave.leaveType === 'vacation' && leave.affectsSubsidy) {
+      const d = leave.totalDays * grossDailyCents;
+      subsidyAdjustmentCents += d;
+      components.push({ label: `Subsídio férias pro-rata (${leave.totalDays}d)`, amount_cents: d, sign: '-' });
+    }
+  }
+
+  return { unpaidDeductionCents, subsidyAdjustmentCents, components };
+}
+
+/**
+ * Merges OT, mileage, travel allowance, and leave components into a base PayslipCalculation.
+ * Returns a new object — does NOT mutate base.
+ */
+export function mergeComponents(
+  base: PayslipCalculation,
+  otResult: OtScaledResult,
+  otIrsCents: number,
+  mileage: { exemptCents: number; taxableCents: number; totalCents: number },
+  allowances: { exemptCents: number; taxableExcessCents: number }[],
+  leaveImpact: LeaveImpact,
+): PayslipCalculation {
+  const extra: { label: string; amount_cents: number; sign: '+' | '-' }[] = [
+    ...otResult.components,
+    ...(otIrsCents > 0 ? [{ label: 'IRS s/ Horas Extra', amount_cents: otIrsCents, sign: '-' as const }] : []),
+    ...(mileage.exemptCents > 0 ? [{ label: 'Quilometragem (isento)', amount_cents: mileage.exemptCents, sign: '+' as const }] : []),
+    ...(mileage.taxableCents > 0 ? [{ label: 'Quilometragem (tributável)', amount_cents: mileage.taxableCents, sign: '+' as const }] : []),
+    ...allowances.flatMap(a => [
+      ...(a.exemptCents > 0 ? [{ label: 'Ajudas Custo (isento)', amount_cents: a.exemptCents, sign: '+' as const }] : []),
+      ...(a.taxableExcessCents > 0 ? [{ label: 'Ajudas Custo (tributável)', amount_cents: a.taxableExcessCents, sign: '+' as const }] : []),
+    ]),
+    ...leaveImpact.components,
+  ];
+  const netDelta = extra.reduce(
+    (acc, c) => acc + (c.sign === '+' ? c.amount_cents : -c.amount_cents),
+    0,
+  );
+  return { ...base, components: [...base.components, ...extra], net_cents: base.net_cents + netDelta };
 }
