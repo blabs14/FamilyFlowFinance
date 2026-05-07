@@ -1721,7 +1721,7 @@ export const calculatePayslip = async (
   // Fetch OT policy to get threshold_hours, ot_hours_ytd, isMPE flag
   const otPolicies = await getOTPoliciesByContract(contractId);
   const otPolicy = otPolicies[0] ?? null;
-  if (!otPolicy || !otPolicy.use_legal_defaults) {
+  if (!otPolicy || !(otPolicy as any).use_legal_defaults) {
     // No legal-defaults policy: return base calculation unchanged
     return baseResult;
   }
@@ -1729,12 +1729,20 @@ export const calculatePayslip = async (
   const firstDay = `${period}-01`;
   const lastDay  = new Date(year, month, 0).toISOString().split('T')[0];
 
+  // Fetch user_id needed for time entries and mileage queries
+  const contractData = await supabase
+    .from('payroll_contracts')
+    .select('user_id')
+    .eq('id', contractId)
+    .single();
+  const userId: string = contractData.data?.user_id ?? '';
+
   const [rawTimeEntries, mileageTrips, travelAllowances, leaves, taxRates] = await Promise.all([
-    getTimeEntriesByContract(null as any, contractId),
-    getMileageTrips(null as any, firstDay, lastDay, contractId),
+    getTimeEntriesByContract(userId, contractId),
+    getMileageTrips(userId, firstDay, lastDay, contractId),
     fetchAllowances(contractId, period),
     getLeavesByContractPeriod(contractId, firstDay, lastDay),
-    fetchRates(new Date().getFullYear()),
+    fetchRates(year),
   ]);
 
   const thresholdMins   = (otPolicy.threshold_hours ?? 8) * 60;
