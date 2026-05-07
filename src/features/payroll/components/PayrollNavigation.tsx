@@ -98,6 +98,13 @@ export function PayrollNavigation({ className }: PayrollNavigationProps) {
       isNew: true
     },
     {
+      path: '/app/payroll/ajudas-custo',
+      label: 'Ajudas Custo',
+      icon: Car,
+      description: 'Ajudas de custo e deslocações',
+      isNew: true
+    },
+    {
       path: '/personal/payroll/config',
       label: 'Configurações',
       icon: Settings,

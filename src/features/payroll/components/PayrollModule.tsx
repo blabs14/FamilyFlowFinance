@@ -28,6 +28,7 @@ import HistoryWrapper from './PayrollHistoryPage';
 
 const PayslipPreview = lazy(() => import('./PayslipPreview'));
 const PayslipHistory = lazy(() => import('./PayslipHistory'));
+const TravelAllowancesPage = lazy(() => import('../pages/TravelAllowancesPage'));
 
 // Toggle para permitir rotas de preview em ambientes de teste (Playwright) ou quando ativado via env
 const DEV_ROUTES = import.meta.env.DEV || import.meta.env.VITE_E2E === '1' || import.meta.env.VITE_ENABLE_PAYROLL_PREVIEW === '1';
@@ -111,6 +112,11 @@ function PayrollContent() {
         <Route path="periods" element={<PayrollPeriodsManager />} />
         <Route path="onboarding" element={<PayrollOnboardingWizard />} />
         <Route path="recibos" element={<RecibosPage />} />
+        <Route path="ajudas-custo" element={
+          <Suspense fallback={<LoadingSpinner size="lg" />}>
+            <TravelAllowancesPage />
+          </Suspense>
+        } />
       </Routes>
     </>
   );
