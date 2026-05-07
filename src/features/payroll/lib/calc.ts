@@ -1,17 +1,18 @@
 // Serviço de cálculo de folha de pagamento
 // Funções puras para cálculos de horários, horas extras, subsídios e quilometragem
 
-import { 
-  PayrollContract, 
-  PayrollOTPolicy, 
-  PayrollHoliday, 
-  PayrollTimeEntry, 
+import {
+  PayrollContract,
+  PayrollOTPolicy,
+  PayrollHoliday,
+  PayrollTimeEntry,
   PayrollMileageTrip,
   PayrollVacation,
-  TimeSegment, 
-  PlannedSchedule, 
-  PayrollCalculation 
+  TimeSegment,
+  PlannedSchedule,
+  PayrollCalculation
 } from '../types';
+import type { OtDayEntry } from '../types/payroll-advanced.types';
 import { formatDateLocal } from '@/lib/dateUtils';
 import { logger } from '../../../shared/lib/logger';
 
@@ -23,34 +24,34 @@ import { logger } from '../../../shared/lib/logger';
  * @param nightEnd Fim do período noturno (ex: '07:00')
  * @returns true se alguma parte do trabalho ocorre durante período noturno
  */
-function isWorkDuringNightHours(
-  startTime: Date,
-  endTime: Date,
+/**
+ * Verifica se o trabalho ocorre durante horário noturno.
+ * Aceita horários no formato "HH:MM".
+ */
+export function isWorkDuringNightHours(
+  startTime: string,
+  endTime: string,
   nightStart: string,
   nightEnd: string
 ): boolean {
-  const startHour = startTime.getHours();
-  const startMinute = startTime.getMinutes();
-  const endHour = endTime.getHours();
-  const endMinute = endTime.getMinutes();
-  
+  const [startHour, startMinute] = startTime.split(':').map(Number);
+  const [endHour, endMinute] = endTime.split(':').map(Number);
   const [nightStartHour, nightStartMinute] = nightStart.split(':').map(Number);
   const [nightEndHour, nightEndMinute] = nightEnd.split(':').map(Number);
-  
+
   const workStartMinutes = startHour * 60 + startMinute;
   const workEndMinutes = endHour * 60 + endMinute;
   const nightStartMinutes = nightStartHour * 60 + nightStartMinute;
   const nightEndMinutes = nightEndHour * 60 + nightEndMinute;
-  
+
   // Se o período noturno atravessa meia-noite (ex: 22:00-07:00)
   if (nightStartMinutes > nightEndMinutes) {
-    // Trabalho noturno se:
-    // - Começa depois das 22h OU
-    // - Termina antes das 7h OU
-    // - Atravessa meia-noite
-    return workStartMinutes >= nightStartMinutes || 
-           workEndMinutes <= nightEndMinutes ||
-           workEndMinutes < workStartMinutes; // Atravessa meia-noite
+    // Night zone is [nightStart, midnight) ∪ [midnight, nightEnd)
+    // Shift overlaps if it starts in the late-night zone OR ends/starts in the early-morning zone OR crosses midnight
+    return workStartMinutes >= nightStartMinutes || // starts after 22:00
+           workEndMinutes <= nightEndMinutes ||      // ends before or at 07:00
+           workStartMinutes < nightEndMinutes ||     // starts before 07:00 (early morning)
+           workEndMinutes < workStartMinutes;        // crosses midnight
   } else {
     // Período noturno não atravessa meia-noite
     return (workStartMinutes >= nightStartMinutes && workStartMinutes < nightEndMinutes) ||
@@ -121,7 +122,8 @@ export function segmentEntry(
   // Verificar se é trabalho noturno (22h-7h conforme legislação portuguesa)
   const nightStart = otPolicy?.night_start_time || '22:00';
   const nightEnd = otPolicy?.night_end_time || '07:00';
-  const isNightShift = isWorkDuringNightHours(startTime, endTime, nightStart, nightEnd);
+  const toHHMM = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const isNightShift = isWorkDuringNightHours(toHHMM(startTime), toHHMM(endTime), nightStart, nightEnd);
 
   const segments: TimeSegment[] = [];
 
@@ -146,7 +148,7 @@ export function segmentEntry(
       end: regularEndTime,
       isOvertime: false,
       hours: regularHours,
-      isNightShift: isWorkDuringNightHours(startTime, regularEndTime, nightStart, nightEnd)
+      isNightShift: isWorkDuringNightHours(toHHMM(startTime), toHHMM(regularEndTime), nightStart, nightEnd)
     });
 
     // Segmento de horas extras
@@ -155,7 +157,7 @@ export function segmentEntry(
       end: endTime,
       isOvertime: true,
       hours: overtimeHours,
-      isNightShift: isWorkDuringNightHours(regularEndTime, endTime, nightStart, nightEnd)
+      isNightShift: isWorkDuringNightHours(toHHMM(regularEndTime), toHHMM(endTime), nightStart, nightEnd)
     });
   }
 
@@ -998,4 +1000,60 @@ export function validateDeductions(
     isValid: errors.length === 0,
     errors
   };
+}
+
+// ── Unit 12a: OT Day Entry Builder ────────────────────────────────────────────
+
+/**
+ * Converts an array of PayrollTimeEntry records into OtDayEntry objects.
+ * Only returns entries where actual OT (duration > thresholdMinutes) occurred.
+ *
+ * @param entries Raw time entries for the period
+ * @param thresholdMinutes Daily threshold after which OT starts (e.g. 480 for 8h)
+ */
+export function buildOtDayEntries(
+  entries: Array<{
+    date: string;
+    start_time?: string | null;
+    end_time?: string | null;
+    duration_minutes: number;
+    planned_minutes?: number | null;
+    is_holiday?: boolean | null;
+    is_sunday?: boolean | null;
+  }>,
+  thresholdMinutes: number,
+): OtDayEntry[] {
+  // Group entries by date
+  const byDate = new Map<string, typeof entries>();
+  for (const e of entries) {
+    const list = byDate.get(e.date) ?? [];
+    list.push(e);
+    byDate.set(e.date, list);
+  }
+
+  const result: OtDayEntry[] = [];
+
+  for (const [date, dayEntries] of byDate) {
+    const totalMinutes = dayEntries.reduce((s, e) => s + (e.duration_minutes ?? 0), 0);
+    const otMinutes = Math.max(0, totalMinutes - thresholdMinutes);
+    if (otMinutes === 0) continue;
+
+    const isRestDay = dayEntries.some(e => e.is_holiday || e.is_sunday);
+
+    // Estimate night OT minutes: check if any entry overlaps with night hours
+    let nightMinutes = 0;
+    for (const e of dayEntries) {
+      if (!e.start_time || !e.end_time) continue;
+      if (isWorkDuringNightHours(e.start_time, e.end_time, '22:00', '07:00')) {
+        // Rough estimate: assume all OT from this entry is during night hours
+        // A more precise calculation would require minute-by-minute overlap
+        nightMinutes += Math.min(otMinutes, e.duration_minutes ?? 0);
+      }
+    }
+    nightMinutes = Math.min(nightMinutes, otMinutes);
+
+    result.push({ date, otMinutes, isRestDay, nightMinutes });
+  }
+
+  return result;
 }
