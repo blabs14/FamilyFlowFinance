@@ -717,6 +717,35 @@ export default function PayrollOvertimeDetailPage() {
                 <p className="text-xs text-muted-foreground mt-2">
                   YTD acumulado: {scaledOtResult.newYtdHours.toFixed(1)}h
                 </p>
+                {scaledOtResult.components.length > 0 && (
+                  <table className="w-full text-sm mb-3">
+                    <thead>
+                      <tr className="border-b text-muted-foreground">
+                        <th className="text-left py-1">Dia</th>
+                        <th className="text-right py-1">Escala</th>
+                        <th className="text-right py-1">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {scaledOtResult.components
+                        .filter(c => c.label.startsWith('OT ')) // exclude Night Bonus components
+                        .map((c, i) => {
+                          const isScale2 = c.label.includes('E2');
+                          return (
+                            <tr key={i} className="border-b">
+                              <td className="py-1">{c.label.replace(/^OT E[12] /, '')}</td>
+                              <td className="text-right py-1">
+                                <Badge variant={isScale2 ? 'destructive' : 'secondary'}>
+                                  {isScale2 ? 'Escala 2' : 'Escala 1'}
+                                </Badge>
+                              </td>
+                              <td className="text-right py-1">{formatCurrency(c.amount_cents)}</td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                )}
               </CardContent>
             </Card>
           )}
