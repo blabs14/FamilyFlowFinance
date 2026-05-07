@@ -2,7 +2,7 @@
 
 **Data:** 2026-05-07
 **Autor:** Pedro + Claude
-**Estado:** aprovado
+**Estado:** aprovado (v3 — todos os bloqueantes e sugestões do revisor corrigidos)
 
 ---
 
@@ -25,13 +25,37 @@ Estender o Payroll Core (Unit 11) com o motor fiscal completo para um trabalhado
 - **SECURITY DEFINER RPCs (DB):** responsáveis exclusivamente por escritas financeiras (`create_payslip_draft`, `post_payslip`). Não mudam em 12a.
 - **`calculatePayslip` service (TypeScript):** orquestra duas fases — chama o RPC base e depois as funções `calc.ts`. O resultado enriquecido é transparente para `usePayslipCalculation` e `PayslipPreview`.
 
+### Dependência de Unit 11
+`PayslipComponent`, `PayslipCalculation`, e `enrichComponents` são outputs de Unit 11 (PR #35, merged em main):
+- `src/features/payroll/types/payroll-core.types.ts` — define `PayslipComponent` e `PayslipCalculation`
+- `src/features/payroll/services/payrollCalculator.ts` — define `enrichComponents`
+- `src/features/payroll/components/PayslipPreview.tsx` — usa ambos
+
+Unit 12a assume que estes artefactos existem. O implementador deve verificar que a branch parte de main com Unit 11 merged.
+
+### Tipo base do RPC `calculate_payslip`
+O RPC devolve `PayslipCalculation` (definido em Unit 11):
+```typescript
+// De payroll-core.types.ts (Unit 11)
+interface PayslipCalculation {
+  gross_cents:   number;
+  irs_cents:     number;
+  ss_cents:      number;
+  meal_cents:    number;
+  net_cents:     number;
+  working_days:  number;
+  components:    PayslipComponent[];
+}
+```
+`irsRateFraction` **não é devolvido pelo RPC** — é derivado no serviço: `irsRateFraction = base.irs_cents / base.gross_cents` (taxa efectiva de retenção). Se `gross_cents = 0`, o serviço usa `irsRateFraction = 0`.
+
 ---
 
 ## O que existe e o que muda
 
 | Artefacto | Estado actual | Mudança em 12a |
 |---|---|---|
-| `src/features/payroll/lib/calc.ts` | OT flat multiplier, night work detection | + `calcOtScaled`, `calcOtIrsWithholding`, `calcMileageCap`, `calcTravelAllowance`, `calcLeaveImpact` |
+| `src/features/payroll/lib/calc.ts` | OT flat multiplier, night work detection | + `buildOtDayEntries`, `calcOtScaled`, `calcOtIrsWithholding`, `calcMileageCap`, `calcTravelAllowance`, `calcLeaveImpact`, `mergeComponents` |
 | `src/features/payroll/services/calculation.service.ts` | Usa calc.ts com multiplier flat | Actualiza para usar `calcOtScaled` + taxas de `tax_tables` |
 | `payroll_ot_policies` | `threshold_hours`, `multiplier` (flat) | + `use_legal_defaults boolean DEFAULT true`, `ot_hours_ytd numeric DEFAULT 0` |
 | `payroll_mileage_policies` | Taxa manual por km | + `use_tax_table_rate boolean DEFAULT true` |
@@ -156,8 +180,9 @@ CREATE TABLE payroll_travel_allowances (
   declared_cents       bigint      NOT NULL,    -- valor declarado pelo utilizador
   taxable_excess_cents bigint      NOT NULL DEFAULT 0, -- calculado pelo motor em typescript
   receipt_file_path    text,
-  operation_id         text        NOT NULL,
-  created_at           timestamptz NOT NULL DEFAULT now()
+  operation_id         text        NOT NULL UNIQUE,  -- idempotency key, gerado no cliente
+  created_at           timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT payroll_travel_allowances_operation_id_unique UNIQUE (operation_id)
 );
 
 ALTER TABLE payroll_travel_allowances ENABLE ROW LEVEL SECURITY;
@@ -308,8 +333,17 @@ export function calcTravelAllowance(
 ```
 
 Lógica:
-- `deslocacao_viatura_propria`: delega em `calcMileageCap`
-- Outros: `capDaily = caps[type][role]`; `maxExempt = days × capDaily`; `exempt = min(declared, maxExempt)`; `taxable = max(0, declared - maxExempt)`
+- `deslocacao_viatura_propria`: delega em `calcMileageCap` (usa `mileageCapCentsPerKm`, `km` obrigatório)
+- Para os restantes tipos, o cap diário é determinado pelo mapeamento:
+
+| `type` | `role = 'general'` | `role = 'admin'` |
+|---|---|---|
+| `deslocacao_nacional` | `caps.national_general_cents` | `caps.national_admin_cents` |
+| `deslocacao_estrangeiro` | `caps.foreign_general_cents` | `caps.foreign_admin_cents` |
+| `alojamento` | `caps.national_general_cents × caps.breakdown.sleep` | `caps.national_admin_cents × caps.breakdown.sleep` |
+
+- `maxExempt = days × capDaily`; `exempt = min(declaredCents, maxExempt)`; `taxableExcessCents = max(0, declaredCents − maxExempt)`
+- `breakdown.sleep = 0.50` (metade do dia nacional; `alojamento` não tem componente de refeição)
 
 ### `calcLeaveImpact` — Impacto fiscal de ausências
 
@@ -321,11 +355,59 @@ export function calcLeaveImpact(
 ```
 
 Regras PT por tipo:
-- **`sick`, dias 1–`employerDays`**: empregador paga (sem dedução); componente informativo
-- **`sick`, dias `employerDays+1`+**: SS paga; anotação no componente; sem dedução no payslip do empregador
+- **`sick`, dias 1–`employerDays`**: empregador paga (sem dedução no payslip); componente informativo "Baixa (empregador)"
+- **`sick`, dias `employerDays+1`+**: SS paga; componente informativo "Baixa (SS)"; sem dedução pelo empregador
 - **`unpaid`**: `deduction = totalDays × grossDailyCents`
-- **`maternity` / `paternity`**: SS paga integralmente; deduz `totalDays × grossDailyCents` do payslip
-- **`vacation` com `affectsSubsidy = true`**: `subsidyAdjustmentCents = days × grossDailyCents × subsidyRate`
+- **`maternity` / `paternity`**: SS paga integralmente; deduz `totalDays × grossDailyCents` do payslip (empregador não paga durante a licença)
+- **`vacation` com `affectsSubsidy = true`**: `subsidyAdjustmentCents = days × grossDailyCents` (taxa = 100% salário diário — o subsídio de férias é pago à mesma taxa do salário; `subsidyRate` não existe como parâmetro separado)
+
+### `mergeComponents` — agrega resultados no `PayslipCalculation` base
+
+Helper puro em `calc.ts` que recebe o `PayslipCalculation` do RPC e os resultados das funções avançadas, devolvendo um `PayslipCalculation` enriquecido com os componentes extra e o `net_cents` recalculado.
+
+```typescript
+export function mergeComponents(
+  base: PayslipCalculation,
+  otResult: OtScaledResult,
+  otIrsCents: number,
+  mileage: { exemptCents: number; taxableCents: number; totalCents: number },
+  allowances: { exemptCents: number; taxableExcessCents: number }[],
+  leaveImpact: LeaveImpact
+): PayslipCalculation {
+  const extra: PayslipComponent[] = [
+    ...otResult.components,
+    ...(otIrsCents > 0
+      ? [{ label: 'IRS s/ Horas Extra', amount_cents: otIrsCents, sign: '-' as const }]
+      : []),
+    ...(mileage.exemptCents > 0
+      ? [{ label: 'Quilometragem (isento)', amount_cents: mileage.exemptCents, sign: '+' as const }]
+      : []),
+    ...(mileage.taxableCents > 0
+      ? [{ label: 'Quilometragem (tributável)', amount_cents: mileage.taxableCents, sign: '+' as const }]
+      : []),
+    ...allowances.flatMap(a => [
+      ...(a.exemptCents > 0
+        ? [{ label: 'Ajudas Custo (isento)', amount_cents: a.exemptCents, sign: '+' as const }]
+        : []),
+      ...(a.taxableExcessCents > 0
+        ? [{ label: 'Ajudas Custo (tributável)', amount_cents: a.taxableExcessCents, sign: '+' as const }]
+        : []),
+    ]),
+    ...leaveImpact.components,
+  ];
+  const netDelta = extra.reduce(
+    (acc, c) => acc + (c.sign === '+' ? c.amount_cents : -c.amount_cents),
+    0
+  );
+  return {
+    ...base,
+    components: [...base.components, ...extra],
+    net_cents: base.net_cents + netDelta,
+  };
+}
+```
+
+`mergeComponents` é a única ligação entre a camada de cálculo e o `PayslipCalculation` do RPC. Não tem efeitos secundários e é testável isoladamente.
 
 ---
 
@@ -342,7 +424,7 @@ export async function calculatePayslip(
 ): Promise<PayslipCalculation> {
   const base = await supabase.rpc('calculate_payslip', { p_contract_id: contractId, p_period: period });
 
-  const [otPolicy, timeEntries, mileageTrips, travelAllowances, leaves, taxRates] =
+  const [otPolicy, rawTimeEntries, mileageTrips, travelAllowances, leaves, taxRates] =
     await Promise.all([
       fetchOtPolicy(contractId),
       fetchTimesheetEntries(contractId, period),
@@ -352,13 +434,40 @@ export async function calculatePayslip(
       fetchTaxRates(new Date().getFullYear()),
     ]);
 
-  const otResult    = calcOtScaled(timeEntries, base, otPolicy, taxRates.otRates, taxRates.otLimits, otPolicy.isMPE ?? true);
-  const otIrs       = calcOtIrsWithholding(otResult.otPayCents, base.irsRateFraction, taxRates.otIrsWithholding.autonomous_rate_of_base);
-  const mileage     = calcMileageCap(mileageTrips, taxRates.mileageCaps.cents_per_km);
-  const allowances  = travelAllowances.map(a => calcTravelAllowance(a, taxRates.travelCaps, taxRates.mileageCaps.cents_per_km));
-  const leaveImpact = calcLeaveImpact(leaves, Math.round(base.gross_cents / base.working_days));
+  // Converte PayrollTimeEntry[] → OtDayEntry[] (extrai otMinutes, isRestDay, nightMinutes)
+  // usando buildOtDayEntries (nova função helper em calc.ts que usa isWorkDuringNightHours existente)
+  const otEntries = buildOtDayEntries(rawTimeEntries, otPolicy.threshold_hours);
 
-  return mergeComponents(base, otResult, otIrs, mileage, allowances, leaveImpact);
+  // baseHourlyCents: aproximação gross/hora — gross_cents / (weekly_hours × 4.33 semanas × 60 min)
+  // otPolicy.threshold_hours é horas diárias normais (ex: 8h)
+  const baseHourlyCents = Math.round(base.gross_cents / (otPolicy.threshold_hours * 4.33 * 60));
+
+  // irsRateFraction derivado do RPC (não devolvido explicitamente)
+  const irsRateFraction = base.gross_cents > 0 ? base.irs_cents / base.gross_cents : 0;
+
+  const otResult    = calcOtScaled(
+    otEntries,
+    baseHourlyCents,
+    otPolicy.ot_hours_ytd,   // acumulado antes deste mês
+    taxRates.otRates,
+    taxRates.otLimits,
+    otPolicy.isMPE ?? true
+  );
+  const otIrsCents  = calcOtIrsWithholding(
+    otResult.otPayCents,
+    irsRateFraction,
+    taxRates.otIrsWithholding.autonomous_rate_of_base
+  );
+  const mileage     = calcMileageCap(mileageTrips, taxRates.mileageCaps.cents_per_km);
+  const allowances  = travelAllowances.map(a =>
+    calcTravelAllowance(a, taxRates.travelCaps, taxRates.mileageCaps.cents_per_km)
+  );
+  const grossDailyCents = base.working_days > 0
+    ? Math.round(base.gross_cents / base.working_days)
+    : 0;
+  const leaveImpact = calcLeaveImpact(leaves, grossDailyCents);
+
+  return mergeComponents(base, otResult, otIrsCents, mileage, allowances, leaveImpact);
 }
 ```
 
