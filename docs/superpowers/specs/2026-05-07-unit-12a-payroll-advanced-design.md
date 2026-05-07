@@ -137,6 +137,10 @@ COMMENT ON COLUMN payroll_ot_policies.use_legal_defaults IS
 COMMENT ON COLUMN payroll_ot_policies.ot_hours_ytd IS
   'Horas extra acumuladas no ano civil — determina passagem escala 1→2 nas 100h';
 
+-- Nota: o campo existente threshold_hours armazena horas DIÁRIAS normais (ex: 8h/dia).
+-- O serviço usa: baseHourlyCents = gross_cents / (threshold_hours × 4.33 × 60)
+-- onde 4.33 = semanas médias por mês e 60 = minutos por hora.
+
 -- payroll_mileage_policies
 ALTER TABLE payroll_mileage_policies
   ADD COLUMN use_tax_table_rate boolean NOT NULL DEFAULT true;
@@ -180,7 +184,7 @@ CREATE TABLE payroll_travel_allowances (
   declared_cents       bigint      NOT NULL,    -- valor declarado pelo utilizador
   taxable_excess_cents bigint      NOT NULL DEFAULT 0, -- calculado pelo motor em typescript
   receipt_file_path    text,
-  operation_id         text        NOT NULL UNIQUE,  -- idempotency key, gerado no cliente
+  operation_id         text        NOT NULL,          -- idempotency key, gerado no cliente
   created_at           timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT payroll_travel_allowances_operation_id_unique UNIQUE (operation_id)
 );
@@ -358,7 +362,7 @@ Regras PT por tipo:
 - **`sick`, dias 1–`employerDays`**: empregador paga (sem dedução no payslip); componente informativo "Baixa (empregador)"
 - **`sick`, dias `employerDays+1`+**: SS paga; componente informativo "Baixa (SS)"; sem dedução pelo empregador
 - **`unpaid`**: `deduction = totalDays × grossDailyCents`
-- **`maternity` / `paternity`**: SS paga integralmente; deduz `totalDays × grossDailyCents` do payslip (empregador não paga durante a licença)
+- **`maternity` / `paternity`**: SS paga integralmente; deduz `totalDays × grossDailyCents` do payslip (empregador não paga durante a licença). `totalDays` representa **dias úteis** (não dias de calendário) — o mesmo eixo de `working_days` devolvido pelo RPC base.
 - **`vacation` com `affectsSubsidy = true`**: `subsidyAdjustmentCents = days × grossDailyCents` (taxa = 100% salário diário — o subsídio de férias é pago à mesma taxa do salário; `subsidyRate` não existe como parâmetro separado)
 
 ### `mergeComponents` — agrega resultados no `PayslipCalculation` base
