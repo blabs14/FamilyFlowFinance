@@ -14,14 +14,16 @@ ALTER TABLE payroll_leaves
   ADD COLUMN IF NOT EXISTS affects_subsidy  boolean DEFAULT false;
 
 -- 4. Fix payroll_leaves CHECK constraint to include 'vacation'
---    (existing constraint may not include vacation)
+--    (original values preserved; 'vacation' added)
 DO $$
 BEGIN
-  -- Drop old constraint if it exists
   ALTER TABLE payroll_leaves DROP CONSTRAINT IF EXISTS payroll_leaves_leave_type_check;
-EXCEPTION WHEN OTHERS THEN NULL;
+  ALTER TABLE payroll_leaves
+    ADD CONSTRAINT payroll_leaves_leave_type_check
+    CHECK (leave_type IN (
+      'maternity', 'paternity', 'parental', 'adoption',
+      'sick', 'family_assistance', 'bereavement', 'marriage',
+      'study', 'unpaid', 'vacation', 'other'
+    ));
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
-
-ALTER TABLE payroll_leaves
-  ADD CONSTRAINT payroll_leaves_leave_type_check
-  CHECK (leave_type IN ('sick', 'vacation', 'maternity', 'paternity', 'unpaid', 'other'));

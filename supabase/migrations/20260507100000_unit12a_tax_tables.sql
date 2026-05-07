@@ -12,8 +12,12 @@ CREATE TABLE IF NOT EXISTS tax_tables (
 
 -- Enable RLS (read-only for authenticated users; writes via service role)
 ALTER TABLE tax_tables ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "authenticated read tax_tables"
-  ON tax_tables FOR SELECT TO authenticated USING (true);
+DO $$
+BEGIN
+  CREATE POLICY "authenticated read tax_tables"
+    ON tax_tables FOR SELECT TO authenticated USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ── 2026 seed data ─────────────────────────────────────────────────────────────
 

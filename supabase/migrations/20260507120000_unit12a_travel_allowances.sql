@@ -26,8 +26,24 @@ CREATE INDEX IF NOT EXISTS idx_travel_allowances_contract_date
 
 ALTER TABLE payroll_travel_allowances ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "authenticated manage travel_allowances"
-  ON payroll_travel_allowances
-  FOR ALL TO authenticated
-  USING (true)
-  WITH CHECK (true);
+DO $$
+BEGIN
+  CREATE POLICY "Users can manage own travel allowances"
+    ON payroll_travel_allowances
+    FOR ALL TO authenticated
+    USING (
+      EXISTS (
+        SELECT 1 FROM payroll_contracts pc
+        WHERE pc.id = contract_id
+          AND pc.user_id = auth.uid()
+      )
+    )
+    WITH CHECK (
+      EXISTS (
+        SELECT 1 FROM payroll_contracts pc
+        WHERE pc.id = contract_id
+          AND pc.user_id = auth.uid()
+      )
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
