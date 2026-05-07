@@ -1718,24 +1718,25 @@ export const calculatePayslip = async (
 
   const [year, month] = period.split('-').map(Number);
 
-  // Fetch OT policy to get threshold_hours, ot_hours_ytd, isMPE flag
+  // Fetch OT policy to get threshold_hours, ot_hours_ytd, use_legal_defaults flag
   const otPolicies = await getOTPoliciesByContract(contractId);
   const otPolicy = otPolicies[0] ?? null;
-  if (!otPolicy || !(otPolicy as any).use_legal_defaults) {
+  if (!otPolicy || !otPolicy.use_legal_defaults) {
     // No legal-defaults policy: return base calculation unchanged
     return baseResult;
   }
 
   const firstDay = `${period}-01`;
-  const lastDay  = new Date(year, month, 0).toISOString().split('T')[0];
+  const lastDay  = getLastDayOfMonth(year, month); // local-safe (no UTC shift)
 
-  // Fetch user_id needed for time entries and mileage queries
+  // Fetch user_id + weekly_hours needed for time entries and baseMinuteCents
   const contractData = await supabase
     .from('payroll_contracts')
-    .select('user_id')
+    .select('user_id, weekly_hours')
     .eq('id', contractId)
     .single();
-  const userId: string = contractData.data?.user_id ?? '';
+  const userId: string  = contractData.data?.user_id ?? '';
+  const weeklyHours: number = contractData.data?.weekly_hours ?? 40;
 
   const [rawTimeEntries, mileageTrips, travelAllowances, leaves, taxRates] = await Promise.all([
     getTimeEntriesByContract(userId, contractId),
@@ -1747,17 +1748,20 @@ export const calculatePayslip = async (
 
   const thresholdMins   = (otPolicy.threshold_hours ?? 8) * 60;
   const otEntries       = buildOtDayEntries(rawTimeEntries ?? [], thresholdMins);
-  const baseMinuteCents = thresholdMins > 0
-    ? Math.round(baseResult.gross_cents / (thresholdMins * 4.33))
+  // baseMinuteCents: cents per minute of normal work time.
+  // Monthly minutes = weekly_hours × 4.33 weeks × 60 min/h
+  const monthlyWorkMins = weeklyHours * 4.33 * 60;
+  const baseMinuteCents = monthlyWorkMins > 0
+    ? Math.round(baseResult.gross_cents / monthlyWorkMins)
     : 0;
   const irsRateFraction = baseResult.gross_cents > 0
     ? baseResult.irs_cents / baseResult.gross_cents
     : 0;
 
   const otResult    = calcOtScaled(
-    otEntries, baseMinuteCents, (otPolicy as any).ot_hours_ytd ?? 0,
+    otEntries, baseMinuteCents, otPolicy.ot_hours_ytd ?? 0,
     taxRates.otRates, taxRates.otLimits,
-    (otPolicy as any).isMPE ?? true, // TODO(12b): add isMPE column to payroll_ot_policies
+    false, // TODO(12b): add isMPE column to payroll_ot_policies
   );
   const otIrsCents  = calcOtIrsWithholding(
     otResult.otPayCents, irsRateFraction,

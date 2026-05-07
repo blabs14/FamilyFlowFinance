@@ -1,8 +1,10 @@
 -- Migration 2: add fiscal columns to existing payroll tables
 
 -- 1. payroll_ot_policies: add ot_hours_ytd (running YTD hour counter)
+--    and use_legal_defaults (enables Phase 2 Motor Fiscal calc engine)
 ALTER TABLE payroll_ot_policies
-  ADD COLUMN IF NOT EXISTS ot_hours_ytd numeric(6,2) DEFAULT 0;
+  ADD COLUMN IF NOT EXISTS ot_hours_ytd      numeric(6,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS use_legal_defaults boolean      DEFAULT false;
 
 -- 2. payroll_mileage_policies: add use_tax_table_rate flag
 ALTER TABLE payroll_mileage_policies

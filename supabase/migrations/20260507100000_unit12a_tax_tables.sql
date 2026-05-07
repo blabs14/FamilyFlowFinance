@@ -1,7 +1,8 @@
--- Migration 1: tax_tables — fiscal rate store for Unit 12a
--- Creates the tax_tables table and seeds 2026 fiscal values
+-- Migration 1: payroll_fiscal_params — fiscal rate store for Unit 12a
+-- Creates the payroll_fiscal_params table and seeds 2026 fiscal values.
+-- NOTE: Does NOT reuse the Unit 11 tax_tables (IRS bracket columns) — different schema.
 
-CREATE TABLE IF NOT EXISTS tax_tables (
+CREATE TABLE IF NOT EXISTS payroll_fiscal_params (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   effective_year  integer NOT NULL,
   type            text    NOT NULL,
@@ -11,18 +12,18 @@ CREATE TABLE IF NOT EXISTS tax_tables (
 );
 
 -- Enable RLS (read-only for authenticated users; writes via service role)
-ALTER TABLE tax_tables ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payroll_fiscal_params ENABLE ROW LEVEL SECURITY;
 DO $$
 BEGIN
-  CREATE POLICY "authenticated read tax_tables"
-    ON tax_tables FOR SELECT TO authenticated USING (true);
+  CREATE POLICY "authenticated read payroll_fiscal_params"
+    ON payroll_fiscal_params FOR SELECT TO authenticated USING (true);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- ── 2026 seed data ─────────────────────────────────────────────────────────────
 
 -- OT rates (Lei 13/2023, duas escalas: até 100h / acima 100h)
-INSERT INTO tax_tables (effective_year, type, data) VALUES
+INSERT INTO payroll_fiscal_params (effective_year, type, data) VALUES
 (2026, 'ot_rates', '{
   "up_to_100h": {
     "first_hour_pct": 0.25,
@@ -41,7 +42,7 @@ INSERT INTO tax_tables (effective_year, type, data) VALUES
 ON CONFLICT (effective_year, type) DO UPDATE SET data = EXCLUDED.data;
 
 -- OT annual limits (hours)
-INSERT INTO tax_tables (effective_year, type, data) VALUES
+INSERT INTO payroll_fiscal_params (effective_year, type, data) VALUES
 (2026, 'ot_annual_limits', '{
   "mpe_hours":       175,
   "others_hours":    150,
@@ -51,7 +52,7 @@ INSERT INTO tax_tables (effective_year, type, data) VALUES
 ON CONFLICT (effective_year, type) DO UPDATE SET data = EXCLUDED.data;
 
 -- OT IRS withholding (IRS autónomo em OT desde 2025: 50% da taxa base)
-INSERT INTO tax_tables (effective_year, type, data) VALUES
+INSERT INTO payroll_fiscal_params (effective_year, type, data) VALUES
 (2026, 'ot_irs_withholding', '{
   "autonomous_rate_of_base": 0.50,
   "since": "2025-01-01"
@@ -59,7 +60,7 @@ INSERT INTO tax_tables (effective_year, type, data) VALUES
 ON CONFLICT (effective_year, type) DO UPDATE SET data = EXCLUDED.data;
 
 -- Mileage caps (cap AT 2026: €0,40/km)
-INSERT INTO tax_tables (effective_year, type, data) VALUES
+INSERT INTO payroll_fiscal_params (effective_year, type, data) VALUES
 (2026, 'mileage_caps', '{
   "cents_per_km": 40
 }'::jsonb)
@@ -69,7 +70,7 @@ ON CONFLICT (effective_year, type) DO UPDATE SET data = EXCLUDED.data;
 -- national_general: €65,89/day | national_admin: €72,65/day
 -- foreign_general: €156,36/day | foreign_admin: €175,42/day
 -- breakdown: lunch 25%, dinner 25%, sleep 50%
-INSERT INTO tax_tables (effective_year, type, data) VALUES
+INSERT INTO payroll_fiscal_params (effective_year, type, data) VALUES
 (2026, 'travel_allowance_caps', '{
   "national_general_cents": 6589,
   "national_admin_cents":   7265,

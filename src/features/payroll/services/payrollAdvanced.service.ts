@@ -11,7 +11,7 @@ export async function fetchTaxRates(year: number): Promise<TaxRates> {
   if (cached && Date.now() < cached.expiresAt) return cached.data;
 
   const { data, error } = await supabase
-    .from('tax_tables')
+    .from('payroll_fiscal_params')
     .select('type, data')
     .eq('effective_year', year);
   if (error) throw error;
