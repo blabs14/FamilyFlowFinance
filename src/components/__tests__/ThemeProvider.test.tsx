@@ -1,25 +1,36 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render } from '@testing-library/react';
+import { ThemeProvider } from '../ThemeProvider';
 
-// Simple wrapper test — verify html class logic is correct
-describe('ThemeProvider logic', () => {
+vi.mock('../../hooks/useUserPreferences', () => ({
+  useUserPreferences: vi.fn(),
+}));
+
+import { useUserPreferences } from '../../hooks/useUserPreferences';
+const mockUseUserPreferences = vi.mocked(useUserPreferences);
+
+describe('ThemeProvider', () => {
   beforeEach(() => {
     document.documentElement.classList.remove('dark');
+    vi.clearAllMocks();
   });
 
-  it('applies dark class when theme is dark', () => {
-    const apply = (theme: string) => {
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else if (theme === 'light') {
-        document.documentElement.classList.remove('dark');
-      } else {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.classList.toggle('dark', prefersDark);
-      }
-    };
-    apply('dark');
+  it('adds dark class when theme is dark', () => {
+    mockUseUserPreferences.mockReturnValue({ data: { theme: 'dark' } } as any);
+    render(<ThemeProvider><div /></ThemeProvider>);
     expect(document.documentElement.classList.contains('dark')).toBe(true);
-    apply('light');
+  });
+
+  it('removes dark class when theme is light', () => {
+    document.documentElement.classList.add('dark');
+    mockUseUserPreferences.mockReturnValue({ data: { theme: 'light' } } as any);
+    render(<ThemeProvider><div /></ThemeProvider>);
     expect(document.documentElement.classList.contains('dark')).toBe(false);
+  });
+
+  it('defaults to system theme when prefs are null', () => {
+    mockUseUserPreferences.mockReturnValue({ data: null } as any);
+    // Should not throw
+    render(<ThemeProvider><div /></ThemeProvider>);
   });
 });

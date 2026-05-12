@@ -53,7 +53,7 @@ function App() {
       <AuthProvider>
         <ScopeProvider>
           <ThemeProvider>
-          <LocaleProvider>
+            <LocaleProvider>
             <Router>
               <ErrorBoundary>
                 <GlobalShortcuts />
@@ -150,7 +150,7 @@ function App() {
                 </Routes>
               </ErrorBoundary>
             </Router>
-          </LocaleProvider>
+            </LocaleProvider>
           </ThemeProvider>
         </ScopeProvider>
       </AuthProvider>
