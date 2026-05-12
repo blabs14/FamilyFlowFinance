@@ -18,24 +18,29 @@ export function usePostStaging() {
     mutationFn: async ({ selectedRows }: PostParams) => {
       const created: string[] = [];
 
-      // NOTE: confirm_recurring_instance RPC does not exist in this project.
-      // Recurring match is recorded but not confirmed via RPC — plain INSERT only.
       for (const row of selectedRows) {
-        const { data, error } = await supabase
-          .from('transactions')
-          .insert({
-            data: row.date,
-            amount_cents: row.amount_cents,
-            descricao: row.description,
-            categoria_id: row.category_id ?? null,
-            account_id: row.account_id,
-            tipo: 'expense',
-            // user_id is set by Supabase RLS via auth.uid() — not passed explicitly
-          } as any)
-          .select('id')
-          .single();
-        if (error) throw error;
-        created.push(data.id);
+        if (row.matched_recurring_instance_id) {
+          const { data, error } = await supabase.rpc('confirm_recurring_instance', {
+            p_instance_id: row.matched_recurring_instance_id,
+          });
+          if (error) throw error;
+          if (data?.transaction_id) created.push(data.transaction_id);
+        } else {
+          const { data, error } = await supabase
+            .from('transactions')
+            .insert({
+              data: row.date,
+              amount_cents: row.amount_cents,
+              descricao: row.description,
+              categoria_id: row.category_id ?? null,
+              account_id: row.account_id,
+              tipo: 'expense',
+            } as any)
+            .select('id')
+            .single();
+          if (error) throw error;
+          created.push(data.id);
+        }
       }
       return created;
     },
