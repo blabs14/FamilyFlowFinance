@@ -11,6 +11,7 @@ const mockNextStep = vi.fn();
 let mockCurrentStep = 1;
 
 vi.mock('./useOnboardingState', () => ({
+  ONBOARDING_TOTAL_STEPS: 4,
   useOnboardingState: () => ({
     get currentStep() { return mockCurrentStep; },
     nextStep: mockNextStep,
@@ -18,6 +19,10 @@ vi.mock('./useOnboardingState', () => ({
     skipOnboarding: vi.fn(),
     showWizard: true,
   }),
+}));
+
+vi.mock('../../hooks/use-toast', () => ({
+  useToast: () => ({ toast: vi.fn() }),
 }));
 
 describe('OnboardingWizard — passo 1', () => {
@@ -74,5 +79,6 @@ describe('OnboardingWizard — passo 4 (último)', () => {
     render(<OnboardingWizard onComplete={onComplete} />);
     await user.click(screen.getByRole('button', { name: /concluir/i }));
     expect(mockCompleteOnboarding).toHaveBeenCalledOnce();
+    expect(onComplete).toHaveBeenCalledOnce();
   });
 });

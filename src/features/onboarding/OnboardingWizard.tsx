@@ -1,7 +1,8 @@
 import React from 'react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../../components/ui/card';
-import { useOnboardingState } from './useOnboardingState';
+import { useToast } from '../../hooks/use-toast';
+import { useOnboardingState, ONBOARDING_TOTAL_STEPS } from './useOnboardingState';
 
 interface OnboardingWizardProps {
   onComplete?: () => void;
@@ -34,10 +35,11 @@ const STEPS = [
   },
 ];
 
-const TOTAL_STEPS = STEPS.length;
+const TOTAL_STEPS = ONBOARDING_TOTAL_STEPS;
 
 export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const { currentStep, nextStep, completeOnboarding } = useOnboardingState();
+  const { toast } = useToast();
 
   const stepIndex = Math.max(0, Math.min(currentStep - 1, TOTAL_STEPS - 1));
   const step = STEPS[stepIndex];
@@ -45,16 +47,24 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   const handleNext = async () => {
     if (isLastStep) {
-      await completeOnboarding();
-      onComplete?.();
+      try {
+        await completeOnboarding();
+        onComplete?.();
+      } catch {
+        toast({ title: 'Erro ao concluir configuração', description: 'Tenta novamente.', variant: 'destructive' });
+      }
     } else {
       nextStep();
     }
   };
 
   const handleSkip = async () => {
-    await completeOnboarding();
-    onComplete?.();
+    try {
+      await completeOnboarding();
+      onComplete?.();
+    } catch {
+      toast({ title: 'Erro ao saltar configuração', description: 'Tenta novamente.', variant: 'destructive' });
+    }
   };
 
   return (

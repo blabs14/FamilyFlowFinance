@@ -1,14 +1,55 @@
 import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { OnboardingGuard } from '../../../components/OnboardingGuard';
 
-// Mock heavy dependencies so the module can be imported without Supabase env vars
 vi.mock('../../../hooks/useUserPreferences', () => ({
-  useUpdateUserPreferences: () => ({ mutateAsync: vi.fn() }),
+  useUserPreferences: vi.fn(),
 }));
 
-// Minimal smoke test — guard logic is route-level, tested by integration
+import { useUserPreferences } from '../../../hooks/useUserPreferences';
+
 describe('useOnboardingState', () => {
-  it('exports completeOnboarding function', async () => {
+  it('exports useOnboardingState function', async () => {
     const mod = await import('../useOnboardingState');
     expect(typeof mod.useOnboardingState).toBe('function');
+  });
+});
+
+describe('OnboardingGuard', () => {
+  it('shows null while loading', () => {
+    vi.mocked(useUserPreferences).mockReturnValue({ data: undefined, isLoading: true } as any);
+    const { container } = render(
+      <MemoryRouter initialEntries={['/app']}>
+        <OnboardingGuard><div>content</div></OnboardingGuard>
+      </MemoryRouter>
+    );
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('renders children when onboarding_completed_at is set', () => {
+    vi.mocked(useUserPreferences).mockReturnValue({
+      data: { onboarding_completed_at: '2026-01-01T00:00:00Z' },
+      isLoading: false,
+    } as any);
+    render(
+      <MemoryRouter initialEntries={['/app']}>
+        <OnboardingGuard><div>content</div></OnboardingGuard>
+      </MemoryRouter>
+    );
+    expect(screen.getByText('content')).toBeInTheDocument();
+  });
+
+  it('renders children for exempt path even without onboarding_completed_at', () => {
+    vi.mocked(useUserPreferences).mockReturnValue({
+      data: { onboarding_completed_at: null },
+      isLoading: false,
+    } as any);
+    render(
+      <MemoryRouter initialEntries={['/app/settings']}>
+        <OnboardingGuard><div>content</div></OnboardingGuard>
+      </MemoryRouter>
+    );
+    expect(screen.getByText('content')).toBeInTheDocument();
   });
 });

@@ -25,6 +25,7 @@ export function ProfileSettings() {
   const [nome, setNome] = useState('');
   const [fotoUrl, setFotoUrl] = useState('');
   const [profileSynced, setProfileSynced] = useState(false);
+  const [isReverting, setIsReverting] = useState(false);
 
   // Sync from profile when loaded (only once)
   useEffect(() => {
@@ -105,11 +106,23 @@ export function ProfileSettings() {
               {updateProfile.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Guardar perfil
             </Button>
-            <Button variant="ghost" size="sm" onClick={async () => {
-              await updatePrefs.mutateAsync({ onboarding_completed_at: null });
-              nav('/app/onboarding');
-            }}>
-              Rever onboarding
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isReverting}
+              onClick={async () => {
+                setIsReverting(true);
+                try {
+                  await updatePrefs.mutateAsync({ onboarding_completed_at: null });
+                  nav('/app/onboarding');
+                } catch {
+                  toast({ title: 'Erro ao reiniciar onboarding', variant: 'destructive' });
+                } finally {
+                  setIsReverting(false);
+                }
+              }}
+            >
+              {isReverting ? 'A processar...' : 'Rever onboarding'}
             </Button>
           </div>
         </CardContent>
