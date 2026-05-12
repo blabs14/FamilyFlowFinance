@@ -1,7 +1,7 @@
 -- supabase/migrations/20260512100000_unit14a_bank_templates.sql
 BEGIN;
 
-CREATE TABLE bank_templates (
+CREATE TABLE IF NOT EXISTS bank_templates (
   id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   bank_code        text        NOT NULL UNIQUE,
   format           text        NOT NULL CHECK (format IN ('csv','ofx')),

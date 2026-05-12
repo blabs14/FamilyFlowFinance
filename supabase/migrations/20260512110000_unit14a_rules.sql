@@ -1,7 +1,7 @@
 -- supabase/migrations/20260512110000_unit14a_rules.sql
 BEGIN;
 
-CREATE TABLE import_categorization_rules (
+CREATE TABLE IF NOT EXISTS import_categorization_rules (
   id          uuid      PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id     uuid      REFERENCES auth.users,
   family_id   uuid      REFERENCES families,
@@ -14,6 +14,13 @@ CREATE TABLE import_categorization_rules (
   active      boolean   NOT NULL DEFAULT true,
   created_at  timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS import_categorization_rules_system_seed_uniq
+  ON import_categorization_rules (pattern, match_field)
+  WHERE scope = 'system_seed';
+
+CREATE INDEX IF NOT EXISTS idx_import_categorization_rules_lookup
+  ON import_categorization_rules (active, scope, priority DESC);
 
 ALTER TABLE import_categorization_rules ENABLE ROW LEVEL SECURITY;
 
@@ -95,12 +102,12 @@ DECLARE
   seed text[];
 BEGIN
   FOREACH seed SLICE 1 IN ARRAY seeds LOOP
-    SELECT id INTO cat_id FROM categories WHERE name ILIKE seed[2] LIMIT 1;
+    SELECT id INTO cat_id FROM categories WHERE nome ILIKE seed[2] LIMIT 1;
     IF cat_id IS NOT NULL THEN
       INSERT INTO import_categorization_rules
         (scope, priority, match_field, match_type, pattern, category_id)
       VALUES ('system_seed', 1000, 'description', 'contains', seed[1], cat_id)
-      ON CONFLICT DO NOTHING;
+      ON CONFLICT (pattern, match_field) WHERE scope = 'system_seed' DO NOTHING;
     END IF;
   END LOOP;
 END $$;
