@@ -4,11 +4,24 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SettingsPage from '../SettingsPage';
 
+vi.mock('../../../lib/supabaseClient', () => ({
+  supabase: {
+    auth: { updateUser: vi.fn().mockResolvedValue({ error: null }) },
+    from: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+  },
+}));
 vi.mock('../../../hooks/useUserPreferences', () => ({
   useUserPreferences: () => ({ data: null, isLoading: false }),
+  useUpdateUserPreferences: () => ({ mutateAsync: vi.fn() }),
+}));
+vi.mock('../../../hooks/useProfilesQuery', () => ({
+  useProfile: () => ({ data: null }),
+  useUpdateProfile: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 vi.mock('../../../contexts/AuthContext', () => ({
-  useAuth: () => ({ user: { id: 'u1' } }),
+  useAuth: () => ({ user: { id: 'u1', email: 'test@example.com' } }),
 }));
 vi.mock('../../../features/scope', () => ({
   useScope: vi.fn(),
