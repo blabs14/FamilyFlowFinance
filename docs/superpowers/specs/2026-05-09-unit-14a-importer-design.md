@@ -10,7 +10,7 @@
 ## 1. Goal
 
 Replace the existing 40%-functional importer with a production-ready import pipeline for FamilyFlowFinance. Covers:
-- Pre-configured templates for 6 PT banks (CSV) + OFX support
+- Pre-configured templates for 7 PT banks (Millennium BCP, Santander Totta, CGD, Novo Banco, ActivoBank, Montepio, BPI) in CSV + OFX support
 - Auto-detection of format and bank
 - Fuzzy dedup against `transactions` AND `recurring_instances` (closes Unit 9 integration)
 - Rules engine with ~30 PT system seeds (auto-categorisation)
@@ -130,6 +130,7 @@ ALTER TABLE staging_transactions
 
 ```sql
 ALTER TABLE ingestion_files
+  ADD COLUMN IF NOT EXISTS account_id      uuid REFERENCES accounts(id),  -- target account, set at upload time
   ADD COLUMN IF NOT EXISTS detected_format text CHECK (detected_format IN ('csv','ofx','unknown')),
   ADD COLUMN IF NOT EXISTS detected_bank   text,
   ADD COLUMN IF NOT EXISTS total_rows      integer,
@@ -139,6 +140,8 @@ ALTER TABLE ingestion_files
   ADD COLUMN IF NOT EXISTS matched_recurring_rows integer,
   ADD COLUMN IF NOT EXISTS soft_deleted_at timestamptz;
 ```
+
+`account_id` is collected from the account selector in the Upload step (Step 1) and saved to `ingestion_files` before triggering the EF. The EF receives it as a parameter and uses it as the dedup scope for both `transactions` and `recurring_instances`.
 
 ### Removed
 
@@ -237,6 +240,8 @@ matches_recurring:    status IN ('pending','confirmed')
 
 Description similarity via `rpc('string_similarity', { a, b })` wrapper over `pg_trgm similarity()` — avoids reimplementing in Deno, uses existing PG index.
 
+**Performance note:** To avoid N individual RPC round-trips for the `probable_duplicate` pass, implement dedup as a single bulk SQL query (e.g. pass all candidate rows as a JSON array to a single RPC `bulk_fuzzy_dedup`) rather than one call per row. This matters for files near the 5000-line cap.
+
 Rows with no match → `row_status = 'ok'`.
 
 ### `apply-rules.ts`
@@ -244,8 +249,10 @@ Rows with no match → `row_status = 'ok'`.
 Applied only to rows with `row_status IN ('ok', 'probable_duplicate')`:
 
 ```typescript
-// Rules loaded ordered: system_seed (priority 1000) < family < user
-// Lower priority number = higher precedence → user rules override system seeds
+// Priority ordering: lower number = evaluated first = wins.
+// User rules default priority=100, family=100, system_seed=1000.
+// ORDER BY priority ASC → user/family rules (100) are evaluated before system seeds (1000).
+// First match wins → user rules override system seeds.
 const rules = await fetchActiveRules(userId, familyId); // ORDER BY priority ASC
 
 for (const row of rows) {
@@ -267,7 +274,7 @@ for (const row of rows) {
 | `description` | `starts_with` | `description.toLowerCase().startsWith(pattern.toLowerCase())` |
 | `description` | `regex` | `new RegExp(pattern, 'i').test(description)` |
 | `counterparty` | `equals` | normalised exact match |
-| `amount_range` | `range` | `pattern = "min,max"` → cents within range |
+| `amount_range` | `range` | `pattern = "min_cents,max_cents"` → integer cents within range (e.g. `"0,5000"` = €0–€50) |
 
 ---
 
@@ -313,7 +320,7 @@ Columns: Data | Descrição | Montante | Categoria | Estado
 | Badge | Colour | Default behaviour |
 |---|---|---|
 | `ok` | green | selected for import |
-| `auto ⚡` | blue | category pre-filled, editable |
+| `auto ⚡` | blue | UI-derived state: `row_status='ok' AND applied_rule_id IS NOT NULL`; not a separate DB enum value; category pre-filled, editable |
 | `provável duplicado` | yellow | deselected by default; expand shows existing transaction |
 | `corresponde recorrente` | purple | selected; expand shows Unit 9 recurring instance |
 | `duplicado` | grey | deselected, not selectable |
@@ -324,7 +331,7 @@ Columns: Data | Descrição | Montante | Categoria | Estado
 ### Step 3 — Post
 
 - `"Importar X transações"` button (counts only selected rows where `row_status NOT IN ('duplicate','error')`)
-- Rows with `matches_recurring`: calls `confirm_recurring_instance(instance_id, amount_cents)` instead of creating new transaction
+- Rows with `matches_recurring`: calls `rpc('confirm_recurring_instance', { p_instance_id: instance_id })` (single-argument, matches existing Unit 9 RPC signature); the RPC marks the instance `status='confirmed'` and returns `{ transaction_id }` — the importer uses the returned `transaction_id` as the posted transaction (no duplicate transaction created)
 - Success toast + redirect to `/app/transacoes`
 
 ---
@@ -337,6 +344,7 @@ Columns: Data | Descrição | Montante | Categoria | Estado
 
 - `detect-format.test.ts` — CSV variants, OFX detection, unknown fallback
 - `detect-bank.test.ts` — header matching for all 7 banks, no-match case
+- Fixtures location: `supabase/functions/ingest_csv/__tests__/fixtures/` (one anonymised CSV per bank + one OFX file)
 - `csv-bank-template.test.ts` — fixture CSV per bank (anonymised real extracts), date formats, decimal separators
 - `csv-generic.test.ts` — manual mapping, semicolon delimiter, encoding edge cases
 - `ofx.test.ts` — OFX fixture (anonymised), amount sign, date normalisation
