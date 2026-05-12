@@ -11,6 +11,7 @@ import { Toaster as SonnerToaster } from './components/ui/sonner';
 import { GlobalShortcuts } from './components/GlobalShortcuts';
 import { LocaleProvider } from './contexts/LocaleProvider';
 import { ScopeProvider } from './features/scope';
+import { ThemeProvider } from './components/ThemeProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Lazy loading de páginas base
@@ -51,6 +52,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ScopeProvider>
+          <ThemeProvider>
           <LocaleProvider>
             <Router>
               <ErrorBoundary>
@@ -149,6 +151,7 @@ function App() {
               </ErrorBoundary>
             </Router>
           </LocaleProvider>
+          </ThemeProvider>
         </ScopeProvider>
       </AuthProvider>
       <Toaster />
