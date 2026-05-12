@@ -2,6 +2,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useOnboardingState } from './useOnboardingState';
 
+// Mock useUpdateUserPreferences so completeOnboarding doesn't hit Supabase
+vi.mock('../../hooks/useUserPreferences', () => ({
+  useUpdateUserPreferences: () => ({
+    mutateAsync: vi.fn().mockResolvedValue({}),
+  }),
+}));
+
 const STORAGE_KEY = 'fff_onboarding_done';
 
 // setupTests.ts substitui localStorage por spies sem estado real.
@@ -36,16 +43,16 @@ describe('useOnboardingState', () => {
     expect(result.current.showWizard).toBe(false);
   });
 
-  it('completeOnboarding persiste a flag e fecha o wizard', () => {
+  it('completeOnboarding persiste a flag e fecha o wizard', async () => {
     const { result } = renderHook(() => useOnboardingState());
-    act(() => { result.current.completeOnboarding(); });
+    await act(async () => { await result.current.completeOnboarding(); });
     expect(localStorage.getItem(STORAGE_KEY)).toBe('true');
     expect(result.current.showWizard).toBe(false);
   });
 
-  it('skipOnboarding persiste a flag e fecha o wizard', () => {
+  it('skipOnboarding persiste a flag e fecha o wizard', async () => {
     const { result } = renderHook(() => useOnboardingState());
-    act(() => { result.current.skipOnboarding(); });
+    await act(async () => { result.current.skipOnboarding(); });
     expect(localStorage.getItem(STORAGE_KEY)).toBe('true');
     expect(result.current.showWizard).toBe(false);
   });
@@ -61,11 +68,12 @@ describe('useOnboardingState', () => {
     expect(result.current.currentStep).toBe(2);
   });
 
-  it('nextStep no último passo (3) chama completeOnboarding', () => {
+  it('nextStep no último passo (4) chama completeOnboarding', async () => {
     const { result } = renderHook(() => useOnboardingState());
     act(() => { result.current.nextStep(); }); // 1→2
     act(() => { result.current.nextStep(); }); // 2→3
-    act(() => { result.current.nextStep(); }); // 3→complete
+    act(() => { result.current.nextStep(); }); // 3→4
+    await act(async () => { result.current.nextStep(); }); // 4→complete
     expect(localStorage.getItem(STORAGE_KEY)).toBe('true');
     expect(result.current.showWizard).toBe(false);
   });

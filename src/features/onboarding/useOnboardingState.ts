@@ -1,14 +1,14 @@
 import { useState } from 'react';
+import { useUpdateUserPreferences } from '../../hooks/useUserPreferences';
 
 const STORAGE_KEY = 'fff_onboarding_done';
-const TOTAL_STEPS = 3;
 
 export interface OnboardingState {
   showWizard: boolean;
   currentStep: number;
   nextStep: () => void;
   skipOnboarding: () => void;
-  completeOnboarding: () => void;
+  completeOnboarding: () => Promise<void>;
 }
 
 const isDone = (): boolean => {
@@ -22,13 +22,17 @@ const isDone = (): boolean => {
 export const useOnboardingState = (): OnboardingState => {
   const [showWizard, setShowWizard] = useState<boolean>(!isDone());
   const [currentStep, setCurrentStep] = useState<number>(1);
+  const updatePrefs = useUpdateUserPreferences();
 
-  const completeOnboarding = () => {
+  const TOTAL_STEPS = 4;
+
+  const completeOnboarding = async () => {
     try {
       localStorage.setItem(STORAGE_KEY, 'true');
     } catch {
       // Storage unavailable — continue silently
     }
+    await updatePrefs.mutateAsync({ onboarding_completed_at: new Date().toISOString() });
     setShowWizard(false);
   };
 

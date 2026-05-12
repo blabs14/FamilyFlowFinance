@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 vi.mock('../../../../lib/supabaseClient', () => ({
@@ -25,13 +26,13 @@ import { ProfileSettings } from '../ProfileSettings';
 
 describe('ProfileSettings', () => {
   it('renders name and email fields', () => {
-    render(<QueryClientProvider client={new QueryClient()}><ProfileSettings /></QueryClientProvider>);
+    render(<MemoryRouter><QueryClientProvider client={new QueryClient()}><ProfileSettings /></QueryClientProvider></MemoryRouter>);
     expect(screen.getByLabelText(/nome/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
   });
 
   it('shows password section', () => {
-    render(<QueryClientProvider client={new QueryClient()}><ProfileSettings /></QueryClientProvider>);
+    render(<MemoryRouter><QueryClientProvider client={new QueryClient()}><ProfileSettings /></QueryClientProvider></MemoryRouter>);
     expect(screen.getByText(/alterar password/i)).toBeInTheDocument();
   });
 });

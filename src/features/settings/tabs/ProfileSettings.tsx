@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabaseClient';
 import { AvatarUploader } from '../AvatarUploader';
@@ -10,13 +11,16 @@ import { Alert, AlertDescription } from '../../../components/ui/alert';
 import { useToast } from '../../../hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useProfile, useUpdateProfile } from '../../../hooks/useProfilesQuery';
+import { useUpdateUserPreferences } from '../../../hooks/useUserPreferences';
 
 export function ProfileSettings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const nav = useNavigate();
 
   const { data: profile } = useProfile();
   const updateProfile = useUpdateProfile();
+  const updatePrefs = useUpdateUserPreferences();
 
   const [nome, setNome] = useState('');
   const [fotoUrl, setFotoUrl] = useState('');
@@ -96,10 +100,18 @@ export function ProfileSettings() {
             />
             <p className="text-xs text-muted-foreground">Email não pode ser alterado aqui.</p>
           </div>
-          <Button onClick={handleSaveProfile} disabled={updateProfile.isPending}>
-            {updateProfile.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            Guardar perfil
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleSaveProfile} disabled={updateProfile.isPending}>
+              {updateProfile.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Guardar perfil
+            </Button>
+            <Button variant="ghost" size="sm" onClick={async () => {
+              await updatePrefs.mutateAsync({ onboarding_completed_at: null });
+              nav('/app/onboarding');
+            }}>
+              Rever onboarding
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
