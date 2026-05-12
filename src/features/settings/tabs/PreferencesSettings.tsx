@@ -11,8 +11,12 @@ export function PreferencesSettings() {
   const { toast } = useToast();
 
   const save = async (patch: Parameters<typeof update.mutateAsync>[0]) => {
-    await update.mutateAsync(patch);
-    toast({ title: 'Preferências guardadas' });
+    try {
+      await update.mutateAsync(patch);
+      toast({ title: 'Preferências guardadas' });
+    } catch {
+      toast({ title: 'Erro ao guardar', variant: 'destructive' });
+    }
   };
 
   if (!prefs) return null;

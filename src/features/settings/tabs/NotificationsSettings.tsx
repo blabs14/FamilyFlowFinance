@@ -10,8 +10,12 @@ export function NotificationsSettings() {
   const { toast } = useToast();
 
   const handleUpdate = async (patch: UserPreferencesUpdate) => {
-    await update.mutateAsync(patch);
-    toast({ title: 'Notificações actualizadas' });
+    try {
+      await update.mutateAsync(patch);
+      toast({ title: 'Notificações atualizadas' });
+    } catch {
+      toast({ title: 'Erro ao guardar', variant: 'destructive' });
+    }
   };
 
   if (!prefs) return null;
