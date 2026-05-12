@@ -3,6 +3,11 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
+-- Input: JSON array of {row_index, date, amount_cents, description}
+-- Output: table of {row_index, row_status, matched_transaction_id, matched_recurring_instance_id}
+--
+-- transactions uses Portuguese columns: data (date), valor (float euros), descricao (text)
+-- recurring_instances has amount_cents + due_date but no account_id; scope via recurring_rules
 CREATE OR REPLACE FUNCTION bulk_fuzzy_dedup(
   p_account_id  uuid,
   p_rows        jsonb
@@ -36,11 +41,12 @@ BEGIN
     v_status      := 'ok';
 
     -- Pass 1: exact duplicate against transactions
+    -- transactions columns: data (date), valor (float euros → compare as cents), descricao, account_id
     SELECT id INTO v_txn_id
     FROM transactions
     WHERE account_id = p_account_id
-      AND ABS(date - v_date) <= 2
-      AND ABS(amount_cents - v_amount) <= 2
+      AND ABS(data - v_date) <= 2
+      AND ABS(ROUND(valor * 100)::integer - v_amount) <= 2
     LIMIT 1;
 
     IF v_txn_id IS NOT NULL THEN
@@ -50,9 +56,9 @@ BEGIN
       SELECT id INTO v_txn_id
       FROM transactions
       WHERE account_id = p_account_id
-        AND ABS(date - v_date) <= 5
-        AND amount_cents = v_amount
-        AND similarity(description, v_description) >= 0.7
+        AND ABS(data - v_date) <= 5
+        AND ROUND(valor * 100)::integer = v_amount
+        AND similarity(COALESCE(descricao, ''), v_description) >= 0.7
       LIMIT 1;
 
       IF v_txn_id IS NOT NULL THEN
@@ -61,13 +67,20 @@ BEGIN
     END IF;
 
     -- Pass 2: recurring instances (only if not already a hard duplicate)
+    -- recurring_instances has no account_id; scope via recurring_rules (user_id / family_id)
     IF v_status <> 'duplicate' THEN
-      SELECT id INTO v_rec_id
-      FROM recurring_instances
-      WHERE account_id = p_account_id
-        AND status IN ('pending','confirmed')
-        AND ABS(due_date - v_date) <= 2
-        AND ABS(amount_cents - v_amount) <= 2
+      SELECT ri.id INTO v_rec_id
+      FROM recurring_instances ri
+      JOIN recurring_rules rr ON rr.id = ri.rule_id
+      WHERE (
+          rr.user_id = auth.uid()
+          OR rr.family_id IN (
+            SELECT family_id FROM family_members WHERE user_id = auth.uid()
+          )
+        )
+        AND ri.status IN ('pending', 'confirmed')
+        AND ABS(ri.due_date - v_date) <= 2
+        AND ABS(ri.amount_cents - v_amount) <= 2
       LIMIT 1;
 
       IF v_rec_id IS NOT NULL THEN
