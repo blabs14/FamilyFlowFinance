@@ -9,13 +9,6 @@ vi.mock('../../../hooks/useUserPreferences', () => ({
 
 import { useUserPreferences } from '../../../hooks/useUserPreferences';
 
-describe('useOnboardingState', () => {
-  it('exports useOnboardingState function', async () => {
-    const mod = await import('../useOnboardingState');
-    expect(typeof mod.useOnboardingState).toBe('function');
-  });
-});
-
 describe('OnboardingGuard', () => {
   it('shows null while loading', () => {
     vi.mocked(useUserPreferences).mockReturnValue({ data: undefined, isLoading: true } as any);

@@ -54,7 +54,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         toast({ title: 'Erro ao concluir configuração', description: 'Tenta novamente.', variant: 'destructive' });
       }
     } else {
-      nextStep();
+      await nextStep();
     }
   };
 
