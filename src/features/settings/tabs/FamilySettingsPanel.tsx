@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '../../../contexts/AuthContext';
 import { useScope } from '../../../features/scope';
 import { supabase } from '../../../lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
@@ -13,7 +12,6 @@ interface Member {
 }
 
 export function FamilySettingsPanel() {
-  const { user } = useAuth();
   const { activeFamily } = useScope();
 
   const { data: members = [] } = useQuery({

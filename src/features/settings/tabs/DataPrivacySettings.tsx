@@ -29,7 +29,10 @@ export function DataPrivacySettings() {
   });
 
   const requestDeletion = useMutation({
-    mutationFn: () => requestAccountDeletion(user!.id),
+    mutationFn: () => {
+      if (!user?.id) throw new Error('Not authenticated');
+      return requestAccountDeletion(user.id);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['deletion-pending'] });
       setDeleteOpen(false);
@@ -40,7 +43,10 @@ export function DataPrivacySettings() {
   });
 
   const cancelDeletion = useMutation({
-    mutationFn: () => cancelAccountDeletion(user!.id),
+    mutationFn: () => {
+      if (!user?.id) throw new Error('Not authenticated');
+      return cancelAccountDeletion(user.id);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['deletion-pending'] });
       toast({ title: 'Eliminação cancelada' });

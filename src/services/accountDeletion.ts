@@ -17,7 +17,8 @@ export async function cancelAccountDeletion(userId: string) {
   return supabase
     .from('deletion_tokens')
     .delete()
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .gte('expires_at', new Date().toISOString());
 }
 
 /** Checks if there is a pending deletion token. */
