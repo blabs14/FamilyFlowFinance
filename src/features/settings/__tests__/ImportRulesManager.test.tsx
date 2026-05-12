@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ImportRulesManager } from '../ImportRulesManager';
@@ -48,8 +48,11 @@ describe('ImportRulesManager', () => {
 
   it('system_seed rules have no delete button', async () => {
     render(<QueryClientProvider client={new QueryClient()}><ImportRulesManager /></QueryClientProvider>);
-    const rows = await screen.findAllByRole('row');
-    expect(rows.length).toBeGreaterThan(1);
+    await screen.findByText('LIDL'); // wait for load
+    // User rule (NETFLIX) has a delete button
+    expect(screen.getByLabelText('Eliminar regra NETFLIX')).toBeInTheDocument();
+    // System seed rule (LIDL) has NO delete button
+    expect(screen.queryByLabelText('Eliminar regra LIDL')).toBeNull();
   });
 
   it('opens create dialog when "Nova regra" is clicked', async () => {

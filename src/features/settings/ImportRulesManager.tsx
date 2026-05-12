@@ -65,6 +65,10 @@ export function ImportRulesManager() {
     mutationFn: ({ id, active }: { id: string; active: boolean }) =>
       supabase.from('import_categorization_rules').update({ active }).eq('id', id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['import-rules'] }),
+    onError: () => {
+      qc.invalidateQueries({ queryKey: ['import-rules'] });
+      toast({ title: 'Erro ao atualizar regra', variant: 'destructive' });
+    },
   });
 
   const deleteRule = useMutation({
