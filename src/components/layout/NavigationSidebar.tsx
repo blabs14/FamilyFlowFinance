@@ -39,7 +39,7 @@ const mainNavItems = [
 const familyNavItems = [
   { title: 'Membros',            href: '/app/membros',            icon: Users,    description: 'Membros da família', end: false },
   { title: 'Convites',           href: '/app/convites',           icon: UserPlus, description: 'Gerir convites', end: false },
-  { title: 'Definições Família', href: '/app/definicoes-familia', icon: Settings, description: 'Configurações da família', end: false },
+  { title: 'Definições Família', href: '/app/settings', icon: Settings, description: 'Configurações da família', end: false },
 ];
 
 export function NavigationSidebar({ onNavigate }: NavigationSidebarProps) {
