@@ -1,179 +1,167 @@
+// supabase/functions/ingest_csv/index.ts
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { detectFormat }         from './parsers/detect-format.ts';
+import { detectBank }           from './parsers/detect-bank.ts';
+import { parseCsvWithTemplate } from './parsers/csv-bank-template.ts';
+import { parseCsvGeneric }      from './parsers/csv-generic.ts';
+import { parseOfx }             from './parsers/ofx.ts';
+import { runFuzzyDedup }        from './dedup/fuzzy-dedup.ts';
+import { applyRules }           from './rules/apply-rules.ts';
 
 declare const Deno: any;
 
-function corsHeaders(req: Request) {
-  const origin = req.headers.get('Origin') || '*';
+const MAX_ROWS = 5000;
+
+function corsHeaders(req: Request): Record<string, string> {
   return {
-    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Origin': req.headers.get('Origin') || '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Max-Age': '86400',
-    'Vary': 'Origin'
-  } as Record<string,string>;
-}
-
-async function sha256Hex(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
-function inferDelimiter(headerLine: string): string {
-  const candidates = [',',';','\t','|'];
-  let best = ','; let max = -1;
-  for (const c of candidates) { const ct = (headerLine.match(new RegExp(`\\${c}`, 'g'))||[]).length; if (ct>max) { max = ct; best = c; } }
-  return best;
-}
-
-function parseCsv(text: string, delimiter?: string): { headers: string[]; rows: string[][] } {
-  const lines = text.split(/\r?\n/).filter(l=>l.trim().length>0);
-  if (lines.length===0) return { headers: [], rows: [] };
-  const delim = delimiter || inferDelimiter(lines[0]);
-  const headers = lines[0].split(delim).map(h=>h.trim());
-  const rows = lines.slice(1).map(l=> l.split(delim));
-  return { headers, rows };
-}
-
-function normalizeRow(raw: Record<string,string>, mapping: any){
-  const dateRaw = raw[mapping.date];
-  const fmt = mapping.date_fmt as string|undefined;
-  let date = dateRaw;
-  if (fmt === 'DD/MM/YYYY' || /\d{2}\/\d{2}\/\d{4}/.test(dateRaw)) {
-    const [d,m,y] = dateRaw.split('/'); date = `${y}-${m}-${d}`;
-  } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateRaw)) {
-    date = dateRaw;
-  } else { date = new Date(dateRaw).toISOString().slice(0,10); }
-  const dec = mapping.decimal || ',';
-  const amtStr = String(raw[mapping.amount]||'').replace(dec, '.');
-  let amount = Number(amtStr||0);
-  if (mapping.debit_sign && amount>0) amount = amount * mapping.debit_sign;
-  return {
-    date,
-    amount_cents: Math.round(amount*100),
-    currency: 'EUR',
-    description: String(raw[mapping.description]||'').trim(),
-    merchant: String(raw[mapping.description]||'').trim()
+    'Vary': 'Origin',
   };
 }
 
+function json(body: unknown, status = 200, req: Request) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...corsHeaders(req) },
+  });
+}
+
 Deno.serve(async (req: Request) => {
-  const url = new URL(req.url);
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: { ...corsHeaders(req) } });
-  }
-  const body = await req.json().catch(()=>({}));
-  const jobId = (body as any)?.job_id || url.searchParams.get('job_id');
-  if (!jobId) return new Response(JSON.stringify({ error: 'missing job_id' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders(req) } });
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) });
 
-  const projectRef = Deno.env.get('SUPABASE_PROJECT_REF');
-  const supabaseUrl = Deno.env.get('SUPABASE_URL') || (projectRef ? `https://${projectRef}.supabase.co` : undefined);
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
-  const authHeader = req.headers.get('Authorization') || '';
-  if (!supabaseUrl || !anonKey) return new Response(JSON.stringify({ error: 'missing SUPABASE_URL/ANON_KEY' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders(req) } });
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const anonKey     = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const authHeader  = req.headers.get('Authorization') || '';
+  const restHeaders = { apikey: anonKey, Authorization: authHeader, 'Content-Type': 'application/json' };
 
-  const restHeaders = { 'apikey': anonKey, 'Authorization': authHeader, 'Content-Type': 'application/json' } as Record<string,string>;
+  const body      = await req.json().catch(() => ({})) as Record<string, unknown>;
+  const fileId    = body.file_id as string;
+  const accountId = body.account_id as string;
+  const manualMap = body.mapping as Record<string, string> | undefined;
+
+  if (!fileId || !accountId) return json({ error: 'missing file_id or account_id' }, 400, req);
 
   try {
-    let mapping = (body as any)?.mapping || {};
+    // 1. Fetch file record
+    const fileRes  = await fetch(`${supabaseUrl}/rest/v1/ingestion_files?id=eq.${fileId}&select=storage_bucket,storage_path`, { headers: restHeaders });
+    const [fileRow] = await fileRes.json();
+    if (!fileRow) return json({ error: 'file not found' }, 404, req);
 
-    // 1) Buscar ficheiro mais recente do job
-    const filesRes = await fetch(`${supabaseUrl}/rest/v1/ingestion_files?job_id=eq.${jobId}&select=storage_bucket,storage_path&order=created_at.desc&limit=1`, {
-      headers: restHeaders
-    });
-    const files = await filesRes.json();
-    if (!Array.isArray(files) || files.length===0) {
-      return new Response(JSON.stringify({ error: 'no file for job' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders(req) } });
-    }
-    const { storage_bucket, storage_path } = files[0];
+    // 2. Download content from Storage
+    const storagePath = fileRow.storage_path.startsWith('imports/')
+      ? fileRow.storage_path
+      : `imports/${fileRow.storage_path}`;
+    const objUrl  = `${supabaseUrl}/storage/v1/object/${fileRow.storage_bucket}/${storagePath.split('/').map(encodeURIComponent).join('/')}`;
+    const objRes  = await fetch(objUrl, { headers: { apikey: anonKey, Authorization: authHeader } });
+    if (!objRes.ok) return json({ error: 'failed to download file' }, 500, req);
+    const content = await objRes.text();
 
-    // 2) Download do CSV do Storage (com fallbacks de path)
-    const candidates: string[] = [];
-    const basePath = String(storage_path);
-    candidates.push(basePath);
-    if (basePath.startsWith('imports/')) {
-      candidates.push(basePath.replace(/^imports\//, ''));
+    const filename = fileRow.storage_path.split('/').pop() ?? '';
+
+    // 3. Detect format
+    const fmt = detectFormat(content, filename);
+    if (fmt.format === 'unknown' && !manualMap) return json({ error: 'unknown format — provide manual mapping' }, 400, req);
+
+    // 4. Parse
+    let rawRows;
+    let detectedBank: string | null = null;
+
+    if (fmt.format === 'ofx') {
+      rawRows = parseOfx(content);
     } else {
-      candidates.push(`imports/${basePath}`);
-    }
-    // normalizar e remover duplicados
-    const unique = Array.from(new Set(candidates));
+      const tplRes  = await fetch(`${supabaseUrl}/rest/v1/bank_templates?active=eq.true&select=*`, { headers: restHeaders });
+      const templates = await tplRes.json();
 
-    let text: string | null = null;
-    const attempts: Array<{ url: string; status: number }> = [];
-    for (const p of unique) {
-      const encodedPath = p.split('/').map(encodeURIComponent).join('/');
-      const objUrl = `${supabaseUrl}/storage/v1/object/${storage_bucket}/${encodedPath}`;
-      const objRes = await fetch(objUrl, { headers: { 'apikey': anonKey, 'Authorization': authHeader } });
-      if (objRes.ok) { text = await objRes.text(); break; }
-      attempts.push({ url: objUrl, status: objRes.status });
-    }
-    if (text === null) {
-      console.error('storage_download_failed_all', { attempts });
-      return new Response(JSON.stringify({ error: 'failed to download file from storage', attempts }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders(req) } });
+      const headerLine = content.split(/\r?\n/)[0] ?? '';
+      detectedBank = detectBank(headerLine, templates);
+
+      if (detectedBank) {
+        const tpl = templates.find((t: any) => t.bank_code === detectedBank);
+        rawRows = parseCsvWithTemplate(content, tpl.mapping);
+      } else if (manualMap) {
+        rawRows = parseCsvGeneric(content, manualMap as any);
+      } else {
+        return json({ error: 'unrecognised bank — provide manual mapping', detected_format: 'csv' }, 400, req);
+      }
     }
 
-    // 3) Parse simples
-    const parsed = parseCsv(text);
-    const headers = parsed.headers;
-    const rows = parsed.rows;
-
-    if (headers.length===0) {
-      return new Response(JSON.stringify({ error: 'empty or invalid CSV' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders(req) } });
+    // 5. Line cap
+    if (rawRows.length > MAX_ROWS) {
+      return json({ error: `Ficheiro demasiado grande (máx. ${MAX_ROWS} linhas). Suporte para ficheiros maiores em breve.` }, 422, req);
     }
 
-    // 3.1) Fallback de mapeamento automático se necessário
-    const lower = headers.map(h=>h.trim().toLowerCase());
-    const findHeader = (cands: string[]) => {
-      for (const c of cands) { const idx = lower.findIndex(h=> h===c || h.includes(c)); if (idx>=0) return headers[idx]; }
-      return '';
+    // 6. Fuzzy dedup (bulk RPC)
+    const rpcFn = async (params: { p_account_id: string; p_rows: unknown[] }) => {
+      const r = await fetch(`${supabaseUrl}/rest/v1/rpc/bulk_fuzzy_dedup`, {
+        method: 'POST', headers: restHeaders,
+        body: JSON.stringify(params),
+      });
+      return r.json();
     };
-    if (!mapping.date) mapping.date = findHeader(['data','date']);
-    if (!mapping.amount) mapping.amount = findHeader(['montante','amount','valor']);
-    if (!mapping.description) mapping.description = findHeader(['descrição','descricao','description','desc']);
-    if (!mapping.decimal) mapping.decimal = ',';
+    const dedupedRows = await runFuzzyDedup(rawRows, accountId, rpcFn);
 
-    if (!mapping.date || !mapping.amount || !mapping.description) {
-      return new Response(JSON.stringify({ error: 'missing mapping fields', details: { headers, mapping } }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders(req) } });
-    }
+    // 7. Apply categorisation rules
+    const rulesRes = await fetch(`${supabaseUrl}/rest/v1/import_categorization_rules?active=eq.true&order=priority.asc`, { headers: restHeaders });
+    const rules    = await rulesRes.json();
+    const ruledRows = applyRules(dedupedRows, rules);
 
-    // 4) Inserir em staging via RPC idempotente
-    let inserted = 0;
-    for (let i=0;i<rows.length;i++){
-      const row = rows[i];
-      const raw: Record<string,string> = {};
-      headers.forEach((h,idx)=> raw[h] = row[idx] ?? '');
-      const normalized = normalizeRow(raw, mapping);
-      const hash = await sha256Hex(JSON.stringify({ jobId, ...normalized }));
-      const ins = await fetch(`${supabaseUrl}/rest/v1/rpc/upsert_staging_transaction`, {
+    // 8. Upsert staging_transactions in batches of 100
+    const BATCH = 100;
+    let ok = 0, errors = 0, dups = 0, recurring = 0;
+
+    for (let i = 0; i < ruledRows.length; i += BATCH) {
+      const batch = ruledRows.slice(i, i + BATCH).map((r: any, j: number) => ({
+        file_id: fileId,
+        account_id: accountId,
+        row_index: i + j + 1,
+        date: r.date,
+        amount_cents: r.amount_cents,
+        description: r.description,
+        raw_json: r.raw_json,
+        row_status: r.row_status ?? 'ok',
+        category_id: r.category_id ?? null,
+        applied_rule_id: r.applied_rule_id ?? null,
+        matched_recurring_instance_id: r.matched_recurring_instance_id ?? null,
+      }));
+
+      const ins = await fetch(`${supabaseUrl}/rest/v1/staging_transactions`, {
         method: 'POST',
-        headers: restHeaders,
-        body: JSON.stringify({ p_job_id: jobId, p_row_index: i+1, p_raw_json: raw, p_normalized_json: normalized, p_hash: hash, p_dedupe_status: 'unknown' })
+        headers: { ...restHeaders, Prefer: 'resolution=ignore-duplicates' },
+        body: JSON.stringify(batch),
       });
       if (!ins.ok) {
-        const msg = await ins.text().catch(()=>String(ins.status));
-        return new Response(JSON.stringify({ error: 'failed to insert staging', row: i+1, status: ins.status, detail: msg }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders(req) } });
+        const msg = await ins.text();
+        return json({ error: 'staging upsert failed', detail: msg }, 500, req);
       }
-      inserted++;
-      if (inserted>=1000) break; // proteção simples
+
+      for (const r of batch) {
+        if (r.row_status === 'duplicate') dups++;
+        else if (r.row_status === 'matches_recurring') recurring++;
+        else if (r.row_status === 'error') errors++;
+        else ok++;
+      }
     }
 
-    // 5) Atualizar status do job e stats
-    await fetch(`${supabaseUrl}/rest/v1/ingestion_jobs?id=eq.${jobId}`, {
+    // 9. Update ingestion_files with stats + detected info
+    await fetch(`${supabaseUrl}/rest/v1/ingestion_files?id=eq.${fileId}`, {
       method: 'PATCH',
       headers: restHeaders,
-      body: JSON.stringify({ status: 'normalized', stats_json: { rows: inserted } })
+      body: JSON.stringify({
+        detected_format: fmt.format,
+        detected_bank: detectedBank,
+        total_rows: ruledRows.length,
+        ok_rows: ok,
+        error_rows: errors,
+        duplicate_rows: dups,
+        matched_recurring_rows: recurring,
+        status: 'ready',
+      }),
     });
 
-    // 6) Dedupe
-    await fetch(`${supabaseUrl}/rest/v1/rpc/refresh_staging_dedupe`, {
-      method: 'POST',
-      headers: restHeaders,
-      body: JSON.stringify({ p_job_id: jobId })
-    });
-
-    return new Response(JSON.stringify({ ok: true, inserted, headers, mapping }), { headers: { 'Content-Type': 'application/json', ...corsHeaders(req) } });
+    return json({ ok: true, total: ruledRows.length, ok_rows: ok, duplicate_rows: dups, matched_recurring_rows: recurring, detected_bank: detectedBank }, 200, req);
   } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders(req) } });
+    return json({ error: String(e) }, 500, req);
   }
-}); 
+});
