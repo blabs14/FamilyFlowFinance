@@ -38,6 +38,8 @@ export function PayrollLeavesManager({ contractId }: PayrollLeavesManagerProps) 
     medical_certificate: false,
     notes: ''
   });
+  // Unit 12a: employer_days for sick leave (days employer pays before SS takes over)
+  const [employerDays, setEmployerDays] = useState(3);
   const correlationId = useRef(globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
   const log = withContext({ feature: 'payroll', component: 'PayrollLeavesManager', correlationId: correlationId.current });
 
@@ -142,7 +144,9 @@ export function PayrollLeavesManager({ contractId }: PayrollLeavesManagerProps) 
         contract_id: contractId,
         paid_days: formData.paid_days || Math.floor(totalDays * (leaveType?.defaultPaid || 100) / 100),
         unpaid_days: formData.unpaid_days || (totalDays - Math.floor(totalDays * (leaveType?.defaultPaid || 100) / 100)),
-        percentage_paid: formData.percentage_paid || leaveType?.defaultPaid || 100
+        percentage_paid: formData.percentage_paid || leaveType?.defaultPaid || 100,
+        // Unit 12a: days employer pays before SS (only meaningful for sick leave)
+        employer_days: formData.leave_type === 'sick' ? employerDays : undefined,
       };
 
       if (editingLeave) {
@@ -465,12 +469,30 @@ export function PayrollLeavesManager({ contractId }: PayrollLeavesManagerProps) 
                   <Checkbox
                     id="medical_certificate"
                     checked={formData.medical_certificate}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setFormData(prev => ({ ...prev, medical_certificate: checked as boolean }))
                     }
                   />
                   <Label htmlFor="medical_certificate">Requer atestado médico</Label>
                 </div>
+
+                {/* Unit 12a: employer_days for sick leave */}
+                {formData.leave_type === 'sick' && (
+                  <div className="space-y-1">
+                    <Label htmlFor="employer-days">Dias a cargo do empregador</Label>
+                    <Input
+                      id="employer-days"
+                      type="number"
+                      min="0"
+                      max="30"
+                      value={employerDays}
+                      onChange={e => setEmployerDays(parseInt(e.target.value, 10) || 0)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Default: 3 dias. A partir do dia {employerDays + 1}, a Segurança Social paga.
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="notes">Observações</Label>
                   <Textarea

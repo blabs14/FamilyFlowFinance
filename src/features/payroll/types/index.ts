@@ -41,6 +41,9 @@ export interface PayrollOTPolicy {
   night_end_time: string; // Fim período noturno
   rounding_minutes: number; // Arredondamento em minutos
   is_active: boolean;
+  // Unit 12a additions
+  ot_hours_ytd: number;        // Running YTD overtime hour counter (resets each year)
+  use_legal_defaults: boolean; // Enables Phase 2 Motor Fiscal TypeScript calc engine
   created_at: string;
   updated_at: string;
 }

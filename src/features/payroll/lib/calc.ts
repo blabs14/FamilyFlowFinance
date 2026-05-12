@@ -1,17 +1,19 @@
 // Serviço de cálculo de folha de pagamento
 // Funções puras para cálculos de horários, horas extras, subsídios e quilometragem
 
-import { 
-  PayrollContract, 
-  PayrollOTPolicy, 
-  PayrollHoliday, 
-  PayrollTimeEntry, 
+import {
+  PayrollContract,
+  PayrollOTPolicy,
+  PayrollHoliday,
+  PayrollTimeEntry,
   PayrollMileageTrip,
   PayrollVacation,
-  TimeSegment, 
-  PlannedSchedule, 
-  PayrollCalculation 
+  TimeSegment,
+  PlannedSchedule,
+  PayrollCalculation
 } from '../types';
+import type { OtDayEntry, OtRates, OtAnnualLimits, OtScaledResult, TravelAllowanceCaps, LeaveRecord, LeaveImpact } from '../types/payroll-advanced.types';
+import type { PayslipCalculation } from '../types/payroll-core.types';
 import { formatDateLocal } from '@/lib/dateUtils';
 import { logger } from '../../../shared/lib/logger';
 
@@ -23,34 +25,37 @@ import { logger } from '../../../shared/lib/logger';
  * @param nightEnd Fim do período noturno (ex: '07:00')
  * @returns true se alguma parte do trabalho ocorre durante período noturno
  */
-function isWorkDuringNightHours(
-  startTime: Date,
-  endTime: Date,
+/**
+ * Verifica se o trabalho ocorre durante horário noturno.
+ * Aceita horários no formato "HH:MM".
+ */
+export function isWorkDuringNightHours(
+  startTime: string,
+  endTime: string,
   nightStart: string,
   nightEnd: string
 ): boolean {
-  const startHour = startTime.getHours();
-  const startMinute = startTime.getMinutes();
-  const endHour = endTime.getHours();
-  const endMinute = endTime.getMinutes();
-  
+  const [startHour, startMinute] = startTime.split(':').map(Number);
+  const [endHour, endMinute] = endTime.split(':').map(Number);
   const [nightStartHour, nightStartMinute] = nightStart.split(':').map(Number);
   const [nightEndHour, nightEndMinute] = nightEnd.split(':').map(Number);
-  
+
   const workStartMinutes = startHour * 60 + startMinute;
   const workEndMinutes = endHour * 60 + endMinute;
   const nightStartMinutes = nightStartHour * 60 + nightStartMinute;
   const nightEndMinutes = nightEndHour * 60 + nightEndMinute;
-  
+
   // Se o período noturno atravessa meia-noite (ex: 22:00-07:00)
   if (nightStartMinutes > nightEndMinutes) {
-    // Trabalho noturno se:
-    // - Começa depois das 22h OU
-    // - Termina antes das 7h OU
-    // - Atravessa meia-noite
-    return workStartMinutes >= nightStartMinutes || 
-           workEndMinutes <= nightEndMinutes ||
-           workEndMinutes < workStartMinutes; // Atravessa meia-noite
+    // Night zone is [nightStart, midnight) ∪ [midnight, nightEnd)
+    // Shift overlaps if it starts in the late-night zone OR ends/starts in the early-morning zone OR crosses midnight
+    return (
+      workStartMinutes >= nightStartMinutes ||  // starts at or after 22:00
+      workEndMinutes <= nightEndMinutes ||       // ends before or at 07:00
+      workStartMinutes < nightEndMinutes ||      // starts before 07:00
+      workEndMinutes < workStartMinutes ||       // crosses midnight
+      workEndMinutes > nightStartMinutes         // ends after 22:00 (same-day entry into night)
+    );
   } else {
     // Período noturno não atravessa meia-noite
     return (workStartMinutes >= nightStartMinutes && workStartMinutes < nightEndMinutes) ||
@@ -121,7 +126,8 @@ export function segmentEntry(
   // Verificar se é trabalho noturno (22h-7h conforme legislação portuguesa)
   const nightStart = otPolicy?.night_start_time || '22:00';
   const nightEnd = otPolicy?.night_end_time || '07:00';
-  const isNightShift = isWorkDuringNightHours(startTime, endTime, nightStart, nightEnd);
+  const toHHMM = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const isNightShift = isWorkDuringNightHours(toHHMM(startTime), toHHMM(endTime), nightStart, nightEnd);
 
   const segments: TimeSegment[] = [];
 
@@ -146,7 +152,7 @@ export function segmentEntry(
       end: regularEndTime,
       isOvertime: false,
       hours: regularHours,
-      isNightShift: isWorkDuringNightHours(startTime, regularEndTime, nightStart, nightEnd)
+      isNightShift: isWorkDuringNightHours(toHHMM(startTime), toHHMM(regularEndTime), nightStart, nightEnd)
     });
 
     // Segmento de horas extras
@@ -155,7 +161,7 @@ export function segmentEntry(
       end: endTime,
       isOvertime: true,
       hours: overtimeHours,
-      isNightShift: isWorkDuringNightHours(regularEndTime, endTime, nightStart, nightEnd)
+      isNightShift: isWorkDuringNightHours(toHHMM(regularEndTime), toHHMM(endTime), nightStart, nightEnd)
     });
   }
 
@@ -998,4 +1004,321 @@ export function validateDeductions(
     isValid: errors.length === 0,
     errors
   };
+}
+
+// ── Unit 12a: OT Day Entry Builder ────────────────────────────────────────────
+
+/**
+ * Converts an array of PayrollTimeEntry records into OtDayEntry objects.
+ * Only returns entries where actual OT (duration > thresholdMinutes) occurred.
+ *
+ * @param entries Raw time entries for the period
+ * @param thresholdMinutes Daily threshold after which OT starts (e.g. 480 for 8h)
+ */
+export function buildOtDayEntries(
+  entries: Array<{
+    date: string;
+    start_time?: string | null;
+    end_time?: string | null;
+    duration_minutes: number;
+    planned_minutes?: number | null;
+    is_holiday?: boolean | null;
+    is_sunday?: boolean | null;
+  }>,
+  thresholdMinutes: number,
+): OtDayEntry[] {
+  // Group entries by date
+  const byDate = new Map<string, typeof entries>();
+  for (const e of entries) {
+    const list = byDate.get(e.date) ?? [];
+    list.push(e);
+    byDate.set(e.date, list);
+  }
+
+  const result: OtDayEntry[] = [];
+
+  for (const [date, dayEntries] of byDate) {
+    const totalMinutes = dayEntries.reduce((s, e) => s + (e.duration_minutes ?? 0), 0);
+    const otMinutes = Math.max(0, totalMinutes - thresholdMinutes);
+    if (otMinutes === 0) continue;
+
+    const isRestDay = dayEntries.some(e => e.is_holiday || e.is_sunday);
+
+    // Estimate night OT minutes: use proportional OT per entry
+    let nightMinutes = 0;
+    for (const e of dayEntries) {
+      if (!e.start_time || !e.end_time) continue;
+      if (isWorkDuringNightHours(e.start_time, e.end_time, '22:00', '07:00')) {
+        // Proportion of this entry's duration relative to day total, applied to OT
+        const entryOtFraction = totalMinutes > 0 ? (e.duration_minutes ?? 0) / totalMinutes : 0;
+        nightMinutes += Math.round(otMinutes * entryOtFraction);
+      }
+    }
+    nightMinutes = Math.min(nightMinutes, otMinutes); // never exceed total OT
+
+    result.push({ date, otMinutes, isRestDay, nightMinutes });
+  }
+
+  return result;
+}
+
+// ── Unit 12a: calcOtScaled ────────────────────────────────────────────────────
+
+/**
+ * Calculates scaled OT pay (Lei 13/2023 — duas escalas).
+ *
+ * Scale transition at 100 YTD hours:
+ *   - Escala 1 (E1): hours 0–100 → lower rates
+ *   - Escala 2 (E2): hours above 100 → higher rates
+ *
+ * Component labels encode 'E1' or 'E2' so callers can detect the scale
+ * without extra state (e.g. label.includes('E2')).
+ *
+ * @param entries          OtDayEntry[] for the current payroll period
+ * @param baseMinuteCents  Employee's base rate per MINUTE in cents
+ * @param ytdHoursBefore   YTD OT hours accumulated BEFORE this period
+ * @param rates            OtRates from tax_tables
+ * @param limits           OtAnnualLimits from tax_tables
+ * @param isMPE            True if company is MPE (micro/small) — uses 175h limit
+ */
+export function calcOtScaled(
+  entries: OtDayEntry[],
+  baseMinuteCents: number,   // cents per MINUTE
+  ytdHoursBefore: number,
+  rates: OtRates,
+  limits: OtAnnualLimits,
+  isMPE: boolean,
+): OtScaledResult {
+  const annualLimit = isMPE ? limits.mpe_hours : limits.others_hours;
+  let ytdHours = ytdHoursBefore;
+  let otPayCents = 0;
+  let nightBonusCents = 0;
+  let otHoursThisMonth = 0;
+  let dailyLimitWarning = false;
+
+  const components: OtScaledResult['components'] = [];
+
+  for (const entry of entries) {
+    const otMins = entry.otMinutes;
+    if (otMins <= 0) continue;
+
+    const otHours = otMins / 60;
+    otHoursThisMonth += otHours;
+
+    // Check daily limit (max 2h OT per day)
+    if (otMins > limits.daily_max_hours * 60) {
+      dailyLimitWarning = true;
+    }
+
+    // How many minutes remain in E1 (before 100h threshold)?
+    const scaleBreakMinutes = Math.max(0, (100 - ytdHours) * 60);
+
+    let e1Cents = 0;
+    let e2Cents = 0;
+
+    if (entry.isRestDay) {
+      const e1Mins = Math.min(otMins, scaleBreakMinutes);
+      const e2Mins = otMins - e1Mins;
+      if (e1Mins > 0) {
+        e1Cents = Math.round(e1Mins * baseMinuteCents * (1 + rates.up_to_100h.rest_day_pct));
+      }
+      if (e2Mins > 0) {
+        e2Cents = Math.round(e2Mins * baseMinuteCents * (1 + rates.above_100h.rest_day_pct));
+      }
+    } else {
+      // Regular day: first 60 min at first_hour_pct, remainder at next_hours_pct
+      // E1 portion (up to scaleBreakMinutes minutes)
+      const e1TotalMins = Math.min(otMins, scaleBreakMinutes);
+      if (e1TotalMins > 0) {
+        const e1First = Math.min(e1TotalMins, 60);
+        const e1Next  = e1TotalMins - e1First;
+        e1Cents += Math.round(e1First * baseMinuteCents * (1 + rates.up_to_100h.first_hour_pct));
+        if (e1Next > 0) {
+          e1Cents += Math.round(e1Next * baseMinuteCents * (1 + rates.up_to_100h.next_hours_pct));
+        }
+      }
+      // E2 portion — continue from where E1 left off in the first-hour budget
+      const firstHourBudgetLeft = Math.max(0, 60 - Math.min(e1TotalMins, 60));
+      const e2TotalMins = otMins - e1TotalMins;
+      if (e2TotalMins > 0) {
+        const e2First = Math.min(e2TotalMins, firstHourBudgetLeft);
+        const e2Next  = e2TotalMins - e2First;
+        if (e2First > 0) {
+          e2Cents += Math.round(e2First * baseMinuteCents * (1 + rates.above_100h.first_hour_pct));
+        }
+        if (e2Next > 0) {
+          e2Cents += Math.round(e2Next * baseMinuteCents * (1 + rates.above_100h.next_hours_pct));
+        }
+      }
+    }
+
+    // Night bonus
+    if (entry.nightMinutes > 0) {
+      const nightBonus = Math.round(entry.nightMinutes * baseMinuteCents * rates.night_work_pct);
+      nightBonusCents += nightBonus;
+      components.push({ label: `Night Bonus ${entry.date}`, amount_cents: nightBonus, sign: '+' });
+    }
+
+    otPayCents += e1Cents + e2Cents;
+
+    if (e1Cents > 0) {
+      components.push({ label: `OT E1 ${entry.date}`, amount_cents: e1Cents, sign: '+' });
+    }
+    if (e2Cents > 0) {
+      components.push({ label: `OT E2 ${entry.date}`, amount_cents: e2Cents, sign: '+' });
+    }
+
+    ytdHours += otHours;
+  }
+
+  const newYtdHours = ytdHoursBefore + otHoursThisMonth;
+  const annualLimitExceeded = newYtdHours >= annualLimit;
+  const annualLimitWarning  = !annualLimitExceeded && (newYtdHours >= annualLimit - 10);
+
+  return {
+    otPayCents: otPayCents + nightBonusCents,
+    otHoursThisMonth,
+    newYtdHours,
+    nightBonusCents,
+    dailyLimitWarning,
+    annualLimitWarning,
+    annualLimitExceeded,
+    components,
+  };
+}
+
+// ── Unit 12a Task 5: Motor Fiscal PT — Pure Functions ─────────────────────────
+
+/**
+ * Calculates IRS withholding on overtime pay.
+ * Portuguese law: OT withholding = otPay × baseIrsRate × withholdingRateOfBase (typically 50%).
+ */
+export function calcOtIrsWithholding(
+  otPayCents: number,
+  baseIrsRateFraction: number,
+  withholdingRateOfBase: number,
+): number {
+  return Math.round(otPayCents * baseIrsRateFraction * withholdingRateOfBase);
+}
+
+/**
+ * Splits mileage reimbursement into AT-exempt and taxable portions.
+ * Amounts above the official cap per km are taxable.
+ */
+export function calcMileageCap(
+  trips: { km: number; rateCentsPerKm: number }[],
+  capCentsPerKm: number,
+): { exemptCents: number; taxableCents: number; totalCents: number } {
+  let exemptCents = 0;
+  let taxableCents = 0;
+  for (const trip of trips) {
+    exemptCents  += Math.round(trip.km * Math.min(trip.rateCentsPerKm, capCentsPerKm));
+    taxableCents += Math.round(trip.km * Math.max(0, trip.rateCentsPerKm - capCentsPerKm));
+  }
+  return { exemptCents, taxableCents, totalCents: exemptCents + taxableCents };
+}
+
+/**
+ * Calculates exempt vs. taxable portions of a travel allowance (ajudas de custo).
+ * Delegates viatura própria to calcMileageCap; uses cap table for all other types.
+ */
+export function calcTravelAllowance(
+  allowance: {
+    type: 'alojamento' | 'deslocacao_nacional' | 'deslocacao_estrangeiro' | 'deslocacao_viatura_propria';
+    days?: number;
+    km?: number;
+    role: 'general' | 'admin';
+    declaredCents: number;
+  },
+  caps: TravelAllowanceCaps,
+  mileageCapCentsPerKm: number,
+): { exemptCents: number; taxableExcessCents: number } {
+  if (allowance.type === 'deslocacao_viatura_propria') {
+    const km = allowance.km ?? 0;
+    const ratePerKm = km > 0 ? allowance.declaredCents / km : 0;
+    const r = calcMileageCap([{ km, rateCentsPerKm: ratePerKm }], mileageCapCentsPerKm);
+    return { exemptCents: r.exemptCents, taxableExcessCents: r.taxableCents };
+  }
+
+  const capMap: Record<string, number> = {
+    deslocacao_nacional_general:    caps.national_general_cents,
+    deslocacao_nacional_admin:      caps.national_admin_cents,
+    deslocacao_estrangeiro_general: caps.foreign_general_cents,
+    deslocacao_estrangeiro_admin:   caps.foreign_admin_cents,
+    alojamento_general: Math.round(caps.national_general_cents * caps.breakdown.sleep),
+    alojamento_admin:   Math.round(caps.national_admin_cents   * caps.breakdown.sleep),
+  };
+
+  const capDaily = capMap[`${allowance.type}_${allowance.role}`] ?? 0;
+  const maxExempt = (allowance.days ?? 1) * capDaily;
+  const exemptCents = Math.min(allowance.declaredCents, maxExempt);
+  return { exemptCents, taxableExcessCents: Math.max(0, allowance.declaredCents - exemptCents) };
+}
+
+/**
+ * Computes the payroll impact of leave records (sick, unpaid, maternity, vacation subsidy).
+ */
+export function calcLeaveImpact(
+  leaves: LeaveRecord[],
+  grossDailyCents: number,
+): LeaveImpact {
+  let unpaidDeductionCents = 0;
+  let subsidyAdjustmentCents = 0;
+  const components: { label: string; amount_cents: number; sign: '+' | '-' }[] = [];
+
+  for (const leave of leaves) {
+    if (leave.leaveType === 'sick') {
+      const employerDays = Math.min(leave.totalDays, leave.employerDays);
+      if (employerDays > 0) {
+        components.push({ label: `Baixa (empregador, ${employerDays}d)`, amount_cents: 0, sign: '+' });
+      }
+      if (leave.totalDays > leave.employerDays) {
+        components.push({ label: `Baixa (SS, ${leave.totalDays - leave.employerDays}d)`, amount_cents: 0, sign: '+' });
+      }
+    } else if (leave.leaveType === 'unpaid') {
+      const d = leave.totalDays * grossDailyCents;
+      unpaidDeductionCents += d;
+      components.push({ label: `Licença não remunerada (${leave.totalDays}d)`, amount_cents: d, sign: '-' });
+    } else if (leave.leaveType === 'maternity' || leave.leaveType === 'paternity') {
+      const d = leave.totalDays * grossDailyCents;
+      unpaidDeductionCents += d;
+      components.push({ label: `Licença parental (SS, ${leave.totalDays}d)`, amount_cents: d, sign: '-' });
+    } else if (leave.leaveType === 'vacation' && leave.affectsSubsidy) {
+      const d = leave.totalDays * grossDailyCents;
+      subsidyAdjustmentCents += d;
+      components.push({ label: `Subsídio férias pro-rata (${leave.totalDays}d)`, amount_cents: d, sign: '-' });
+    }
+  }
+
+  return { unpaidDeductionCents, subsidyAdjustmentCents, components };
+}
+
+/**
+ * Merges OT, mileage, travel allowance, and leave components into a base PayslipCalculation.
+ * Returns a new object — does NOT mutate base.
+ */
+export function mergeComponents(
+  base: PayslipCalculation,
+  otResult: OtScaledResult,
+  otIrsCents: number,
+  mileage: { exemptCents: number; taxableCents: number; totalCents: number },
+  allowances: { exemptCents: number; taxableExcessCents: number }[],
+  leaveImpact: LeaveImpact,
+): PayslipCalculation {
+  const extra: { label: string; amount_cents: number; sign: '+' | '-' }[] = [
+    ...otResult.components,
+    ...(otIrsCents > 0 ? [{ label: 'IRS s/ Horas Extra', amount_cents: otIrsCents, sign: '-' as const }] : []),
+    ...(mileage.exemptCents > 0 ? [{ label: 'Quilometragem (isento)', amount_cents: mileage.exemptCents, sign: '+' as const }] : []),
+    ...(mileage.taxableCents > 0 ? [{ label: 'Quilometragem (tributável)', amount_cents: mileage.taxableCents, sign: '+' as const }] : []),
+    ...allowances.flatMap(a => [
+      ...(a.exemptCents > 0 ? [{ label: 'Ajudas Custo (isento)', amount_cents: a.exemptCents, sign: '+' as const }] : []),
+      ...(a.taxableExcessCents > 0 ? [{ label: 'Ajudas Custo (tributável)', amount_cents: a.taxableExcessCents, sign: '+' as const }] : []),
+    ]),
+    ...leaveImpact.components,
+  ];
+  const netDelta = extra.reduce(
+    (acc, c) => acc + (c.sign === '+' ? c.amount_cents : -c.amount_cents),
+    0,
+  );
+  return { ...base, components: [...base.components, ...extra], net_cents: base.net_cents + netDelta };
 }
