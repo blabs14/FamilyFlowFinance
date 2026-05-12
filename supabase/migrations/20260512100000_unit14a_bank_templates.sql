@@ -45,6 +45,7 @@ INSERT INTO bank_templates (bank_code, format, header_signature, mapping) VALUES
 ('BPI', 'csv',
  ARRAY['Data','Descrição do Movimento','Valor'],
  '{"date_col":"Data","amount_col":"Valor","description_col":"Descrição do Movimento","debit_sign":1,"decimal_separator":",","date_format":"DD-MM-YYYY","encoding":"utf-8"}'::jsonb
-);
+)
+ON CONFLICT (bank_code) DO NOTHING;
 
 COMMIT;
