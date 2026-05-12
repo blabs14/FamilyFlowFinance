@@ -26,6 +26,7 @@ const RecurrentsAppPage = lazy(() => import('./pages/app/RecurrentsPage'));
 const InboxPage         = lazy(() => import('./pages/app/InboxPage'));
 const MembersPage      = lazy(() => import('./pages/app/MembersPage'));
 const FamilySettingsPage = lazy(() => import('./pages/app/FamilySettingsPage'));
+const SettingsPage       = lazy(() => import('./pages/app/SettingsPage'));
 
 // Outras páginas
 const ImportPage           = lazy(() => import('./features/importer/ImportPage'));
@@ -115,6 +116,9 @@ function App() {
                     <Route path="profile" element={
                       <Suspense fallback={<PageLoading />}><ProfilePage /></Suspense>
                     } />
+                    <Route path="settings" element={
+                      <Suspense fallback={<PageLoading />}><SettingsPage /></Suspense>
+                    } />
                   </Route>
 
                   {/* Redirects legacy /personal/* → /app/* */}
@@ -129,7 +133,7 @@ function App() {
                   <Route path="/personal/importar" element={<Navigate to="/app/import" replace />} />
                   {/* /personal/insights removed — dead route (Unit 10) */}
                   <Route path="/personal/reminders" element={<Navigate to="/app" replace />} />
-                  <Route path="/personal/settings" element={<Navigate to="/app/profile" replace />} />
+                  <Route path="/personal/settings" element={<Navigate to="/app/settings" replace />} />
                   <Route path="/personal/*" element={<Navigate to="/app" replace />} />
 
                   {/* Redirects legacy /family/* → /app/* */}
@@ -142,7 +146,7 @@ function App() {
                   <Route path="/family/recorrentes" element={<Navigate to="/app/recorrentes" replace />} />
                   <Route path="/family/importar" element={<Navigate to="/app/import" replace />} />
                   <Route path="/family/members" element={<Navigate to="/app/membros" replace />} />
-                  <Route path="/family/settings" element={<Navigate to="/app/definicoes-familia" replace />} />
+                  <Route path="/family/settings" element={<Navigate to="/app/settings" replace />} />
                   <Route path="/family/*" element={<Navigate to="/app" replace />} />
 
                   {/* 404 */}
