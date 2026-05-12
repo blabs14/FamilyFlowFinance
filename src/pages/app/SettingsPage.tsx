@@ -4,6 +4,7 @@ import { PreferencesSettings } from '../../features/settings/tabs/PreferencesSet
 import { NotificationsSettings } from '../../features/settings/tabs/NotificationsSettings';
 import { DataPrivacySettings } from '../../features/settings/tabs/DataPrivacySettings';
 import { FamilySettingsPanel } from '../../features/settings/tabs/FamilySettingsPanel';
+import { ImportRulesManager } from '../../features/settings/ImportRulesManager';
 import { useScope } from '../../features/scope';
 import { useFamilyRole } from '../../hooks/useFamilyRole';
 
@@ -26,7 +27,10 @@ export default function SettingsPage() {
         <TabsContent value="profile"><ProfileSettings /></TabsContent>
         <TabsContent value="preferences"><PreferencesSettings /></TabsContent>
         <TabsContent value="notifications"><NotificationsSettings /></TabsContent>
-        <TabsContent value="data-privacy"><DataPrivacySettings /></TabsContent>
+        <TabsContent value="data-privacy">
+          <DataPrivacySettings />
+          <div className="mt-6"><ImportRulesManager /></div>
+        </TabsContent>
         {showFamilyTab && <TabsContent value="family"><FamilySettingsPanel /></TabsContent>}
       </Tabs>
     </div>
