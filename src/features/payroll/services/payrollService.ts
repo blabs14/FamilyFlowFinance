@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabaseClient';
 import { PayrollContract, PayrollOTPolicy, PayrollHoliday, PayrollVacation, PayrollVacationFormData, PayrollTimeEntry, PayrollLeave, PayrollLeaveFormData, MileagePolicyFormData, PayrollMealAllowanceConfig, PayrollMealAllowanceConfigFormData, PayrollDeductionConfig, PayrollDeductionConfigFormData, PayrollPeriod, PayrollPeriodFormData, PayrollCalculation, PayrollMileageTrip, PayrollMileagePolicy } from '../types';
+import type { PayslipCalculation, PayslipRecord } from '../types/payroll-core.types';
 import { formatDateLocal } from '../../../lib/dateUtils';
 
 /**
@@ -1664,6 +1665,97 @@ export async function recalculatePayroll(
 ): Promise<PayrollCalculation> {
   // Import calculation service dynamically to avoid circular dependencies
   const { calculatePayroll } = await import('./calculation.service');
-  
+
   return calculatePayroll(userId, contractId, year, month);
 }
+
+// ─────────────────────────────────────────────────────────────────
+// Unit 11 — Payroll Core: RPC-backed methods
+// ─────────────────────────────────────────────────────────────────
+
+export const calculatePayslip = async (
+  contractId: string,
+  period: string,
+): Promise<PayslipCalculation> => {
+  const { data, error } = await supabase.rpc('calculate_payslip', {
+    p_contract_id: contractId,
+    p_period: period,
+  });
+  if (error) throw error;
+  return data as PayslipCalculation;
+};
+
+export const createPayslipDraft = async (
+  contractId: string,
+  period: string,
+): Promise<string> => {
+  const { data, error } = await supabase.rpc('create_payslip_draft', {
+    p_contract_id: contractId,
+    p_period: period,
+  });
+  if (error) throw error;
+  if (!data) throw new Error('create_payslip_draft returned no ID');
+  return data as string;
+};
+
+export const postPayslip = async (
+  payslipId: string,
+): Promise<{ transaction_id: string; idempotent: boolean }> => {
+  const { data, error } = await supabase.rpc('post_payslip', {
+    p_payslip_id: payslipId,
+  });
+  if (error) throw error;
+  // RPC returns snake_case — do NOT rename to camelCase here
+  return data as { transaction_id: string; idempotent: boolean };
+};
+
+export const savePayrollContractCore = async (params: {
+  name: string;
+  baseSalaryCents: number;
+  weeklyHours: number;
+  scheduleJson: Record<string, unknown>;
+  vacationBonusMode: string;
+  christmasBonusMode: string;
+  accountId: string;
+}): Promise<string> => {
+  const { data, error } = await supabase.rpc('save_payroll_contract', {
+    p_name:                  params.name,
+    p_base_salary_cents:     params.baseSalaryCents,
+    p_weekly_hours:          params.weeklyHours,
+    p_schedule_json:         params.scheduleJson,
+    p_vacation_bonus_mode:   params.vacationBonusMode,
+    p_christmas_bonus_mode:  params.christmasBonusMode,
+    p_account_id:            params.accountId,
+  });
+  if (error) throw error;
+  return data as string;
+};
+
+export const getPostedPayslips = async (contractId: string): Promise<PayslipRecord[]> => {
+  const { data, error } = await supabase
+    .from('payroll_payslips')
+    .select(
+      'id, contract_id, period, status, transaction_id, gross_cents, irs_cents, ss_cents, meal_allowance_cents, net_cents, working_days, components, created_at',
+    )
+    .eq('contract_id', contractId)
+    .eq('status', 'posted')
+    .order('period', { ascending: false });
+
+  if (error) throw error;
+
+  return (data ?? []).map(r => ({
+    id: r.id,
+    contractId: r.contract_id,
+    period: r.period ?? '',
+    status: (r.status ?? 'draft') as PayslipRecord['status'],
+    transactionId: r.transaction_id ?? null,
+    gross_cents:   r.gross_cents   ?? 0,
+    irs_cents:     r.irs_cents     ?? 0,
+    ss_cents:      r.ss_cents      ?? 0,
+    meal_cents:    r.meal_allowance_cents ?? 0,
+    net_cents:     r.net_cents     ?? 0,
+    working_days:  r.working_days  ?? 0,
+    components:    (r.components   ?? []) as PayslipRecord['components'],
+    createdAt:     r.created_at    ?? '',
+  }));
+};

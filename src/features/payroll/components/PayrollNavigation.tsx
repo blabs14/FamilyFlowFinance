@@ -12,7 +12,8 @@ import {
   BarChart3,
   Table,
   Gift,
-  Calendar
+  Calendar,
+  Receipt
 } from 'lucide-react';
 
 interface PayrollNavigationProps {
@@ -88,6 +89,13 @@ export function PayrollNavigation({ className }: PayrollNavigationProps) {
       label: 'Contratos',
       icon: FileText,
       description: 'Visualizar e gerir contratos'
+    },
+    {
+      path: '/app/payroll/recibos',
+      label: 'Recibos',
+      icon: Receipt,
+      description: 'Recibos de vencimento',
+      isNew: true
     },
     {
       path: '/personal/payroll/config',
