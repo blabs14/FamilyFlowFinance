@@ -33,12 +33,13 @@ const mainNavItems = [
   { title: 'Inbox',        href: '/app/inbox',       icon: Inbox,          description: 'Itens pendentes de ação', end: false },
   { title: 'Payroll',      href: '/app/payroll',     icon: Briefcase,      description: 'Folha de pagamento', end: false },
   { title: 'Relatórios',   href: '/app/reports',     icon: BarChart3,      description: 'Relatórios e análises', end: false },
+  { title: 'Definições',   href: '/app/settings',    icon: Settings,       description: 'Definições da aplicação', end: false },
 ];
 
 const familyNavItems = [
   { title: 'Membros',            href: '/app/membros',            icon: Users,    description: 'Membros da família', end: false },
   { title: 'Convites',           href: '/app/convites',           icon: UserPlus, description: 'Gerir convites', end: false },
-  { title: 'Definições Família', href: '/app/definicoes-familia', icon: Settings, description: 'Configurações da família', end: false },
+  { title: 'Definições Família', href: '/app/settings', icon: Settings, description: 'Configurações da família', end: false },
 ];
 
 export function NavigationSidebar({ onNavigate }: NavigationSidebarProps) {

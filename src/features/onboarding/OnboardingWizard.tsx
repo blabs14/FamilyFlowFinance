@@ -1,43 +1,71 @@
 import React from 'react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../../components/ui/card';
-
-const TOTAL_STEPS = 3;
+import { useToast } from '../../hooks/use-toast';
+import { useOnboardingState, ONBOARDING_TOTAL_STEPS } from './useOnboardingState';
 
 interface OnboardingWizardProps {
-  currentStep: number;
-  onNext: () => void;
-  onSkip: () => void;
-  onCreateAccount: () => void;
-  onSeedCategories: () => void;
+  onComplete?: () => void;
 }
 
 const STEPS = [
   {
-    title: 'Criar conta',
-    description: 'Regista-te para guardar os teus dados de forma segura e aceder em qualquer dispositivo.',
+    title: 'Bem-vindo ao FamilyFlow',
+    description: 'Começa por criar a tua primeira conta bancária para registar transações.',
+    cta: 'Criar primeira conta',
+    skippable: false,
+  },
+  {
+    title: 'Primeira conta',
+    description: 'Regista a tua conta bancária principal (ex: conta-ordenado).',
     cta: 'Criar conta',
+    skippable: true,
   },
   {
-    title: 'Configurar categorias',
-    description: 'Personaliza as categorias de receitas e despesas para refletir a tua vida financeira.',
-    cta: 'Adicionar categorias',
+    title: 'Convidar família',
+    description: 'Convida o teu parceiro/a ou família para partilhar finanças.',
+    cta: 'Convidar',
+    skippable: true,
   },
   {
-    title: 'Explorar a aplicação',
-    description: 'Descobre as funcionalidades disponíveis e começa a gerir as tuas finanças.',
-    cta: 'Explorar',
+    title: 'Configurar salário',
+    description: 'Regista o teu contrato de trabalho para calcular o teu salário líquido automaticamente.',
+    cta: 'Configurar',
+    skippable: true,
   },
 ];
 
-export function OnboardingWizard({
-  currentStep,
-  onNext,
-  onSkip,
-}: OnboardingWizardProps) {
+const TOTAL_STEPS = ONBOARDING_TOTAL_STEPS;
+
+export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
+  const { currentStep, nextStep, completeOnboarding } = useOnboardingState();
+  const { toast } = useToast();
+
   const stepIndex = Math.max(0, Math.min(currentStep - 1, TOTAL_STEPS - 1));
   const step = STEPS[stepIndex];
   const isLastStep = currentStep >= TOTAL_STEPS;
+
+  const handleNext = async () => {
+    if (isLastStep) {
+      try {
+        await completeOnboarding();
+        onComplete?.();
+      } catch {
+        toast({ title: 'Erro ao concluir configuração', description: 'Tenta novamente.', variant: 'destructive' });
+      }
+    } else {
+      await nextStep();
+    }
+  };
+
+  const handleSkip = async () => {
+    try {
+      await completeOnboarding();
+      onComplete?.();
+    } catch {
+      toast({ title: 'Erro ao saltar configuração', description: 'Tenta novamente.', variant: 'destructive' });
+    }
+  };
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -61,11 +89,13 @@ export function OnboardingWizard({
       </CardContent>
 
       <CardFooter className="flex justify-between gap-2">
-        <Button variant="ghost" onClick={onSkip}>
-          Saltar
-        </Button>
-        <Button onClick={onNext}>
-          {isLastStep ? 'Concluir' : 'Próximo'}
+        {step.skippable && (
+          <Button variant="ghost" onClick={handleSkip}>
+            Saltar
+          </Button>
+        )}
+        <Button className="ml-auto" onClick={handleNext}>
+          {isLastStep ? 'Concluir' : step.cta}
         </Button>
       </CardFooter>
     </Card>

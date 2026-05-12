@@ -1,51 +1,84 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { OnboardingWizard } from './OnboardingWizard';
 
-const defaultProps = {
-  currentStep: 1,
-  onNext: vi.fn(),
-  onSkip: vi.fn(),
-  onCreateAccount: vi.fn(),
-  onSeedCategories: vi.fn(),
-};
+const mockCompleteOnboarding = vi.fn().mockResolvedValue(undefined);
+const mockNextStep = vi.fn();
 
-describe('OnboardingWizard', () => {
-  it('renderiza conteúdo do passo 1 (criar conta)', () => {
-    render(<OnboardingWizard {...defaultProps} currentStep={1} />);
-    expect(screen.getByText(/criar conta/i)).toBeInTheDocument();
+// Mutable so tests can control the current step
+let mockCurrentStep = 1;
+
+vi.mock('./useOnboardingState', () => ({
+  ONBOARDING_TOTAL_STEPS: 4,
+  useOnboardingState: () => ({
+    get currentStep() { return mockCurrentStep; },
+    nextStep: mockNextStep,
+    completeOnboarding: mockCompleteOnboarding,
+    skipOnboarding: vi.fn(),
+    showWizard: true,
+  }),
+}));
+
+vi.mock('../../hooks/use-toast', () => ({
+  useToast: () => ({ toast: vi.fn() }),
+}));
+
+describe('OnboardingWizard — passo 1', () => {
+  beforeEach(() => {
+    mockCurrentStep = 1;
+    vi.clearAllMocks();
+    mockCompleteOnboarding.mockResolvedValue(undefined);
   });
 
-  it('renderiza conteúdo do passo 2 (categorias)', () => {
-    render(<OnboardingWizard {...defaultProps} currentStep={2} />);
-    expect(screen.getByRole('heading', { name: /categori/i })).toBeInTheDocument();
+  it('renderiza conteúdo do passo 1 (bem-vindo)', () => {
+    render(<OnboardingWizard />);
+    expect(screen.getByText(/bem-vindo ao familyflow/i)).toBeInTheDocument();
   });
 
-  it('renderiza conteúdo do passo 3 (explorar)', () => {
-    render(<OnboardingWizard {...defaultProps} currentStep={3} />);
-    expect(screen.getByText(/explor/i)).toBeInTheDocument();
+  it('botão CTA do passo 1 não tem Saltar (não skippable)', () => {
+    render(<OnboardingWizard />);
+    expect(screen.queryByRole('button', { name: /saltar/i })).not.toBeInTheDocument();
   });
 
-  it('botão Saltar chama onSkip', async () => {
+  it('botão CTA chama nextStep ao clicar no passo 1', async () => {
     const user = userEvent.setup();
-    const onSkip = vi.fn();
-    render(<OnboardingWizard {...defaultProps} onSkip={onSkip} />);
-    await user.click(screen.getByRole('button', { name: /saltar/i }));
-    expect(onSkip).toHaveBeenCalledOnce();
+    render(<OnboardingWizard />);
+    await user.click(screen.getByRole('button', { name: /criar primeira conta/i }));
+    expect(mockNextStep).toHaveBeenCalledOnce();
   });
 
-  it('botão Próximo chama onNext nos passos 1 e 2', async () => {
-    const user = userEvent.setup();
-    const onNext = vi.fn();
-    render(<OnboardingWizard {...defaultProps} currentStep={1} onNext={onNext} />);
-    await user.click(screen.getByRole('button', { name: /próximo/i }));
-    expect(onNext).toHaveBeenCalledOnce();
+  it('renderiza 4 progress dots', () => {
+    render(<OnboardingWizard />);
+    const progressArea = screen.getByLabelText(/passo 1 de 4/i);
+    expect(progressArea.querySelectorAll('span')).toHaveLength(4);
+  });
+});
+
+describe('OnboardingWizard — passo 4 (último)', () => {
+  beforeEach(() => {
+    mockCurrentStep = 4;
+    vi.clearAllMocks();
+    mockCompleteOnboarding.mockResolvedValue(undefined);
   });
 
-  it('botão Concluir aparece no passo 3', () => {
-    render(<OnboardingWizard {...defaultProps} currentStep={3} />);
+  it('botão Concluir aparece no último passo', () => {
+    render(<OnboardingWizard />);
     expect(screen.getByRole('button', { name: /concluir/i })).toBeInTheDocument();
+  });
+
+  it('botão Saltar aparece no último passo (skippable)', () => {
+    render(<OnboardingWizard />);
+    expect(screen.getByRole('button', { name: /saltar/i })).toBeInTheDocument();
+  });
+
+  it('botão Concluir chama completeOnboarding e onComplete', async () => {
+    const user = userEvent.setup();
+    const onComplete = vi.fn();
+    render(<OnboardingWizard onComplete={onComplete} />);
+    await user.click(screen.getByRole('button', { name: /concluir/i }));
+    expect(mockCompleteOnboarding).toHaveBeenCalledOnce();
+    expect(onComplete).toHaveBeenCalledOnce();
   });
 });

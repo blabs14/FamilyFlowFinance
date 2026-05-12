@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, ReactNode } from 'react';
-import { usePersonalSettings } from '../hooks/usePersonalSettings';
+import { useUserPreferences } from '../hooks/useUserPreferences';
 import { initI18n, changeLanguage } from '../lib/i18n';
-import type { PersonalSettings } from '../services/personalSettings';
 
 interface LocaleContextType {
   language: string;
@@ -32,15 +31,10 @@ interface LocaleProviderProps {
 }
 
 export const LocaleProvider: React.FC<LocaleProviderProps> = ({ children }) => {
-  const { settings, isLoading } = usePersonalSettings();
-  
-  // Obter configurações ou usar padrões
-  const personalSettings = (settings as any)?.personal_settings as PersonalSettings | undefined;
-  const language = personalSettings?.language || 'pt-PT';
-  const currency = personalSettings?.currency || 'EUR';
-  
-  // Fuso horário sempre do navegador
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const { data: prefs, isLoading } = useUserPreferences();
+  const language = prefs?.language ?? 'pt-PT';
+  const currency = prefs?.currency ?? 'EUR';
+  const timezone = prefs?.timezone ?? 'Europe/Lisbon';
 
   // Inicializar i18n quando o idioma mudar
   useEffect(() => {
