@@ -78,6 +78,10 @@ Deno.serve(async (req: Request) => {
         'notif_import_completed_email',
       { headers: rpcHeaders }
     );
+    if (!upRes.ok) {
+      results.notification_emails = { error: `failed to fetch user_preferences: ${upRes.status} ${await upRes.text()}` };
+      throw new Error('Failed to fetch user_preferences');
+    }
     const allPrefs: Array<{
       user_id: string;
       notif_budget_80pct_email: boolean;
@@ -92,7 +96,7 @@ Deno.serve(async (req: Request) => {
       notif_family_invite_email: boolean;
       notif_family_audit_email: boolean;
       notif_import_completed_email: boolean;
-    }> = upRes.ok ? await upRes.json() : [];
+    }> = await upRes.json();
 
     // Build per-event recipient lists (12 events × email channel)
     const recipients = {
@@ -120,7 +124,9 @@ Deno.serve(async (req: Request) => {
       Object.entries(recipients).map(([k, v]) => [k, v.length])
     )};
   } catch (e) {
-    results.notification_emails = { error: String(e) };
+    if (!results.notification_emails) {
+      results.notification_emails = { error: String(e) };
+    }
   }
 
   const finishedAt = new Date().toISOString();

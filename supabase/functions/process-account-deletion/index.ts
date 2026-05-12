@@ -20,7 +20,12 @@ Deno.serve(async (req: Request) => {
     `${supabaseUrl}/rest/v1/deletion_tokens?expires_at=lte.${new Date().toISOString()}&select=user_id,token`,
     { headers }
   );
-  const tokens: { user_id: string; token: string }[] = tokensRes.ok ? await tokensRes.json() : [];
+  if (!tokensRes.ok) {
+    const errText = await tokensRes.text();
+    console.error(JSON.stringify({ event: 'process-account-deletion', error: 'failed to fetch deletion_tokens', detail: errText }));
+    return new Response(JSON.stringify({ error: 'failed to fetch deletion_tokens', detail: errText }), { status: 500 });
+  }
+  const tokens: { user_id: string; token: string }[] = await tokensRes.json();
 
   const results: Record<string, string> = {};
 
@@ -35,15 +40,18 @@ Deno.serve(async (req: Request) => {
       if (deleteRes.ok || deleteRes.status === 404) {
         // 3. Remove the token (cleanup)
         await fetch(
-          `${supabaseUrl}/rest/v1/deletion_tokens?token=eq.${token}`,
+          `${supabaseUrl}/rest/v1/deletion_tokens?token=eq.${encodeURIComponent(token)}`,
           { method: 'DELETE', headers }
         );
         // 4. Write to deletion_audit (audit trail — user_id preserved for compliance)
-        await fetch(`${supabaseUrl}/rest/v1/deletion_audit`, {
+        const auditRes = await fetch(`${supabaseUrl}/rest/v1/deletion_audit`, {
           method: 'POST',
           headers,
           body: JSON.stringify({ user_id, token, deleted_at: new Date().toISOString() }),
         });
+        if (!auditRes.ok) {
+          console.warn(JSON.stringify({ event: 'process-account-deletion', warning: 'audit write failed', user_id, status: auditRes.status }));
+        }
         results[user_id] = 'deleted';
       } else {
         const errText = await deleteRes.text();
