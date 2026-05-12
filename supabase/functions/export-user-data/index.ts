@@ -20,6 +20,12 @@ Deno.serve(async (req: Request) => {
   if (!userRes.ok) return new Response(JSON.stringify({ error: 'Could not identify user' }), { status: 401 });
   const { id: userId } = await userRes.json();
 
+  // Validate UUID shape before using in URL strings
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!userId || !UUID_RE.test(userId)) {
+    return new Response(JSON.stringify({ error: 'Invalid user identity' }), { status: 401 });
+  }
+
   const svcHeaders = {
     apikey: serviceRoleKey,
     Authorization: `Bearer ${serviceRoleKey}`,
@@ -32,7 +38,10 @@ Deno.serve(async (req: Request) => {
     `${supabaseUrl}/rest/v1/export_audit?user_id=eq.${userId}&created_at=gte.${cutoff}&select=id`,
     { headers: svcHeaders }
   );
-  const recent: unknown[] = auditRes.ok ? await auditRes.json() : [];
+  if (!auditRes.ok) {
+    return new Response(JSON.stringify({ error: 'Could not check rate limit' }), { status: 500 });
+  }
+  const recent: unknown[] = await auditRes.json();
   if (recent.length > 0) {
     return new Response(JSON.stringify({ error: 'Rate limit: 1 export per 7 days' }), { status: 429 });
   }
@@ -48,15 +57,28 @@ Deno.serve(async (req: Request) => {
     );
     const rows: Record<string, unknown>[] = res.ok ? await res.json() : [];
     if (rows.length === 0) { zip.file(`${table}.csv`, ''); continue; }
-    const headers = Object.keys(rows[0]);
+    const colHeaders = Object.keys(rows[0]);
+    // RFC 4180 CSV: escape " as "", wrap fields containing , " or \n in double quotes
+    const csvEscape = (v: unknown): string => {
+      const s = v == null ? '' : String(v);
+      if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    };
     const csv = [
-      headers.join(','),
-      ...rows.map((r) => headers.map((h) => JSON.stringify(r[h] ?? '')).join(',')),
+      colHeaders.join(','),
+      ...rows.map((r) => colHeaders.map((h) => csvEscape(r[h])).join(',')),
     ].join('\n');
     zip.file(`${table}.csv`, csv);
   }
 
-  const zipBlob = await zip.generateAsync({ type: 'uint8array' });
+  let zipBlob: Uint8Array;
+  try {
+    zipBlob = await zip.generateAsync({ type: 'uint8array' });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: 'Failed to generate ZIP', detail: String(e) }), { status: 500 });
+  }
   const zipPath = `exports/${userId}/${Date.now()}.zip`;
 
   // Upload to exports bucket
@@ -73,12 +95,15 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: 'Upload failed' }), { status: 500 });
   }
 
-  // Record in export_audit
-  await fetch(`${supabaseUrl}/rest/v1/export_audit`, {
+  // Record in export_audit (must succeed — rate limit depends on this record)
+  const exportAuditRes = await fetch(`${supabaseUrl}/rest/v1/export_audit`, {
     method: 'POST',
     headers: svcHeaders,
     body: JSON.stringify({ user_id: userId, file_path: zipPath }),
   });
+  if (!exportAuditRes.ok) {
+    return new Response(JSON.stringify({ error: 'Failed to record export audit' }), { status: 500 });
+  }
 
   // Generate signed URL (1 hour validity)
   const signRes = await fetch(
@@ -89,10 +114,13 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({ expiresIn: 3600 }),
     }
   );
-  const { signedURL } = signRes.ok ? await signRes.json() : { signedURL: null };
+  if (!signRes.ok) {
+    return new Response(JSON.stringify({ error: 'Failed to generate download URL' }), { status: 500 });
+  }
+  const { signedURL } = await signRes.json();
 
   return new Response(
-    JSON.stringify({ message: 'Export ready', download_url: signedURL ? `${supabaseUrl}/storage/v1${signedURL}` : null }),
+    JSON.stringify({ message: 'Export ready', download_url: `${supabaseUrl}/storage/v1${signedURL}` }),
     { headers: { 'Content-Type': 'application/json' } }
   );
 });
