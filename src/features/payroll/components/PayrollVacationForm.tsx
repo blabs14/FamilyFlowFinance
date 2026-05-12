@@ -33,6 +33,8 @@ export function PayrollVacationForm({ vacation, year, contractId, existingVacati
     description: vacation?.description || ''
   });
   const [isApproved, setIsApproved] = useState(vacation?.is_approved || false);
+  // Unit 12a: affects_subsidy reduces vacation subsidy pro-rata
+  const [affectsSubsidy, setAffectsSubsidy] = useState<boolean>((vacation as any)?.affects_subsidy ?? false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const log = withContext({ feature: 'payroll', component: 'PayrollVacationForm', correlationId: correlationId.current });
 
@@ -142,7 +144,8 @@ export function PayrollVacationForm({ vacation, year, contractId, existingVacati
         ...formData,
         days_count: workingDays,
         year,
-        is_approved: isApproved
+        is_approved: isApproved,
+        affects_subsidy: affectsSubsidy,
       };
       
       log.debug('Vacation data to save', { fields: Object.keys(vacationData) });
@@ -251,7 +254,21 @@ export function PayrollVacationForm({ vacation, year, contractId, existingVacati
           Marcar como aprovado
         </Label>
       </div>
-      
+
+      {/* Unit 12a: affects_subsidy */}
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="affects-subsidy"
+          checked={affectsSubsidy}
+          onChange={e => setAffectsSubsidy(e.target.checked)}
+          className="h-4 w-4"
+        />
+        <Label htmlFor="affects-subsidy" className="text-sm font-normal">
+          Reduz subsídio de férias pro-rata
+        </Label>
+      </div>
+
       <div className="flex justify-end space-x-2 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar

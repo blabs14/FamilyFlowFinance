@@ -22,6 +22,7 @@ const TransactionsPage = lazy(() => import('./pages/app/TransactionsPage'));
 const GoalsPage        = lazy(() => import('./pages/app/GoalsPage'));
 const BudgetsPage      = lazy(() => import('./pages/app/BudgetsPage'));
 const RecurrentsAppPage = lazy(() => import('./pages/app/RecurrentsPage'));
+const InboxPage         = lazy(() => import('./pages/app/InboxPage'));
 const MembersPage      = lazy(() => import('./pages/app/MembersPage'));
 const FamilySettingsPage = lazy(() => import('./pages/app/FamilySettingsPage'));
 
@@ -81,6 +82,9 @@ function App() {
                     <Route path="recorrentes" element={
                       <Suspense fallback={<PageLoading />}><RecurrentsAppPage /></Suspense>
                     } />
+                    <Route path="inbox" element={
+                      <Suspense fallback={<PageLoading />}><InboxPage /></Suspense>
+                    } />
                     <Route path="payroll/*" element={
                       <Suspense fallback={<PageLoading />}><PayrollPage /></Suspense>
                     } />
@@ -116,7 +120,7 @@ function App() {
                   <Route path="/personal/recorrentes" element={<Navigate to="/app/recorrentes" replace />} />
                   <Route path="/personal/payroll" element={<Navigate to="/app/payroll" replace />} />
                   <Route path="/personal/payroll/*" element={<Navigate to="/app/payroll" replace />} />
-                  <Route path="/personal/insights" element={<Navigate to="/app/reports" replace />} />
+                  {/* /personal/insights removed — dead route (Unit 10) */}
                   <Route path="/personal/reminders" element={<Navigate to="/app" replace />} />
                   <Route path="/personal/settings" element={<Navigate to="/app/profile" replace />} />
                   <Route path="/personal/*" element={<Navigate to="/app" replace />} />

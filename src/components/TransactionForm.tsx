@@ -28,10 +28,19 @@ import {
   FormLabel,
   FormMessage,
 } from './ui/form';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
 import { useQueryClient } from '@tanstack/react-query';
 import { payCreditCardFromAccount } from '../services/transactions';
 import { useToast } from '../hooks/use-toast';
 import { logger } from '@/shared/lib/logger';
+import { TransferForm } from './TransferForm';
+import { TransactionSplitModal } from './TransactionSplitModal';
+import { TransactionAttachments } from './TransactionAttachments';
 
 // Esquema estendido para incluir campos específicos do formulário
 const transactionFormSchema = transactionSchema.extend({
@@ -72,6 +81,9 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
   const { data: categories = [], isLoading: categoriesLoading } = useCategoriesDomain();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [showTransferForm, setShowTransferForm] = useState(false);
+  const [splitModal, setSplitModal] = useState<{ txId: string; totalCents: number } | null>(null);
+  const [createdTxId, setCreatedTxId] = useState<string | null>(null);
   
   // 🔍 Debug temporário - TransactionForm
   console.log('🔍 TransactionForm - Categories:', {
@@ -258,10 +270,16 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
         await updateTransactionMutation.mutateAsync({ id: initialData.id, data: updatePayload });
         toast({ title: 'Transação atualizada', description: 'A transação foi atualizada com sucesso.' });
       } else {
-        await createTransactionMutation.mutateAsync(payload);
+        const created = await createTransactionMutation.mutateAsync(payload);
+        if (created?.id) {
+          setCreatedTxId(created.id);
+          if (created?.amount_cents) {
+            setSplitModal({ txId: created.id, totalCents: created.amount_cents });
+          }
+        }
         toast({ title: 'Transação criada', description: isSelectedAccountCreditCard ? 'Compra no cartão registada.' : 'Transação criada com sucesso.' });
       }
-      
+
       onSuccess?.();
     } catch (err) {
       const message = (err as { message?: string })?.message || 'Erro ao salvar transação';
@@ -280,6 +298,29 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
   }
 
   return (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setShowTransferForm(true)}
+        className="mb-4 w-full"
+        data-cy="open-transfer-form-btn"
+      >
+        Nova transferência entre contas
+      </Button>
+
+      <Dialog open={showTransferForm} onOpenChange={setShowTransferForm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nova transferência</DialogTitle>
+          </DialogHeader>
+          <TransferForm
+            onSuccess={() => setShowTransferForm(false)}
+            onCancel={() => setShowTransferForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col gap-4 p-2 sm:p-4">
         
@@ -559,6 +600,22 @@ const TransactionForm = ({ initialData, onSuccess, onCancel, submitMode = 'inter
         </div>
       </form>
     </Form>
+
+    {splitModal && (
+      <TransactionSplitModal
+        open={!!splitModal}
+        onOpenChange={(o) => !o && setSplitModal(null)}
+        transactionId={splitModal.txId}
+        totalCents={splitModal.totalCents}
+      />
+    )}
+
+    {createdTxId && (
+      <div className="mt-4 border-t pt-4">
+        <TransactionAttachments transactionId={createdTxId} />
+      </div>
+    )}
+    </>
   );
 };
 

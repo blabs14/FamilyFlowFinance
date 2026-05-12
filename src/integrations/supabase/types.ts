@@ -61,11 +61,48 @@ export type GoalProgressRPC = Database['public']['Functions']['get_user_goal_pro
 // Tipo combinado para contas com saldos (usado nos componentes)
 export type AccountWithBalances = AccountWithBalancesRPC;
 
+// Unit 6: novos tipos
+export type Transfer = Database['public']['Tables']['transfers']['Row'];
+export type TransferInsert = Database['public']['Tables']['transfers']['Insert'];
+export type TransferUpdate = Database['public']['Tables']['transfers']['Update'];
+
+export type TransactionSplit = Database['public']['Tables']['transaction_splits']['Row'];
+export type TransactionSplitInsert = Database['public']['Tables']['transaction_splits']['Insert'];
+export type TransactionSplitUpdate = Database['public']['Tables']['transaction_splits']['Update'];
+
+export type TransactionAttachment = Database['public']['Tables']['transaction_attachments']['Row'];
+export type TransactionAttachmentInsert = Database['public']['Tables']['transaction_attachments']['Insert'];
+
 // Tipos estendidos para formulários
 export type AccountUpdateExtended = AccountUpdate & {
   saldoAtual?: number;
   ajusteSaldo?: number;
 };
+
+// Unit 07 — Goals extended types
+export type GoalLedgerRow = Database['public']['Tables']['goal_ledger']['Row'];
+export type GoalFundingRule = Database['public']['Tables']['goal_funding_rules']['Row'];
+
+// goal_contributors not yet in generated types (migration applied post-generation)
+export type GoalContributor = {
+  goal_id: string;
+  user_id: string;
+  target_cents: number | null;
+  created_at: string;
+};
+export type GoalContributorInsert = Omit<GoalContributor, 'created_at'>;
+
+// Unit 8: novos tipos
+export type BudgetInstance = Database['public']['Tables']['budget_instances']['Row'];
+export type BudgetInstanceInsert = Database['public']['Tables']['budget_instances']['Insert'];
+export type BudgetInstanceUpdate = Database['public']['Tables']['budget_instances']['Update'];
+
+export type BudgetPersonalTarget = Database['public']['Tables']['budget_personal_targets']['Row'];
+export type BudgetPersonalTargetInsert = Database['public']['Tables']['budget_personal_targets']['Insert'];
+
+export type InboxItem = Database['public']['Tables']['inbox_items']['Row'];
+export type InboxItemInsert = Database['public']['Tables']['inbox_items']['Insert'];
+export type InboxItemUpdate = Database['public']['Tables']['inbox_items']['Update'];
 
 // Tipos auxiliares
 export type Json = Database['public']['Tables']['accounts']['Row']['created_at'] extends string ? never : Database['public']['Tables']['accounts']['Row']['created_at'];

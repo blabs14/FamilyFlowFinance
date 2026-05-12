@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabaseClient';
 import { PayrollContract, PayrollOTPolicy, PayrollHoliday, PayrollVacation, PayrollVacationFormData, PayrollTimeEntry, PayrollLeave, PayrollLeaveFormData, MileagePolicyFormData, PayrollMealAllowanceConfig, PayrollMealAllowanceConfigFormData, PayrollDeductionConfig, PayrollDeductionConfigFormData, PayrollPeriod, PayrollPeriodFormData, PayrollCalculation, PayrollMileageTrip, PayrollMileagePolicy } from '../types';
+import type { PayslipCalculation, PayslipRecord } from '../types/payroll-core.types';
 import { formatDateLocal } from '../../../lib/dateUtils';
 
 /**
@@ -1664,6 +1665,203 @@ export async function recalculatePayroll(
 ): Promise<PayrollCalculation> {
   // Import calculation service dynamically to avoid circular dependencies
   const { calculatePayroll } = await import('./calculation.service');
-  
+
   return calculatePayroll(userId, contractId, year, month);
 }
+
+// ─────────────────────────────────────────────────────────────────
+// Unit 11 — Payroll Core: RPC-backed methods
+// ─────────────────────────────────────────────────────────────────
+
+/** Fetches leaves for a contract within a date range — used by the Phase 2 calc engine. */
+export async function getLeavesByContractPeriod(
+  contractId: string,
+  startDate: string,
+  endDate: string,
+): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('payroll_leaves')
+    .select('*')
+    .eq('contract_id', contractId)
+    .gte('start_date', startDate)
+    .lte('end_date', endDate);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export const calculatePayslip = async (
+  contractId: string,
+  period: string,
+): Promise<PayslipCalculation> => {
+  // ── Phase 1: RPC base calculation (IRS brackets, SS, meal) ──────────────────
+  const { data: base, error } = await supabase.rpc('calculate_payslip', {
+    p_contract_id: contractId,
+    p_period: period,
+  });
+  if (error) throw error;
+  const baseResult = base as PayslipCalculation;
+
+  // ── Phase 2: fetch fiscal inputs + TypeScript calc engine ────────────────────
+  const {
+    fetchTaxRates: fetchRates,
+    fetchTravelAllowances: fetchAllowances,
+  } = await import('./payrollAdvanced.service');
+  const {
+    buildOtDayEntries,
+    calcOtScaled,
+    calcOtIrsWithholding,
+    calcMileageCap,
+    calcTravelAllowance,
+    calcLeaveImpact,
+    mergeComponents,
+  } = await import('../lib/calc');
+
+  const [year, month] = period.split('-').map(Number);
+
+  // Fetch OT policy to get threshold_hours, ot_hours_ytd, use_legal_defaults flag
+  const otPolicies = await getOTPoliciesByContract(contractId);
+  const otPolicy = otPolicies[0] ?? null;
+  if (!otPolicy || !otPolicy.use_legal_defaults) {
+    // No legal-defaults policy: return base calculation unchanged
+    return baseResult;
+  }
+
+  const firstDay = `${period}-01`;
+  const lastDay  = getLastDayOfMonth(year, month); // local-safe (no UTC shift)
+
+  // Fetch user_id + weekly_hours needed for time entries and baseMinuteCents
+  const contractData = await supabase
+    .from('payroll_contracts')
+    .select('user_id, weekly_hours')
+    .eq('id', contractId)
+    .single();
+  const userId: string  = contractData.data?.user_id ?? '';
+  const weeklyHours: number = contractData.data?.weekly_hours ?? 40;
+
+  const [rawTimeEntries, mileageTrips, travelAllowances, leaves, taxRates] = await Promise.all([
+    getTimeEntriesByContract(userId, contractId),
+    getMileageTrips(userId, firstDay, lastDay, contractId),
+    fetchAllowances(contractId, period),
+    getLeavesByContractPeriod(contractId, firstDay, lastDay),
+    fetchRates(year),
+  ]);
+
+  const thresholdMins   = (otPolicy.threshold_hours ?? 8) * 60;
+  const otEntries       = buildOtDayEntries(rawTimeEntries ?? [], thresholdMins);
+  // baseMinuteCents: cents per minute of normal work time.
+  // Monthly minutes = weekly_hours × 4.33 weeks × 60 min/h
+  const monthlyWorkMins = weeklyHours * 4.33 * 60;
+  const baseMinuteCents = monthlyWorkMins > 0
+    ? Math.round(baseResult.gross_cents / monthlyWorkMins)
+    : 0;
+  const irsRateFraction = baseResult.gross_cents > 0
+    ? baseResult.irs_cents / baseResult.gross_cents
+    : 0;
+
+  const otResult    = calcOtScaled(
+    otEntries, baseMinuteCents, otPolicy.ot_hours_ytd ?? 0,
+    taxRates.otRates, taxRates.otLimits,
+    false, // TODO(12b): add isMPE column to payroll_ot_policies
+  );
+  const otIrsCents  = calcOtIrsWithholding(
+    otResult.otPayCents, irsRateFraction,
+    taxRates.otIrsWithholding.autonomous_rate_of_base,
+  );
+  const mileage     = calcMileageCap(
+    (mileageTrips ?? []).map((t: any) => ({ km: t.km, rateCentsPerKm: t.rate_cents_per_km ?? 40 })),
+    taxRates.mileageCaps.cents_per_km,
+  );
+  const allowances  = (travelAllowances ?? []).map((a: any) => calcTravelAllowance(
+    { type: a.type, days: a.days ?? 1, km: a.km ?? undefined, role: a.role, declaredCents: a.declared_cents },
+    taxRates.travelCaps, taxRates.mileageCaps.cents_per_km,
+  ));
+  const grossDailyCents = baseResult.working_days > 0
+    ? Math.round(baseResult.gross_cents / baseResult.working_days)
+    : 0;
+  const leaveImpact = calcLeaveImpact(
+    (leaves ?? []).map((l: any) => ({
+      leaveType:      l.leave_type,
+      totalDays:      l.total_days,
+      employerDays:   l.employer_days ?? 3,
+      affectsSubsidy: l.affects_subsidy ?? false,
+    })),
+    grossDailyCents,
+  );
+
+  return mergeComponents(baseResult, otResult, otIrsCents, mileage, allowances, leaveImpact);
+};
+
+export const createPayslipDraft = async (
+  contractId: string,
+  period: string,
+): Promise<string> => {
+  const { data, error } = await supabase.rpc('create_payslip_draft', {
+    p_contract_id: contractId,
+    p_period: period,
+  });
+  if (error) throw error;
+  if (!data) throw new Error('create_payslip_draft returned no ID');
+  return data as string;
+};
+
+export const postPayslip = async (
+  payslipId: string,
+): Promise<{ transaction_id: string; idempotent: boolean }> => {
+  const { data, error } = await supabase.rpc('post_payslip', {
+    p_payslip_id: payslipId,
+  });
+  if (error) throw error;
+  // RPC returns snake_case — do NOT rename to camelCase here
+  return data as { transaction_id: string; idempotent: boolean };
+};
+
+export const savePayrollContractCore = async (params: {
+  name: string;
+  baseSalaryCents: number;
+  weeklyHours: number;
+  scheduleJson: Record<string, unknown>;
+  vacationBonusMode: string;
+  christmasBonusMode: string;
+  accountId: string;
+}): Promise<string> => {
+  const { data, error } = await supabase.rpc('save_payroll_contract', {
+    p_name:                  params.name,
+    p_base_salary_cents:     params.baseSalaryCents,
+    p_weekly_hours:          params.weeklyHours,
+    p_schedule_json:         params.scheduleJson,
+    p_vacation_bonus_mode:   params.vacationBonusMode,
+    p_christmas_bonus_mode:  params.christmasBonusMode,
+    p_account_id:            params.accountId,
+  });
+  if (error) throw error;
+  return data as string;
+};
+
+export const getPostedPayslips = async (contractId: string): Promise<PayslipRecord[]> => {
+  const { data, error } = await supabase
+    .from('payroll_payslips')
+    .select(
+      'id, contract_id, period, status, transaction_id, gross_cents, irs_cents, ss_cents, meal_allowance_cents, net_cents, working_days, components, created_at',
+    )
+    .eq('contract_id', contractId)
+    .eq('status', 'posted')
+    .order('period', { ascending: false });
+
+  if (error) throw error;
+
+  return (data ?? []).map(r => ({
+    id: r.id,
+    contractId: r.contract_id,
+    period: r.period ?? '',
+    status: (r.status ?? 'draft') as PayslipRecord['status'],
+    transactionId: r.transaction_id ?? null,
+    gross_cents:   r.gross_cents   ?? 0,
+    irs_cents:     r.irs_cents     ?? 0,
+    ss_cents:      r.ss_cents      ?? 0,
+    meal_cents:    r.meal_allowance_cents ?? 0,
+    net_cents:     r.net_cents     ?? 0,
+    working_days:  r.working_days  ?? 0,
+    components:    (r.components   ?? []) as PayslipRecord['components'],
+    createdAt:     r.created_at    ?? '',
+  }));
+};

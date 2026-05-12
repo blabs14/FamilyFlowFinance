@@ -506,6 +506,7 @@ export const setAccountReservePercentage = async (accountId: string, percentBp: 
   }
 };
 
+/** @deprecated Use supabase.rpc('get_kpis', { scope_family_id: null }) — Unit 10 */
 export const getPersonalKPIs = async () => {
   const { data, error } = await supabase.rpc('get_personal_kpis');
   
@@ -526,9 +527,64 @@ export const getPersonalKPIs = async () => {
     total_budget_amount: 0,
     budget_spent_percentage: 0
   };
-  
+
   return {
     data: (Array.isArray(data) && data.length > 0 ? data[0] : defaultKPIs),
     error: null
   };
+};
+
+// ── Unit 5: scope-aware accounts ────────────────────────────────────────────
+
+export const getAccountsScoped = async (
+  options: { userId: string; familyId?: string | null }
+): Promise<{ data: AccountWithBalances[] | null; error: unknown }> => {
+  try {
+    const { data, error } = await supabase.rpc('get_user_accounts', {
+      p_user_id: options.userId,
+      p_family_id: options.familyId ?? null,
+    });
+    if (error) return { data: null, error };
+    return { data: (data || []) as AccountWithBalances[], error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
+};
+
+export const softDeleteAccount = async (
+  accountId: string,
+  userId?: string
+): Promise<{ data: boolean | null; error: unknown }> => {
+  try {
+    let resolvedUserId = userId;
+    if (!resolvedUserId) {
+      const { data: authData } = await supabase.auth.getUser();
+      resolvedUserId = authData?.user?.id;
+    }
+    if (!resolvedUserId) return { data: null, error: { message: 'Utilizador não autenticado' } };
+
+    const { data, error } = await supabase.rpc('soft_delete_account', {
+      p_account_id: accountId,
+      p_user_id: resolvedUserId,
+    });
+    if (error) return { data: null, error };
+    return { data: (data as { success?: boolean } | null)?.success ? true : null, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
+};
+
+export const reorderAccounts = async (
+  userId: string,
+  items: Array<{ id: string; order_index: number }>
+): Promise<{ error: unknown }> => {
+  try {
+    const { error } = await supabase.rpc('reorder_accounts', {
+      p_user_id: userId,
+      p_items: items,
+    });
+    return { error };
+  } catch (error) {
+    return { error };
+  }
 };

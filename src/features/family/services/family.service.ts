@@ -14,15 +14,13 @@ export const familyService = {
   },
 
   async getFamilyData() {
-    console.log('🔍 [DEBUG] getFamilyData: Iniciando...');
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError) throw authError;
     if (!user) throw new Error('Utilizador não autenticado');
 
     // Verificar se há uma família selecionada no localStorage
     const currentFamilyId = localStorage.getItem('currentFamilyId');
-    console.log('🔍 [DEBUG] getFamilyData: currentFamilyId do localStorage:', currentFamilyId);
-    
+
     if (currentFamilyId) {
       // Verificar se o utilizador ainda pertence a esta família
       const { data: membership, error: membershipError } = await supabase
@@ -41,7 +39,6 @@ export const familyService = {
           .single();
 
         if (!familyError && familyData) {
-          console.log('✅ [DEBUG] getFamilyData: Família encontrada no localStorage:', familyData);
           // Contar membros, convites pendentes e metas
           const [membersCount, invitesCount, goalsCount] = await Promise.all([
             supabase.from('family_members').select('id', { count: 'exact' }).eq('family_id', currentFamilyId),
@@ -56,30 +53,23 @@ export const familyService = {
             pending_invites_count: invitesCount.count || 0,
             shared_goals_count: goalsCount.count || 0
           };
-          console.log('✅ [DEBUG] getFamilyData: Retornando dados do localStorage:', result);
           return result;
         }
       }
-      
+
       // Se a família armazenada não é válida, remover do localStorage
-      console.log('⚠️ [DEBUG] getFamilyData: Família do localStorage inválida, removendo...');
       localStorage.removeItem('currentFamilyId');
     }
 
     // Fallback para a função RPC original (primeira família)
-    console.log('🔍 [DEBUG] getFamilyData: Usando fallback RPC...');
     const { data, error } = await supabase.rpc('get_user_family_data');
     if (error) throw error;
-    
-    console.log('✅ [DEBUG] getFamilyData: Dados do RPC:', data);
-    
+
     // Se encontrou uma família, armazenar no localStorage
     if (data && data.family && data.family.id) {
-      console.log('💾 [DEBUG] getFamilyData: Armazenando família no localStorage:', data.family.id);
       localStorage.setItem('currentFamilyId', data.family.id);
     }
-    
-    console.log('✅ [DEBUG] getFamilyData: Retornando dados finais:', data);
+
     return data;
   },
 

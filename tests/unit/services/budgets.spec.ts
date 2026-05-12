@@ -13,20 +13,19 @@ vi.mock('@/lib/supabaseClient', () => ({
       update: vi.fn().mockReturnThis(),
       delete: vi.fn().mockResolvedValue({ data: [], error: null })
     })),
+    rpc: vi.fn().mockResolvedValue({ data: [], error: null }),
     auth: {
-      signUp: vi.fn().mockImplementation(({ email }) => Promise.resolve({ 
-        data: { user: { email } }, 
-        error: null 
+      signUp: vi.fn().mockImplementation(({ email }) => Promise.resolve({
+        data: { user: { email } },
+        error: null
       })),
-      signInWithPassword: vi.fn().mockImplementation(({ email }) => Promise.resolve({ 
-        data: { user: { email } }, 
-        error: null 
+      signInWithPassword: vi.fn().mockImplementation(({ email }) => Promise.resolve({
+        data: { user: { email } },
+        error: null
       }))
     }
   }
 }));
-
-// Nota: import dinâmico removido; mocks acima são suficientes para estes testes
 
 describe('budgets service', () => {
   it('getBudgets retorna um array', async () => {

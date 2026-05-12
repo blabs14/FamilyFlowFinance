@@ -181,3 +181,150 @@ export const makeReminder = (
 export const resetFactoryCounter = () => {
   idCounter = 1;
 };
+
+// --- Unit 09 factories ---
+
+export const makeRecurringRule = (overrides: Record<string, unknown> = {}) => ({
+  id: uuid(),
+  user_id: uuid(),
+  scope: 'personal',
+  family_id: null,
+  payee: null,
+  description: `Regra Recorrente ${nextId()}`,
+  category_id: null,
+  amount_cents: 5000,
+  currency: 'EUR',
+  interval_unit: 'month',
+  interval_count: 1,
+  start_date: '2026-01-01',
+  end_date: null,
+  next_run_date: '2026-05-01',
+  last_run_date: null,
+  status: 'active',
+  is_subscription: false,
+  vendor: null,
+  trial_end_date: null,
+  cancel_at_period_end: false,
+  payment_method: null,
+  metadata: null,
+  // Unit 09 columns
+  execution_mode: 'confirm',
+  amount_mode: 'fixed',
+  schedule_type: 'monthly',
+  type: 'expense',
+  day_of_month: null,
+  weekday_of_month: null,
+  weekday_ordinal: null,
+  created_at: now(),
+  updated_at: now(),
+  ...overrides,
+});
+
+export const makeRecurringInstance = (overrides: Record<string, unknown> = {}) => ({
+  id: uuid(),
+  rule_id: uuid(),
+  due_date: '2026-05-01',
+  period_key: '2026-05',
+  status: 'pending',
+  amount_cents: 5000,
+  currency: 'EUR',
+  transaction_id: null,
+  operation_id: null,
+  confirmed_at: null,
+  posted_at: null,
+  created_at: now(),
+  ...overrides,
+});
+
+export const makeInboxItem = (overrides: Record<string, unknown> = {}) => ({
+  id: uuid(),
+  user_id: uuid(),
+  family_id: null,
+  source_type: 'recurring_instance',
+  source_id: uuid(),
+  title: `Confirmar: Regra ${nextId()}`,
+  body: null,
+  due_at: new Date().toISOString(),
+  status: 'pending',
+  snoozed_until: null,
+  completed_at: null,
+  created_at: now(),
+  ...overrides,
+});
+
+// --- Unit 13 factories ---
+
+export const makeExpenseSplit = (overrides: Partial<{
+  id: string; transaction_id: string; user_id: string;
+  share_cents: number; created_at: string;
+}> = {}) => ({
+  id: uuid(),
+  transaction_id: uuid(),
+  user_id: uuid(),
+  share_cents: 5000,
+  created_at: now(),
+  ...overrides,
+});
+
+export const makeMemberBalance = (overrides: Partial<{
+  family_id: string; user_id: string;
+  paid_cents: number; owed_cents: number; balance_cents: number;
+}> = {}) => ({
+  family_id: uuid(),
+  user_id: uuid(),
+  paid_cents: 10000,
+  owed_cents: 5000,
+  balance_cents: 5000,
+  ...overrides,
+});
+
+export const makeFamilyAuditLog = (overrides: Partial<{
+  id: string; family_id: string; user_id: string;
+  action: string; entity_type: string | null; entity_id: string | null;
+  diff: Record<string, unknown> | null; created_at: string;
+}> = {}) => ({
+  id: uuid(),
+  family_id: uuid(),
+  user_id: uuid(),
+  action: 'transfer_ownership',
+  entity_type: 'user',
+  entity_id: uuid(),
+  diff: null,
+  created_at: now(),
+  ...overrides,
+});
+
+// --- Unit 10 factories ---
+
+export const makeKpiResult = (overrides: Record<string, unknown> = {}) => ({
+  total_balance_cents: 100000,
+  income_cents: 50000,
+  expense_cents: 30000,
+  net_cents: 20000,
+  goals_progress_percentage: 45.5,
+  budget_spent_percentage: 62.0,
+  budgets_at_risk: 1,
+  reserved_cents: 20000,
+  inbox_pending_count: 3,
+  ...overrides,
+});
+
+export const makeCashflowTimelineEvent = (overrides: Record<string, unknown> = {}) => ({
+  event_date: '2026-05-10',
+  amount_cents: 5000,
+  direction: 'out' as 'in' | 'out',
+  source_type: 'transaction',
+  source_id: uuid(),
+  description: 'Evento Teste',
+  is_projected: false,
+  needs_confirm: false,
+  ...overrides,
+});
+
+export const makeInsight = (overrides: Record<string, unknown> = {}) => ({
+  type: 'mom_change',
+  title: 'Despesas vs. mês anterior',
+  value: -12.5,
+  detail: { this_month_cents: 30000, prev_month_cents: 34286 },
+  ...overrides,
+});

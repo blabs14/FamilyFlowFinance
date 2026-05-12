@@ -17,36 +17,39 @@ export type Database = {
       accounts: {
         Row: {
           amount_cents: number
-          billing_cycle_day: number | null
           created_at: string | null
           currency: string
+          deleted_at: string | null
           family_id: string | null
           id: string
           nome: string
+          order_index: number | null
           tipo: string
           updated_at: string
           user_id: string
         }
         Insert: {
           amount_cents?: number
-          billing_cycle_day?: number | null
           created_at?: string | null
           currency?: string
+          deleted_at?: string | null
           family_id?: string | null
           id?: string
           nome: string
+          order_index?: number | null
           tipo: string
           updated_at?: string
           user_id: string
         }
         Update: {
           amount_cents?: number
-          billing_cycle_day?: number | null
           created_at?: string | null
           currency?: string
+          deleted_at?: string | null
           family_id?: string | null
           id?: string
           nome?: string
+          order_index?: number | null
           tipo?: string
           updated_at?: string
           user_id?: string
@@ -110,37 +113,140 @@ export type Database = {
         }
         Relationships: []
       }
+      budget_instances: {
+        Row: {
+          budget_cents: number
+          budget_id: string
+          carried_over_cents: number
+          created_at: string
+          currency: string
+          id: string
+          period_end: string
+          period_key: string
+          period_start: string
+          spent_cents: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          budget_cents: number
+          budget_id: string
+          carried_over_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          period_end: string
+          period_key: string
+          period_start: string
+          spent_cents?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          budget_cents?: number
+          budget_id?: string
+          carried_over_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          period_end?: string
+          period_key?: string
+          period_start?: string
+          spent_cents?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_instances_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_personal_targets: {
+        Row: {
+          budget_id: string
+          created_at: string
+          target_cents: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_id: string
+          created_at?: string
+          target_cents: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_id?: string
+          created_at?: string
+          target_cents?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_personal_targets_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       budgets: {
         Row: {
           amount_cents: number
+          cap_type: string
           categoria_id: string
           created_at: string | null
           currency: string
           family_id: string | null
           id: string
+          is_template: boolean
           mes: string
+          parent_id: string | null
+          period_type: string
+          rollover_mode: string
+          target_goal_id: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           amount_cents?: number
+          cap_type?: string
           categoria_id: string
           created_at?: string | null
           currency?: string
           family_id?: string | null
           id?: string
+          is_template?: boolean
           mes: string
+          parent_id?: string | null
+          period_type?: string
+          rollover_mode?: string
+          target_goal_id?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           amount_cents?: number
+          cap_type?: string
           categoria_id?: string
           created_at?: string | null
           currency?: string
           family_id?: string | null
           id?: string
+          is_template?: boolean
           mes?: string
+          parent_id?: string | null
+          period_type?: string
+          rollover_mode?: string
+          target_goal_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -159,6 +265,34 @@ export type Database = {
             referencedRelation: "families"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "budgets_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_target_goal_id_fkey"
+            columns: ["target_goal_id"]
+            isOneToOne: false
+            referencedRelation: "goal_progress"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_target_goal_id_fkey"
+            columns: ["target_goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_target_goal_id_fkey"
+            columns: ["target_goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals_with_balance"
+            referencedColumns: ["id"]
+          },
         ]
       }
       categories: {
@@ -171,6 +305,7 @@ export type Database = {
           is_system: boolean
           nome: string
           normalized_nome: string | null
+          parent_id: string | null
           tipo: string | null
           user_id: string | null
         }
@@ -183,6 +318,7 @@ export type Database = {
           is_system?: boolean
           nome: string
           normalized_nome?: string | null
+          parent_id?: string | null
           tipo?: string | null
           user_id?: string | null
         }
@@ -195,10 +331,19 @@ export type Database = {
           is_system?: boolean
           nome?: string
           normalized_nome?: string | null
+          parent_id?: string | null
           tipo?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       category_customizations: {
         Row: {
@@ -237,6 +382,180 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_card_installments: {
+        Row: {
+          created_at: string
+          credit_card_id: string
+          current_installment: number
+          id: string
+          monthly_cents: number
+          num_installments: number
+          started_at: string
+          total_cents: number
+          transaction_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          credit_card_id: string
+          current_installment?: number
+          id?: string
+          monthly_cents: number
+          num_installments: number
+          started_at?: string
+          total_cents: number
+          transaction_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          credit_card_id?: string
+          current_installment?: number
+          id?: string
+          monthly_cents?: number
+          num_installments?: number
+          started_at?: string
+          total_cents?: number
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_card_installments_credit_card_id_fkey"
+            columns: ["credit_card_id"]
+            isOneToOne: false
+            referencedRelation: "credit_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_card_installments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_card_installments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions_detailed"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_card_statements: {
+        Row: {
+          closing_date: string
+          created_at: string
+          credit_card_id: string
+          due_date: string
+          id: string
+          paid_cents: number
+          parent_statement_id: string | null
+          status: string
+          total_cents: number
+          updated_at: string
+        }
+        Insert: {
+          closing_date: string
+          created_at?: string
+          credit_card_id: string
+          due_date: string
+          id?: string
+          paid_cents?: number
+          parent_statement_id?: string | null
+          status?: string
+          total_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          closing_date?: string
+          created_at?: string
+          credit_card_id?: string
+          due_date?: string
+          id?: string
+          paid_cents?: number
+          parent_statement_id?: string | null
+          status?: string
+          total_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_card_statements_credit_card_id_fkey"
+            columns: ["credit_card_id"]
+            isOneToOne: false
+            referencedRelation: "credit_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_card_statements_parent_statement_id_fkey"
+            columns: ["parent_statement_id"]
+            isOneToOne: false
+            referencedRelation: "credit_card_statements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_cards: {
+        Row: {
+          annual_fee_cents: number
+          apr: number | null
+          closing_day: number | null
+          created_at: string
+          credit_limit_cents: number
+          currency: string
+          current_balance_cents: number
+          deleted_at: string | null
+          family_id: string | null
+          id: string
+          nome: string
+          order_index: number | null
+          payment_day: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          annual_fee_cents?: number
+          apr?: number | null
+          closing_day?: number | null
+          created_at?: string
+          credit_limit_cents?: number
+          currency?: string
+          current_balance_cents?: number
+          deleted_at?: string | null
+          family_id?: string | null
+          id?: string
+          nome: string
+          order_index?: number | null
+          payment_day?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          annual_fee_cents?: number
+          apr?: number | null
+          closing_day?: number | null
+          created_at?: string
+          credit_limit_cents?: number
+          currency?: string
+          current_balance_cents?: number
+          deleted_at?: string | null
+          family_id?: string | null
+          id?: string
+          nome?: string
+          order_index?: number | null
+          payment_day?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_cards_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
             referencedColumns: ["id"]
           },
         ]
@@ -828,6 +1147,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      inbox_items: {
+        Row: {
+          body: string | null
+          completed_at: string | null
+          created_at: string
+          due_at: string
+          family_id: string | null
+          id: string
+          snoozed_until: string | null
+          source_id: string
+          source_type: string
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_at: string
+          family_id?: string | null
+          id?: string
+          snoozed_until?: string | null
+          source_id: string
+          source_type: string
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string
+          family_id?: string | null
+          id?: string
+          snoozed_until?: string | null
+          source_id?: string
+          source_type?: string
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_items_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ingestion_files: {
         Row: {
@@ -2663,12 +3035,114 @@ export type Database = {
         }
         Relationships: []
       }
+      transaction_attachments: {
+        Row: {
+          id: string
+          mime_type: string | null
+          original_filename: string | null
+          size_bytes: number | null
+          storage_path: string
+          transaction_id: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          id?: string
+          mime_type?: string | null
+          original_filename?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          transaction_id: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          id?: string
+          mime_type?: string | null
+          original_filename?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          transaction_id?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_attachments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_attachments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions_detailed"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transaction_splits: {
+        Row: {
+          amount_cents: number
+          categoria_id: string
+          created_at: string
+          description: string | null
+          id: string
+          order_index: number
+          transaction_id: string
+        }
+        Insert: {
+          amount_cents: number
+          categoria_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_index?: number
+          transaction_id: string
+        }
+        Update: {
+          amount_cents?: number
+          categoria_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_index?: number
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_splits_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_splits_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_splits_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions_detailed"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           account_id: string
           amount_cents: number
-          categoria_id: string
+          categoria_id: string | null
           created_at: string | null
+          created_by: string | null
+          credit_card_id: string | null
           currency: string
           data: string
           descricao: string | null
@@ -2676,17 +3150,19 @@ export type Database = {
           family_id: string | null
           goal_id: string | null
           id: string
-          operation_id: string | null
+          operation_id: string
           reversal_of: string | null
           tipo: string
-          transfer_group_id: string | null
+          transfer_id: string | null
           user_id: string
         }
         Insert: {
           account_id: string
           amount_cents?: number
-          categoria_id: string
+          categoria_id?: string | null
           created_at?: string | null
+          created_by?: string | null
+          credit_card_id?: string | null
           currency?: string
           data: string
           descricao?: string | null
@@ -2694,17 +3170,19 @@ export type Database = {
           family_id?: string | null
           goal_id?: string | null
           id?: string
-          operation_id?: string | null
+          operation_id?: string
           reversal_of?: string | null
           tipo: string
-          transfer_group_id?: string | null
+          transfer_id?: string | null
           user_id: string
         }
         Update: {
           account_id?: string
           amount_cents?: number
-          categoria_id?: string
+          categoria_id?: string | null
           created_at?: string | null
+          created_by?: string | null
+          credit_card_id?: string | null
           currency?: string
           data?: string
           descricao?: string | null
@@ -2712,10 +3190,10 @@ export type Database = {
           family_id?: string | null
           goal_id?: string | null
           id?: string
-          operation_id?: string | null
+          operation_id?: string
           reversal_of?: string | null
           tipo?: string
-          transfer_group_id?: string | null
+          transfer_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -2745,6 +3223,13 @@ export type Database = {
             columns: ["categoria_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_credit_card_id_fkey"
+            columns: ["credit_card_id"]
+            isOneToOne: false
+            referencedRelation: "credit_cards"
             referencedColumns: ["id"]
           },
           {
@@ -2787,6 +3272,141 @@ export type Database = {
             columns: ["reversal_of"]
             isOneToOne: false
             referencedRelation: "transactions_detailed"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_transfer_id_fkey"
+            columns: ["transfer_id"]
+            isOneToOne: false
+            referencedRelation: "transfers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transfers: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          date: string
+          description: string | null
+          event_time: string
+          family_id: string | null
+          from_account_id: string | null
+          from_credit_card_id: string | null
+          id: string
+          operation_id: string
+          reversal_of: string | null
+          to_account_id: string | null
+          to_credit_card_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          date: string
+          description?: string | null
+          event_time?: string
+          family_id?: string | null
+          from_account_id?: string | null
+          from_credit_card_id?: string | null
+          id?: string
+          operation_id?: string
+          reversal_of?: string | null
+          to_account_id?: string | null
+          to_credit_card_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          date?: string
+          description?: string | null
+          event_time?: string
+          family_id?: string | null
+          from_account_id?: string | null
+          from_credit_card_id?: string | null
+          id?: string
+          operation_id?: string
+          reversal_of?: string | null
+          to_account_id?: string | null
+          to_credit_card_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transfers_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfers_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "transfers_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances_v1"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "transfers_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfers_from_credit_card_id_fkey"
+            columns: ["from_credit_card_id"]
+            isOneToOne: false
+            referencedRelation: "credit_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfers_reversal_of_fkey"
+            columns: ["reversal_of"]
+            isOneToOne: false
+            referencedRelation: "transfers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfers_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "transfers_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances_v1"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "transfers_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfers_to_credit_card_id_fkey"
+            columns: ["to_credit_card_id"]
+            isOneToOne: false
+            referencedRelation: "credit_cards"
             referencedColumns: ["id"]
           },
         ]
@@ -2935,22 +3555,53 @@ export type Database = {
       budget_progress: {
         Row: {
           budget_id: string | null
+          budget_instance_id: string | null
+          cap_type: string | null
           categoria_cor: string | null
           categoria_id: string | null
           categoria_nome: string | null
-          mes: string | null
+          family_id: string | null
+          is_template: boolean | null
+          parent_id: string | null
+          period_end: string | null
+          period_key: string | null
+          period_start: string | null
+          period_type: string | null
           progresso_percentual: number | null
+          rollover_mode: string | null
+          status: string | null
           user_id: string | null
-          valor_gasto: number | null
-          valor_orcamento: number | null
-          valor_restante: number | null
+          valor_gasto_cents: number | null
+          valor_orcamento_cents: number | null
+          valor_restante_cents: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "budget_instances_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "budgets_categoria_id_fkey"
             columns: ["categoria_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
             referencedColumns: ["id"]
           },
         ]
@@ -3183,6 +3834,7 @@ export type Database = {
         }
         Returns: string
       }
+      check_budget_thresholds: { Args: never; Returns: Json }
       cleanup_all_old_transfer_transactions: { Args: never; Returns: Json }
       cleanup_expired_backups: { Args: never; Returns: number }
       cleanup_old_transfer_transactions: { Args: never; Returns: Json }
@@ -3357,6 +4009,43 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_budget_status: {
+        Args: { p_instance_id: string }
+        Returns: {
+          is_projected_over: boolean
+          percent_used: number
+          projected_cents: number
+          remaining_cents: number
+          spent_cents: number
+        }[]
+      }
+      get_budgets: {
+        Args: {
+          p_family_id?: string
+          p_period_key?: string
+          p_period_type?: string
+        }
+        Returns: {
+          budget_cents: number
+          budget_id: string
+          cap_type: string
+          categoria_cor: string
+          categoria_id: string
+          categoria_nome: string
+          instance_id: string
+          is_projected_over: boolean
+          parent_id: string
+          period_end: string
+          period_key: string
+          period_start: string
+          period_type: string
+          progresso_percentual: number
+          remaining_cents: number
+          rollover_mode: string
+          spent_cents: number
+          status: string
+        }[]
+      }
       get_credit_card_summary:
         | {
             Args: { p_account_id: string }
@@ -3397,12 +4086,18 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: {
           amount_cents: number
+          cap_type: string
           categoria_id: string
           created_at: string | null
           currency: string
           family_id: string | null
           id: string
+          is_template: boolean
           mes: string
+          parent_id: string | null
+          period_type: string
+          rollover_mode: string
+          target_goal_id: string | null
           updated_at: string | null
           user_id: string
         }[]
@@ -3531,8 +4226,10 @@ export type Database = {
         Returns: {
           account_id: string
           amount_cents: number
-          categoria_id: string
+          categoria_id: string | null
           created_at: string | null
+          created_by: string | null
+          credit_card_id: string | null
           currency: string
           data: string
           descricao: string | null
@@ -3540,10 +4237,10 @@ export type Database = {
           family_id: string | null
           goal_id: string | null
           id: string
-          operation_id: string | null
+          operation_id: string
           reversal_of: string | null
           tipo: string
-          transfer_group_id: string | null
+          transfer_id: string | null
           user_id: string
         }[]
         SetofOptions: {
@@ -3705,8 +4402,10 @@ export type Database = {
         Returns: {
           account_id: string
           amount_cents: number
-          categoria_id: string
+          categoria_id: string | null
           created_at: string | null
+          created_by: string | null
+          credit_card_id: string | null
           currency: string
           data: string
           descricao: string | null
@@ -3714,10 +4413,10 @@ export type Database = {
           family_id: string | null
           goal_id: string | null
           id: string
-          operation_id: string | null
+          operation_id: string
           reversal_of: string | null
           tipo: string
-          transfer_group_id: string | null
+          transfer_id: string | null
           user_id: string
         }[]
         SetofOptions: {
@@ -3762,6 +4461,20 @@ export type Database = {
         Returns: {
           account_id: string
           total_reservado: number
+        }[]
+      }
+      get_user_accounts: {
+        Args: { p_family_id?: string; p_user_id?: string }
+        Returns: {
+          account_id: string
+          amount_cents: number
+          currency: string
+          family_id: string
+          nome: string
+          order_index: number
+          saldo_atual: number
+          saldo_disponivel: number
+          tipo: string
         }[]
       }
       get_user_accounts_with_balances: {
@@ -3818,6 +4531,24 @@ export type Database = {
           valor_gasto: number
           valor_orcamento: number
           valor_restante: number
+        }[]
+      }
+      get_user_credit_cards: {
+        Args: { p_family_id?: string; p_user_id?: string }
+        Returns: {
+          annual_fee_cents: number
+          apr: number
+          available_cents: number
+          card_id: string
+          closing_day: number
+          credit_limit_cents: number
+          currency: string
+          current_balance_cents: number
+          family_id: string
+          nome: string
+          order_index: number
+          payment_day: number
+          utilization_pct: number
         }[]
       }
       get_user_families:
@@ -3982,6 +4713,18 @@ export type Database = {
         Returns: string
       }
       normalize_account_balances: { Args: never; Returns: undefined }
+      pay_credit_card: {
+        Args: {
+          p_amount_cents: number
+          p_card_id: string
+          p_date?: string
+          p_description?: string
+          p_from_account_id: string
+          p_operation_id?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       pay_credit_card_from_account: {
         Args: {
           p_amount: number
@@ -3993,16 +4736,33 @@ export type Database = {
         }
         Returns: boolean
       }
+      process_period_rollover: {
+        Args: { p_instance_id: string }
+        Returns: Json
+      }
       refresh_staging_dedupe: { Args: { p_job_id: string }; Returns: undefined }
       remove_family_member: {
         Args: { p_family_id: string; p_member_user_id: string }
         Returns: Json
       }
+      reorder_accounts: {
+        Args: { p_items: Json; p_user_id: string }
+        Returns: undefined
+      }
+      reorder_credit_cards: {
+        Args: { p_items: Json; p_user_id: string }
+        Returns: undefined
+      }
       restore_family_backup: { Args: { p_backup_id: string }; Returns: Json }
+      reverse_transaction: { Args: { p_tx_id: string }; Returns: Json }
       rr_cancel_at_period_end: { Args: { rule_id: string }; Returns: undefined }
       rr_pause_rule: { Args: { rule_id: string }; Returns: undefined }
       rr_resume_rule: { Args: { rule_id: string }; Returns: undefined }
       rr_skip_next: { Args: { rule_id: string }; Returns: undefined }
+      run_monthly_budget_rollover: {
+        Args: { p_target_month?: string }
+        Returns: Json
+      }
       run_recurrents_now: { Args: never; Returns: undefined }
       set_account_balance: {
         Args: { p_account_id: string; p_new_balance: number; p_user_id: string }
@@ -4015,6 +4775,14 @@ export type Database = {
       set_regular_account_balance: {
         Args: { p_account_id: string; p_new_balance: number; p_user_id: string }
         Returns: string
+      }
+      soft_delete_account: {
+        Args: { p_account_id: string; p_user_id?: string }
+        Returns: Json
+      }
+      soft_delete_credit_card: {
+        Args: { p_card_id: string; p_user_id?: string }
+        Returns: Json
       }
       test_auth_context: {
         Args: never

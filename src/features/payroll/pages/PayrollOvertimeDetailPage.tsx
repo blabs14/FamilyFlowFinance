@@ -13,6 +13,9 @@ import { payrollService } from '../services/payrollService';
 import { logger } from '@/shared/lib/logger';
 import { useActiveContract } from '../hooks/useActiveContract';
 import type { TimesheetEntry, OvertimeBreakdown } from '../types';
+import { buildOtDayEntries, calcOtScaled, calcOtIrsWithholding } from '../lib/calc';
+import { fetchTaxRates } from '../services/payrollAdvanced.service';
+import type { OtScaledResult } from '../types/payroll-advanced.types';
 
 interface OvertimeDetailData {
   breakdown: OvertimeBreakdown;
@@ -48,6 +51,9 @@ export default function PayrollOvertimeDetailPage() {
   const [startDateFilter, setStartDateFilter] = useState<string>('');
   const [endDateFilter, setEndDateFilter] = useState<string>('');
   const [sortAsc, setSortAsc] = useState<boolean>(true);
+  // Scaled OT (duas escalas)
+  const [scaledOtResult, setScaledOtResult] = useState<OtScaledResult | null>(null);
+  const [otIrsCents, setOtIrsCents] = useState(0);
   
 
 
@@ -317,8 +323,9 @@ export default function PayrollOvertimeDetailPage() {
       const timesheetEntries = await loadTimesheetEntries(user.id, activeContract.id, selectedYear, selectedMonth);
 
       // Buscar política de horas extras (para testes de erro específico)
+      let otPolicy: Awaited<ReturnType<typeof payrollService.getActiveOTPolicy>> | null = null;
       try {
-        await payrollService.getActiveOTPolicy(user.id, activeContract.id);
+        otPolicy = await payrollService.getActiveOTPolicy(user.id, activeContract.id);
       } catch (e) {
         toast({ title: 'Erro ao carregar política', description: 'Não foi possível carregar a política de horas extras.', variant: 'destructive' });
         throw e;
@@ -327,6 +334,28 @@ export default function PayrollOvertimeDetailPage() {
       // Calcular breakdown localmente para não depender de mocks
       const breakdown = computeBreakdownLocally(timesheetEntries);
       const monthlyStats = calculateStats(breakdown, timesheetEntries);
+
+      // Computar scaled OT (duas escalas) se a política usar defaults legais
+      if (otPolicy?.use_legal_defaults) {
+        try {
+          const taxRates = await fetchTaxRates(selectedYear ?? new Date().getFullYear());
+          const thresholdMins = ((otPolicy as any).threshold_hours ?? 8) * 60;
+          const otEntries = buildOtDayEntries(timesheetEntries, thresholdMins);
+          const baseMinuteCents = Math.round(
+            ((activeContract as any).base_salary_cents ?? 0) / (thresholdMins * 4.33)
+          );
+          const result = calcOtScaled(
+            otEntries, baseMinuteCents, (otPolicy as any).ot_hours_ytd ?? 0,
+            taxRates.otRates, taxRates.otLimits, true,
+          );
+          setScaledOtResult(result);
+          const irsRate = (activeContract as any)?.irs_rate_fraction ?? 0;
+          setOtIrsCents(calcOtIrsWithholding(
+            result.otPayCents, irsRate,
+            taxRates.otIrsWithholding.autonomous_rate_of_base,
+          ));
+        } catch { /* tax_tables may not exist yet — fail silently */ }
+      }
 
       // Se não houver entradas, ainda assim mostrar totais a zero e a mensagem exigida pelos testes
       if (timesheetEntries.length === 0) {
@@ -649,6 +678,77 @@ export default function PayrollOvertimeDetailPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Scaled OT — duas escalas (Unit 12a) */}
+          {scaledOtResult && (
+            <Card>
+              <CardHeader>
+                <CardTitle>OT — Duas Escalas Legais</CardTitle>
+                <CardDescription>
+                  Decomposição do pagamento de horas extra segundo as escalas do CT
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Valor OT bruto</p>
+                    <p className="text-2xl font-bold">{formatCurrency(scaledOtResult.otPayCents)}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Horas este mês</p>
+                    <p className="text-2xl font-bold">{scaledOtResult.otHoursThisMonth.toFixed(1)}h</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Retenção IRS (OT)</p>
+                    <p className="text-2xl font-bold">{formatCurrency(otIrsCents)}</p>
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {scaledOtResult.dailyLimitWarning && (
+                    <Badge variant="destructive">OT diária &gt; 2h em algum dia</Badge>
+                  )}
+                  {scaledOtResult.annualLimitWarning && !scaledOtResult.annualLimitExceeded && (
+                    <Badge className="bg-amber-100 text-amber-800">A aproximar-se do limite anual</Badge>
+                  )}
+                  {scaledOtResult.annualLimitExceeded && (
+                    <Badge variant="destructive">Limite anual excedido</Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  YTD acumulado: {scaledOtResult.newYtdHours.toFixed(1)}h
+                </p>
+                {scaledOtResult.components.length > 0 && (
+                  <table className="w-full text-sm mb-3">
+                    <thead>
+                      <tr className="border-b text-muted-foreground">
+                        <th className="text-left py-1">Dia</th>
+                        <th className="text-right py-1">Escala</th>
+                        <th className="text-right py-1">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {scaledOtResult.components
+                        .filter(c => c.label.startsWith('OT ')) // exclude Night Bonus components
+                        .map((c, i) => {
+                          const isScale2 = c.label.includes('E2');
+                          return (
+                            <tr key={i} className="border-b">
+                              <td className="py-1">{c.label.replace(/^OT E[12] /, '')}</td>
+                              <td className="text-right py-1">
+                                <Badge variant={isScale2 ? 'destructive' : 'secondary'}>
+                                  {isScale2 ? 'Escala 2' : 'Escala 1'}
+                                </Badge>
+                              </td>
+                              <td className="text-right py-1">{formatCurrency(c.amount_cents)}</td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Avisos */}
           {overtimeData.breakdown.validationWarnings.length > 0 && (

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import PayrollSummaryPage from '../pages/PayrollSummaryPage';
 import PayrollMileagePage from '../pages/PayrollMileagePage';
@@ -19,11 +19,16 @@ import { PayrollPeriodsManager } from './PayrollPeriodsManager';
 import { ActiveContractProvider } from '../contexts/ActiveContractContext';
 import { PayrollConfigProvider } from '../contexts/PayrollConfigContext';
 import { usePayrollOnboarding } from '../hooks/usePayrollOnboarding';
+import { useActiveContract } from '../hooks/useActiveContract';
 import { LoadingSpinner } from '../../../components/ui/loading-states';
 // DEV-only wrappers for preview
 import SummaryWrapper from './PayrollSummaryPage';
 import CalculatorWrapper from './PayrollCalculatorPage';
 import HistoryWrapper from './PayrollHistoryPage';
+
+const PayslipPreview = lazy(() => import('./PayslipPreview'));
+const PayslipHistory = lazy(() => import('./PayslipHistory'));
+const TravelAllowancesPage = lazy(() => import('../pages/TravelAllowancesPage'));
 
 // Toggle para permitir rotas de preview em ambientes de teste (Playwright) ou quando ativado via env
 const DEV_ROUTES = import.meta.env.DEV || import.meta.env.VITE_E2E === '1' || import.meta.env.VITE_ENABLE_PAYROLL_PREVIEW === '1';
@@ -37,6 +42,37 @@ function getMondayOfCurrentWeek(): Date {
   monday.setDate(today.getDate() - daysToSubtract);
   monday.setHours(0, 0, 0, 0); // Definir para início do dia
   return monday;
+}
+
+function RecibosPage() {
+  const { activeContract, loading } = useActiveContract();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!activeContract?.id) {
+    return (
+      <div className="text-center py-16 text-muted-foreground text-sm">
+        Configure um contrato de trabalho para poder lançar recibos.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Suspense fallback={<div className="animate-pulse p-4">A carregar...</div>}>
+        <PayslipPreview contractId={activeContract.id} />
+      </Suspense>
+      <Suspense fallback={<div className="animate-pulse p-4">A carregar...</div>}>
+        <PayslipHistory contractId={activeContract.id} />
+      </Suspense>
+    </div>
+  );
 }
 
 function PayrollContent() {
@@ -75,6 +111,12 @@ function PayrollContent() {
         <Route path="config" element={<PayrollConfigPage />} />
         <Route path="periods" element={<PayrollPeriodsManager />} />
         <Route path="onboarding" element={<PayrollOnboardingWizard />} />
+        <Route path="recibos" element={<RecibosPage />} />
+        <Route path="ajudas-custo" element={
+          <Suspense fallback={<LoadingSpinner size="lg" />}>
+            <TravelAllowancesPage />
+          </Suspense>
+        } />
       </Routes>
     </>
   );

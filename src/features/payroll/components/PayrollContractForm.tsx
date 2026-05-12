@@ -11,11 +11,13 @@ import {
   PayrollContract,
   ContractFormData
 } from '../types';
-import { payrollService } from '../services/payrollService';
+import { payrollService, savePayrollContractCore } from '../services/payrollService';
 import { contractSyncService } from '../services/contractSyncService';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocale } from '@/contexts/LocaleProvider';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabaseClient';
 
 import { getCurrencies } from '@/services/currencies';
 import { logger } from '@/shared/lib/logger';
@@ -52,6 +54,22 @@ export function PayrollContractForm({ contract, onSave, onCancel }: PayrollContr
   // Sistema de notificações
   const { notifications, addNotification, removeNotification } = usePayrollNotifications();
 
+  // Fetch user's personal accounts for salary destination selector
+  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
+    queryKey: ['accounts-for-payroll', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('accounts')
+        .select('id, nome, tipo')
+        .is('family_id', null)    // personal accounts only
+        .order('nome');
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!user?.id,
+  });
+  const queryClient = useQueryClient();
+
   const [loading, setLoading] = useState(false);
   const [syncingHolidays, setSyncingHolidays] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -75,6 +93,7 @@ export function PayrollContractForm({ contract, onSave, onCancel }: PayrollContr
   const [baseSalaryInput, setBaseSalaryInput] = useState('');
   const [weeklyHoursInput, setWeeklyHoursInput] = useState('');
   const [currencyOptions, setCurrencyOptions] = useState<{ code: string; name?: string }[]>([]);
+  const [accountId, setAccountId] = useState<string>(contract?.account_id ?? '');
 
   useEffect(() => {
     if (contract) {
@@ -114,6 +133,8 @@ export function PayrollContractForm({ contract, onSave, onCancel }: PayrollContr
       // Inicializar valores de entrada como strings
       setBaseSalaryInput(contract.base_salary_cents > 0 ? (contract.base_salary_cents / 100).toString().replace('.', ',') : '');
       setWeeklyHoursInput(contract.weekly_hours ? contract.weekly_hours.toString().replace('.', ',') : '40');
+      // Re-hydrate account selector so editing an existing contract preserves the saved account
+      setAccountId(contract.account_id ?? '');
     }
   }, [contract, defaultCurrency]);
 
@@ -174,7 +195,30 @@ export function PayrollContractForm({ contract, onSave, onCancel }: PayrollContr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (accountId) {
+      try {
+        const newContractId = await savePayrollContractCore({
+          name: formData.name,
+          baseSalaryCents: formData.base_salary_cents,
+          weeklyHours: formData.weekly_hours,
+          scheduleJson: formData.schedule_json,
+          vacationBonusMode: formData.vacation_bonus_mode,
+          christmasBonusMode: formData.christmas_bonus_mode,
+          accountId,
+        });
+        toast({ title: 'Contrato guardado', description: 'Contrato activo actualizado.' });
+        queryClient.invalidateQueries({ queryKey: ['payroll-payslips'] });
+        queryClient.invalidateQueries({ queryKey: ['payroll-contracts'] });
+        onSave?.({ ...formData, id: newContractId } as any);
+        return;
+      } catch (err: any) {
+        toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+        return;
+      }
+    }
+    // existing save path continues below for backward compat
+
     if (!user?.id) {
       addNotification({
         type: 'error',
@@ -578,6 +622,28 @@ export function PayrollContractForm({ contract, onSave, onCancel }: PayrollContr
           </div>
 
 
+
+          {/* Conta para receber o salário líquido */}
+          <div className="space-y-2">
+            <Label htmlFor="accountId">Conta para receber o salário líquido</Label>
+            <Select value={accountId} onValueChange={setAccountId} disabled={accountsLoading}>
+              <SelectTrigger id="accountId">
+                <SelectValue placeholder={accountsLoading ? 'A carregar contas...' : 'Selecionar conta...'} />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map(acc => (
+                  <SelectItem key={acc.id} value={acc.id}>
+                    {acc.nome} <span className="text-muted-foreground ml-1">({acc.tipo})</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!accountsLoading && !accountId && (
+              <p className="text-sm text-muted-foreground">
+                Necessário para lançar recibos de vencimento.
+              </p>
+            )}
+          </div>
 
           {/* Horário de Trabalho */}
           <div className="space-y-4">

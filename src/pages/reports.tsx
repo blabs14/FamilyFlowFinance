@@ -24,8 +24,8 @@ import { useTransactions } from '../hooks/useTransactionsQuery';
 import { useAccountsDomain } from '../hooks/useAccountsQuery';
 import { useCategoriesDomain } from '../hooks/useCategoriesQuery';
 import { useGoals } from '../hooks/useGoalsQuery';
-import { useFamilyData } from '../hooks/useFamilyQuery';
-import { getFamilyCategoryBreakdown, getFamilyKPIsRange } from '../services/family';
+import { useScope } from '@/features/scope';
+import { supabase } from '@/lib/supabaseClient';
 const LazyReportExport = lazy(() => import('../components/ReportExport').then(m => ({ default: m.ReportExport })));
 const LazyReportChart = lazy(() => import('../components/ReportChart').then(m => ({ default: m.default })));
 import { formatCurrency } from '../lib/utils';
@@ -41,14 +41,102 @@ if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
   });
 }
 
+function AnnualAnalysis({ scopeFamilyId }: { scopeFamilyId: string | null }) {
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [monthlyData, setMonthlyData] = useState<Array<{
+    month: string; income: number; expense: number; net: number;
+  }>>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setIsLoading(true);
+    Promise.all(
+      Array.from({ length: 12 }, (_, i) => {
+        const m = String(i + 1).padStart(2, '0');
+        const start = `${year}-${m}-01`;
+        const lastDay = new Date(year, i + 1, 0).getDate();
+        const end = `${year}-${m}-${String(lastDay).padStart(2, '0')}`;
+        return supabase.rpc('get_kpis', {
+          scope_family_id: scopeFamilyId,
+          date_start: start,
+          date_end: end,
+          exclude_transfers: true,
+        }).then(({ data }) => {
+          const row = Array.isArray(data) ? data[0] : data;
+          return {
+            month: new Date(year, i).toLocaleString('pt-PT', { month: 'short' }),
+            income:  Number(row?.income_cents  || 0) / 100,
+            expense: Number(row?.expense_cents || 0) / 100,
+            net:     Number(row?.net_cents     || 0) / 100,
+          };
+        });
+      })
+    ).then(setMonthlyData).finally(() => setIsLoading(false));
+  }, [year, scopeFamilyId]);
+
+  const cumSavings = monthlyData.reduce((acc, m) => {
+    const last = acc[acc.length - 1] ?? 0;
+    return [...acc, last + m.net];
+  }, [] as number[]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle>Análise Anual</CardTitle>
+          <div className="flex gap-2 items-center">
+            <Button size="sm" variant="outline" onClick={() => setYear(y => y - 1)}>{'<'}</Button>
+            <span className="text-sm font-semibold">{year}</span>
+            <Button size="sm" variant="outline" onClick={() => setYear(y => y + 1)}>{'>'}</Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <p className="text-center text-muted-foreground py-8">A carregar...</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-muted-foreground border-b">
+                  <th className="text-left py-2">Mês</th>
+                  <th className="text-right py-2">Receita</th>
+                  <th className="text-right py-2">Despesa</th>
+                  <th className="text-right py-2">Saldo</th>
+                  <th className="text-right py-2">Poupança acum.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthlyData.map((m, i) => (
+                  <tr key={m.month} className="border-b last:border-0">
+                    <td className="py-1.5 font-medium capitalize">{m.month}</td>
+                    <td className="py-1.5 text-right text-green-600">{formatCurrency(m.income)}</td>
+                    <td className="py-1.5 text-right text-red-600">{formatCurrency(m.expense)}</td>
+                    <td className={`py-1.5 text-right font-semibold ${m.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(m.net)}
+                    </td>
+                    <td className={`py-1.5 text-right ${cumSavings[i] >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(cumSavings[i])}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 const ReportsPage = () => {
   const { user } = useAuth();
   const { data: transactions = [] } = useTransactions();
   const { data: accounts = [] } = useAccountsDomain();
   const { data: categories = [] } = useCategoriesDomain();
   const { data: goals = [] } = useGoals();
-  const { data: familyData } = useFamilyData();
-  const familyId = familyData?.family?.id as string | undefined;
+  const { scope } = useScope();
+  const scopeFamilyId = scope.kind === 'family' ? (scope as any).familyId as string : null;
   const [rpcExpenses, setRpcExpenses] = useState<Array<{ id: string | null; categoria: string; total: number; percentage: number }> | null>(null);
   const [rpcIncome, setRpcIncome] = useState<Array<{ id: string | null; categoria: string; total: number; percentage: number }> | null>(null);
   const [rpcLoading, setRpcLoading] = useState(false);
@@ -108,9 +196,9 @@ const ReportsPage = () => {
 
   // Atalho global '/' coberto por GlobalShortcuts
 
-  // Buscar breakdown via RPC quando aplicável (família existente e sem filtro de conta)
+  // Buscar breakdown via RPC quando aplicável (sem filtro de conta)
   useEffect(() => {
-    const canUseRPC = !!familyId && selectedAccount === 'all';
+    const canUseRPC = selectedAccount === 'all';
     if (!canUseRPC) {
       setRpcExpenses(null);
       setRpcIncome(null);
@@ -121,13 +209,23 @@ const ReportsPage = () => {
       try {
         setRpcLoading(true);
         const [exp, inc] = await Promise.all([
-          getFamilyCategoryBreakdown(familyId!, dateRange.start, dateRange.end, 'despesa'),
-          getFamilyCategoryBreakdown(familyId!, dateRange.start, dateRange.end, 'receita'),
+          supabase.rpc('get_category_breakdown', {
+            scope_family_id: scopeFamilyId,
+            date_start: dateRange.start,
+            date_end: dateRange.end,
+            kind: 'expense',
+          }),
+          supabase.rpc('get_category_breakdown', {
+            scope_family_id: scopeFamilyId,
+            date_start: dateRange.start,
+            date_end: dateRange.end,
+            kind: 'income',
+          }),
         ]);
         if (cancelled) return;
         const mapRows = (rows: any[]) => rows
-          .filter(r => Number(r.total) > 0)
-          .map(r => ({ id: r.category_id, categoria: r.category_name || 'Sem categoria', total: Number(r.total), percentage: Number(r.percentage) }))
+          .filter(r => Number(r.amount_cents) > 0)
+          .map(r => ({ id: r.categoria_id, categoria: r.categoria_nome || 'Sem categoria', total: Number(r.amount_cents) / 100, percentage: Number(r.share_percent) }))
           .sort((a, b) => b.total - a.total);
         setRpcExpenses(mapRows(exp.data || []));
         setRpcIncome(mapRows(inc.data || []));
@@ -139,31 +237,33 @@ const ReportsPage = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [familyId, dateRange.start, dateRange.end, selectedAccount]);
+  }, [scopeFamilyId, dateRange.start, dateRange.end, selectedAccount]);
 
   // Memoização extra dos arrays RPC para manter referências estáveis
   const rpcExpensesMemo = useMemo(() => rpcExpenses ? [...rpcExpenses] : null, [rpcExpenses?.length, rpcExpenses?.[0]?.id]);
   const rpcIncomeMemo = useMemo(() => rpcIncome ? [...rpcIncome] : null, [rpcIncome?.length, rpcIncome?.[0]?.id]);
 
-  // KPI overspends via RPC (família) para badge rápida
+  // KPI overspends via RPC para badge rápida
   useEffect(() => {
-    if (!familyId) { setOverspentCount(0); return; }
     let cancelled = false;
     (async () => {
       try {
         setKpiLoading(true);
-        const { data, error } = await getFamilyKPIsRange(familyId, dateRange.start, dateRange.end, excludeTransfers);
+        const { data, error } = await supabase.rpc('get_kpis', {
+          scope_family_id: scopeFamilyId,
+          date_start: dateRange.start,
+          date_end: dateRange.end,
+          exclude_transfers: excludeTransfers,
+        });
         if (error || !data) { if (!cancelled) setOverspentCount(0); return; }
-        const count = Array.isArray(data.overspent_budget_ids)
-      ? data.overspent_budget_ids.length
-      : Number(data.overspent_budgets_count || 0);
-        if (!cancelled) setOverspentCount(count || 0);
+        const row = Array.isArray(data) ? data[0] : data;
+        if (!cancelled) setOverspentCount(Number(row?.budgets_at_risk || 0));
       } finally {
         if (!cancelled) setKpiLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [familyId, dateRange.start, dateRange.end, excludeTransfers]);
+  }, [scopeFamilyId, dateRange.start, dateRange.end, excludeTransfers]);
 
   // Filtrar transações baseado nos filtros (memoizado)
   const filteredTransactions = useMemo(() => {
@@ -545,7 +645,7 @@ const ReportsPage = () => {
             {excludeTransfers && (
               <Badge variant="outline">Sem transferências</Badge>
             )}
-            {(familyId && overspentCount > 0) && (
+            {overspentCount > 0 && (
               <Badge variant="destructive" aria-live="polite">Orçamentos ultrapassados: {overspentCount}</Badge>
             )}
             {selectedCategoryName && (
@@ -559,7 +659,7 @@ const ReportsPage = () => {
                 Limpar filtros
               </Button>
             )}
-            {(familyId && overspentCount > 0) && (
+            {overspentCount > 0 && (
               <Button variant="link" size="sm" onClick={() => window.location.assign('/family/budgets')}>Ver orçamentos</Button>
             )}
           </div>
@@ -630,7 +730,7 @@ const ReportsPage = () => {
 
       {/* Tabs de Relatórios */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview" className="flex items-center gap-2" onMouseEnter={prefetchHeavy} onFocus={prefetchHeavy}>
             <BarChart3 className="h-4 w-4" />
             Visão Geral
@@ -647,6 +747,10 @@ const ReportsPage = () => {
             <Target className="h-4 w-4" />
             Objetivos
           </TabsTrigger>
+          <TabsTrigger value="annual" className="flex items-center gap-2" onMouseEnter={prefetchHeavy} onFocus={prefetchHeavy}>
+            <Calendar className="h-4 w-4" />
+            Análise Anual
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -657,7 +761,7 @@ const ReportsPage = () => {
                 <CardTitle>Despesas por Categoria</CardTitle>
               </CardHeader>
               <CardContent>
-                {(rpcLoading && familyId && selectedAccount === 'all') ? (
+                {(rpcLoading && selectedAccount === 'all') ? (
                   <div className="h-[120px] w-full rounded bg-muted animate-pulse" aria-label="A carregar dados (RPC)..." />
                 ) : expensesByCategory.length > 0 ? (
                   <div className="space-y-3">
@@ -844,6 +948,10 @@ const ReportsPage = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="annual" className="space-y-4">
+          <AnnualAnalysis scopeFamilyId={scopeFamilyId} />
         </TabsContent>
       </Tabs>
     </div>

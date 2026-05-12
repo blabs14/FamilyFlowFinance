@@ -12,7 +12,9 @@ import { Plus, Edit, Trash2, Download, MapPin, TrendingUp, Euro, Search, Calenda
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { formatCurrency } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import { payrollService } from '../services/payrollService';
+import { calcMileageCap } from '../lib/calc';
 
 import { useActiveContract } from '../hooks/useActiveContract';
 import { MileageTripForm } from '../components/MileageTripForm';
@@ -427,7 +429,8 @@ const PayrollMileagePage: React.FC = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <>
+                <div className="space-y-4" data-testid="trips-list">
                   {filteredTrips.map((trip) => (
                     <div key={trip.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex-1">
@@ -439,6 +442,24 @@ const PayrollMileagePage: React.FC = () => {
                           const amountCents = policy ? trip.km * policy.rate_cents_per_km : 0;
                           return formatCurrency(amountCents, 'pt-PT', activeContract?.currency || 'EUR');
                         })()}</span>
+                        {(() => {
+                          const ratePerKm = (policies.find(p => p.id === trip.policy_id)?.rate_cents_per_km) ?? 40;
+                          const { exemptCents, taxableCents } = calcMileageCap([{ km: trip.km, rateCentsPerKm: ratePerKm }], 40);
+                          return (
+                            <>
+                              <span className="text-xs text-muted-foreground">
+                                Isento: <strong>{formatCurrency(exemptCents / 100, 'pt-PT', activeContract?.currency || 'EUR')}</strong>
+                              </span>
+                              {taxableCents > 0 ? (
+                                <Badge variant="destructive" className="text-xs">
+                                  Tributável: {formatCurrency(taxableCents / 100, 'pt-PT', activeContract?.currency || 'EUR')}
+                                </Badge>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+                            </>
+                          );
+                        })()}
                         </div>
                         <div className="text-sm text-gray-600">
                           <span className="font-medium">De:</span> {trip.origin} → 
@@ -470,6 +491,34 @@ const PayrollMileagePage: React.FC = () => {
                     </div>
                   ))}
                 </div>
+
+                {/* Fiscal summary for filtered trips */}
+                {filteredTrips.length > 0 && (
+                  <div className="flex gap-6 p-3 bg-muted rounded-md text-sm mt-2">
+                    {(() => {
+                      const total = calcMileageCap(
+                        filteredTrips.map((t: any) => ({
+                          km: t.km,
+                          rateCentsPerKm: policies.find((p: any) => p.id === t.policy_id)?.rate_cents_per_km ?? 40,
+                        })),
+                        40,
+                      );
+                      return (
+                        <>
+                          <span>
+                            Total isento:{' '}
+                            <strong>{formatCurrency(total.exemptCents / 100, 'pt-PT', activeContract?.currency || 'EUR')}</strong>
+                          </span>
+                          <span>
+                            Total tributável:{' '}
+                            <strong>{formatCurrency(total.taxableCents / 100, 'pt-PT', activeContract?.currency || 'EUR')}</strong>
+                          </span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+                </>
               )}
             </CardContent>
           </Card>
