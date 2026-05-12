@@ -26,7 +26,6 @@ const BudgetsPage      = lazy(() => import('./pages/app/BudgetsPage'));
 const RecurrentsAppPage = lazy(() => import('./pages/app/RecurrentsPage'));
 const InboxPage         = lazy(() => import('./pages/app/InboxPage'));
 const MembersPage      = lazy(() => import('./pages/app/MembersPage'));
-const FamilySettingsPage = lazy(() => import('./pages/app/FamilySettingsPage'));
 const SettingsPage       = lazy(() => import('./pages/app/SettingsPage'));
 const OnboardingPage     = lazy(() => import('./pages/app/OnboardingPage'));
 
@@ -113,9 +112,7 @@ function App() {
                       <Route path="convites" element={
                         <Suspense fallback={<PageLoading />}><MembersPage /></Suspense>
                       } />
-                      <Route path="definicoes-familia" element={
-                        <Suspense fallback={<PageLoading />}><FamilySettingsPage /></Suspense>
-                      } />
+                      <Route path="definicoes-familia" element={<Navigate to="/app/settings" replace />} />
                       <Route path="import" element={
                         <Suspense fallback={<PageLoading />}><ImportPage /></Suspense>
                       } />
