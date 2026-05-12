@@ -33,7 +33,12 @@ async function getCroppedBlob(imageSrc: string, cropArea: Area): Promise<Blob> {
     cropArea.x, cropArea.y, cropArea.width, cropArea.height,
     0, 0, OUTPUT_SIZE, OUTPUT_SIZE
   );
-  return new Promise((resolve) => canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.9));
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((b) => {
+      if (b) resolve(b);
+      else reject(new Error('canvas.toBlob returned null'));
+    }, 'image/jpeg', 0.9)
+  );
 }
 
 export function AvatarUploader({ currentUrl, onUploaded }: AvatarUploaderProps) {
@@ -76,7 +81,10 @@ export function AvatarUploader({ currentUrl, onUploaded }: AvatarUploaderProps) 
       if (uploadError) { setError('Erro ao carregar imagem.'); return; }
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
       onUploaded(`${data.publicUrl}?t=${Date.now()}`);
+      if (rawSrc) URL.revokeObjectURL(rawSrc);
       setRawSrc(null);
+    } catch {
+      setError('Erro ao processar imagem.');
     } finally {
       setUploading(false);
     }
@@ -108,7 +116,7 @@ export function AvatarUploader({ currentUrl, onUploaded }: AvatarUploaderProps) 
       </div>
 
       {/* Crop dialog */}
-      <Dialog open={!!rawSrc} onOpenChange={(open) => { if (!open) setRawSrc(null); }}>
+      <Dialog open={!!rawSrc} onOpenChange={(open) => { if (!open) { if (rawSrc) URL.revokeObjectURL(rawSrc); setRawSrc(null); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Recortar foto</DialogTitle></DialogHeader>
           {rawSrc && (

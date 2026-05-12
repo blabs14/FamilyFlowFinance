@@ -16,6 +16,10 @@ vi.mock('../../../../lib/supabaseClient', () => ({
 }));
 vi.mock('../../../../contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 'u1', email: 'a@b.com' } }) }));
 vi.mock('../../../../hooks/useUserPreferences', () => ({ useUserPreferences: () => ({ data: null }), useUpdateUserPreferences: () => ({ mutateAsync: vi.fn() }) }));
+vi.mock('../../../../hooks/useProfilesQuery', () => ({
+  useProfile: () => ({ data: { id: 'u1', nome: 'Ana', foto_url: null }, isLoading: false }),
+  useUpdateProfile: () => ({ mutateAsync: vi.fn().mockResolvedValue({}), isPending: false }),
+}));
 
 import { ProfileSettings } from '../ProfileSettings';
 

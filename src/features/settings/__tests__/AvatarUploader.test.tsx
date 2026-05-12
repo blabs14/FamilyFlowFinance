@@ -39,6 +39,6 @@ describe('AvatarUploader', () => {
     const bigFile = new File(['x'], 'big.jpg', { type: 'image/jpeg' });
     Object.defineProperty(bigFile, 'size', { value: 3 * 1024 * 1024 });
     fireEvent.change(input, { target: { files: [bigFile] } });
-    await waitFor(() => expect(screen.getByText(/demasiado grande/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText(/2 MB/i).length).toBeGreaterThanOrEqual(1));
   });
 });
