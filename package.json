@@ -136,6 +136,6 @@
     "vite-bundle-visualizer": "^1.2.1",
     "vite-plugin-pwa": "^1.0.1",
     "vitest": "^3.2.4",
-    "wait-on": "^7.2.0"
+    "wait-on": "^9.0.10"
   }
 }
